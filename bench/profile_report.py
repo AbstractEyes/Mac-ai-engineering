@@ -191,11 +191,17 @@ def report(model, rec_path, d2m_path):
             e["verdict"] = "met" if lo <= share <= hi else ("missed (lower)" if share < lo else "missed (higher)")
         out["groups"][g] = e
 
-    # per layer class: the in-situ layer's forward + backward per layer, and its main parts
-    types = None
-    for m in mbs:
-        types = m.get("plan", {})
-        break
+    # per layer class: the in-situ layer's forward + backward per layer (the micro-batch's mean shape)
+    n_lin = rec.get("checks", {}).get("linear_attention_layers")
+    n_layers = mbs[0].get("plan", {}).get("layers")
+    if n_lin and n_layers:
+        per = {}
+        for scope, count in (("lin", n_lin), ("full", n_layers - n_lin)):
+            f = sum(r["fwd_ms"] for r in rows if r["component"].startswith(scope + "."))
+            b = sum(r["bwd_ms"] for r in rows if r["component"].startswith(scope + "."))
+            per[scope] = {"layers": count, "fwd_ms_per_layer": round(f / count, 3), "bwd_ms_per_layer": round(b / count, 3),
+                          "fwd_bwd_ms_per_layer": round((f + b) / count, 3)}
+        out["per_layer_in_situ"] = per
     out["dispatch_bound"] = [{"component": r["component"], "direction": d, "ms": round(r[f"{d}_ms"], 3),
                               "cpu_net_ms": round(r[f"cpu_net_{d}_ms"], 3), "gpu_waiting_ms": round(r[f"gpu_waiting_{d}_ms"], 3),
                               "gpu_waits_on_cpu": r[f"gpu_waits_{d}"]}
@@ -224,15 +230,76 @@ def report(model, rec_path, d2m_path):
     return out
 
 
+PRODUCT_OF = {  # in-situ component -> (projection, product, layout) in bench/profile_products.py
+    "top.lm_head": ("lm_head", None), "lin.in_proj_qkv.base": ("in_proj_qkv", None), "lin.in_proj_z.base": ("in_proj_z", None),
+    "lin.out_proj.base": ("out_proj", None), "lin.gate_proj.base": ("gate_proj / up_proj", None),
+    "lin.up_proj.base": ("gate_proj / up_proj", None), "lin.down_proj.base": ("down_proj", None),
+    "full.gate_proj.base": ("gate_proj / up_proj", None), "full.up_proj.base": ("gate_proj / up_proj", None),
+    "full.down_proj.base": ("down_proj", None), "full.q_proj.base": ("q_proj", None), "full.o_proj.base": ("o_proj", None),
+    "full.k_proj.base": ("k_proj / v_proj", None), "full.v_proj.base": ("k_proj / v_proj", None),
+    "lin.in_proj_a.base": ("in_proj_a / in_proj_b", None), "lin.in_proj_b.base": ("in_proj_a / in_proj_b", None),
+}
+
+
+def products_join(res):
+    """The products carrying the most in-situ time, with PyTorch's and MLX's rates at the micro-batch's median shape."""
+    pt_path, mx_path = os.path.join(LOGS, "products_torch.json"), os.path.join(LOGS, "products_mlx.json")
+    if not os.path.exists(pt_path):
+        return None
+    pt = json.load(open(pt_path))
+    mx = json.load(open(mx_path)) if os.path.exists(mx_path) else None
+    out = {"large_square_tflops_torch": pt["large_square_tflops"],
+           "large_square_tflops_mlx": mx["large_square_tflops"] if mx else None, "models": {}}
+    for model, r in res.items():
+        shapes = pt["shapes"].get(model, [])
+        if len(shapes) < 2:
+            continue
+        mb_shape = shapes[1]
+        rows_pt = {(c["projection"], c["product"], c["layout"]): c for c in pt["models"][model][mb_shape]}
+        rows_mx = ({(c["projection"], c["product"], c["layout"]): c for c in mx["models"][model][mb_shape]}
+                   if mx and model in mx["models"] else {})
+        lst = []
+        for c in r["components"]:
+            name = c["component"]
+            for prefix, (proj, _) in PRODUCT_OF.items():
+                if name != prefix:
+                    continue
+                for d, prod in (("fwd", "base fwd"), ("bwd", "base bwd")):
+                    layout = "layer" if (proj == "in_proj_qkv" and d == "bwd") else "plain"
+                    p = rows_pt.get((proj, prod, layout))
+                    m = rows_mx.get((proj, prod, layout))
+                    if p is None:
+                        continue
+                    lst.append({"component": name, "direction": d, "in_situ_ms_per_micro_batch": round(c[f"{d}_ms"], 3),
+                                "share_pct": round(100 * c[f"{d}_ms"] / r["per_micro_batch_ms_total"], 2),
+                                "product": f"{proj} {prod}" + (" (the layer's layout)" if layout == "layer" else ""),
+                                "torch_ms": p["events_ms"], "torch_tflops": p["tflops_events"],
+                                "torch_of_large_square": p["of_large_square"],
+                                "mlx_ms": m["wall_ms"] if m else None, "mlx_tflops": m["tflops_wall"] if m else None,
+                                "torch_over_mlx_rate": round(p["tflops_events"] / m["tflops_wall"], 3) if m else None})
+        lst.sort(key=lambda x: -x["in_situ_ms_per_micro_batch"])
+        out["models"][model] = {"micro_batch_shape": mb_shape, "products": lst}
+    return out
+
+
 def main():
     res = {}
     for model, (name, d2m) in RUNS.items():
         p = os.path.join(LOGS, name)
         if os.path.exists(p):
             res[model] = report(model, p, d2m)
+    pj = products_join(res)
+    if pj:
+        res["products_join"] = pj
     path = os.path.join(LOGS, "profile_results.json")
     json.dump(res, open(path, "w"), indent=1)
     for model, r in res.items():
+        if model == "products_join":
+            for m, v in r["models"].items():
+                print(f"== products at {m} {v['micro_batch_shape']}")
+                for p in v["products"][:12]:
+                    print("  ", json.dumps(p))
+            continue
         print(f"== {model}: {r['micro_batches_profiled']} micro-batches, steps {r['profiled_steps']}")
         print(" validity", json.dumps(r["validity"]))
         print(" new shapes", r["new_shape_cost"], "instrument", r["instrument_overhead_ms_per_micro_batch"], "ms/mb;",

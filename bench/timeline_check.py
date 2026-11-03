@@ -13,6 +13,8 @@ step 0). Each case runs with the instrument's fence (a tiny kernel before each e
    the input) with module marks and their backward nodes: each layer's attributed forward and backward time against the same
    product timed alone; the sum of the components against the wall clock; the marked step against the unmarked one.
 4. The CPU cost of a mark with no GPU work, and of resolving it afterwards.
+5. The GPU's lag behind the CPU at a mark: it stays at its floor across 5 ms of CPU work with the GPU idle, and rises by
+   about the queued GPU work after ~27 ms of products issued in well under a millisecond.
 """
 import json
 import os
@@ -214,6 +216,38 @@ def stack_forward_backward(fence, tokens=4096, dims=(1024, 4096, 1024, 8192, 102
             "checks": checks[-1]}
 
 
+def lag_reading(fence):
+    """The GPU's lag behind the CPU at a mark (bench/timeline.py, Timeline.lags): with the GPU idle between marks it stays at
+    its floor; after ~k ms of queued products it rises by about what the GPU still has to run when the CPU issues the mark."""
+    n = 2048
+    x = torch.randn(n, n, device=DEV, dtype=torch.bfloat16)
+    w = torch.randn(n, n, device=DEV, dtype=torch.bfloat16) * n ** -0.5
+    y = torch.empty(n, n, device=DEV, dtype=torch.bfloat16)
+    one = gpu_ms(lambda: torch.mm(x, w, out=y), reps=5, warm=2, inner=10)["median_ms"]
+    tl = Timeline(fence=fence)
+    tl.start()
+    out = {"product_ms": one, "idle": [], "queued": []}
+    for _ in range(ROUNDS):
+        torch.mps.synchronize()
+        tl.enter("a")
+        time.sleep(0.005)                   # the GPU idle, the CPU busy: the lag stays at its floor
+        tl.exit("a")
+        torch.mps.synchronize()
+        tl.enter("b")
+        for _ in range(20):                 # ~27 ms of products queued, issued in well under a millisecond
+            torch.mm(x, w, out=y)
+        tl.exit("b")
+        torch.mps.synchronize()
+        t = tl.resolve()
+        lag = tl.lags(t)
+        out["idle"].append(round(lag[1] - lag[0], 3))
+        out["queued"].append({"lag_ms": round(lag[3] - lag[0], 3), "cpu_issue_ms": round((tl.cpu[3] - tl.cpu[2]) / 1e6, 3),
+                              "gpu_ms": round(t[3] - t[2], 3)})
+        tl.release()
+    tl.stop()
+    return out
+
+
 def mark_cpu_cost(fence, n=2000):
     tl = Timeline(fence=fence)
     tl.start()
@@ -248,6 +282,8 @@ def main():
             print(key, "short ops", json.dumps(x), flush=True)
         r["stack"] = stack_forward_backward(fence)
         print(key, "stack", json.dumps({k: v for k, v in r["stack"].items() if k != "components_cpu_median_ms"}), flush=True)
+        r["lag"] = lag_reading(fence)
+        print(key, "lag", json.dumps(r["lag"]), flush=True)
     out["ended"] = time.strftime("%Y-%m-%d %H:%M:%S %Z")
     path = os.path.join(HERE, "layer_logs", "timeline_check.json")
     os.makedirs(os.path.dirname(path), exist_ok=True)

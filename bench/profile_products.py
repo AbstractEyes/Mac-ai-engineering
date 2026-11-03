@@ -2,8 +2,8 @@
 autocast runs them) against MLX (mx.matmul, bf16), read against the large-square rate measured in the same session
 (docs/series_layer.md).
 
-    python bench/profile_products.py --shapes 0.8b=4x1024,2x643 --shapes 9b=2x1024,1x643          # PyTorch: products_torch.json
-    python bench/profile_products.py --mlx --shapes 0.8b=4x1024,2x643 --shapes 9b=2x1024,1x643    # MLX (its own process, after)
+    python bench/profile_products.py --shapes 0.8b=4x1024,2x903 --shapes 9b=2x1024,1x859          # PyTorch: products_torch.json
+    python bench/profile_products.py --mlx --shapes 0.8b=4x1024,2x903 --shapes 9b=2x1024,1x859    # MLX (its own process, after)
 
 Each shape is batch x tokens: the bench's (first) and the training micro-batch's median padded one. At each, for every
 projection (in -> out) of both models, the products autograd runs in LoRA training with frozen weights:
@@ -17,12 +17,12 @@ projection (in -> out) of both models, the products autograd runs in LoRA traini
 
 and the LM head (forward, and the backward to its input, against 248,320 words). For in_proj_qkv, whose output the layer
 transposes for the convolution path, the backward products also run with the gradient in the layout the layer hands them (the
-transpose of a contiguous [B, out, T] tensor). The large-square products (4,096 and 8,192 cubed, at the start and the end of
-the session) are the control.
+transpose of a contiguous [B, out, T] tensor). The large-square products (2,048, 4,096 and 8,192 cubed, at the start and the
+end of the session) are the control; the fastest of them is the rate the shapes are read against.
 
 PyTorch: Metal events (macai.instruments.gpu_ms: back-to-back calls between two events) and the wall clock around the same
 calls. MLX: the wall clock around mx.eval of the same number of calls, the backward products written as the matmuls autograd
-runs. Each case is called often enough to fill at least ~10 ms; the median of 7 rounds.
+runs. Each case is called often enough to fill at least ~10 ms, and at least 3 times back to back; the median of 7 rounds.
 """
 import argparse
 import json
@@ -34,7 +34,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 MODELS = {"0.8b": "Qwen/Qwen3.5-0.8B", "9b": "Qwen/Qwen3.5-9B"}
 RANK = 32
-SQUARES = (4096, 8192)
+SQUARES = (2048, 4096, 8192)
 FILL_MS = 10.0
 REPS = 7
 
@@ -94,7 +94,7 @@ def flops(prod, m, k_in, n_out):
 
 
 def fill(once_ms):
-    return max(1, min(400, int(FILL_MS / max(once_ms, 1e-3)) + 1))
+    return max(3, min(400, int(FILL_MS / max(once_ms, 1e-3)) + 1))
 
 
 # ---- PyTorch ----
