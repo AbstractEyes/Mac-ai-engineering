@@ -437,6 +437,45 @@ def test_parts_off_bit_identical_and_call_order(model):
 
 
 @mps
+@pytest.mark.parametrize("model", ["0.8b", "9b"])
+def test_fresh_cache_takes_the_parts(model, monkeypatch):
+    """Training forwards carry a fresh cache (transformers' Trainer sets the model's use_cache from its arguments): with a cache
+    holding no state of the layer the parts run, and the cache ends as transformers' own forward leaves it (the convolution's
+    state bit for bit, the final recurrent state to the rule's precision); a decode step from either cache runs transformers'
+    path and gives the same output."""
+    from transformers.cache_utils import DynamicCache
+    cfg = tiny_config(model)
+    torch.manual_seed(0)
+    gdn = M.Qwen3_5DecoderLayer(cfg, 0).linear_attn
+    for n, p in gdn.named_parameters():
+        if "conv1d" in n:
+            torch.nn.init.normal_(p, std=0.3)
+        elif p.dim() > 1:
+            torch.nn.init.normal_(p, std=0.02)
+    gdn = gdn.to("mps", torch.bfloat16)
+    x = (torch.randn(2, 45, cfg.hidden_size) * 0.5).to("mps", torch.bfloat16)
+    x1 = (torch.randn(2, 1, cfg.hidden_size) * 0.5).to("mps", torch.bfloat16)
+    calls = []
+    real = _qwen3_5.conv_path
+    monkeypatch.setattr(_qwen3_5, "conv_path", lambda *a, **k: calls.append(1) or real(*a, **k))
+    out, caches = {}, {}
+    for on in (False, True):
+        cache = DynamicCache(config=cfg)
+        with layer.configured(**dict.fromkeys(layer.PARTS, on)), torch.no_grad():
+            y = gdn(x, cache_params=cache)
+            y1 = gdn(x1, cache_params=cache)
+        out[on], caches[on] = (y.float().cpu(), y1.float().cpu()), cache
+    assert len(calls) == 1                     # the prefill took the fused path; the decode step did not
+    for i in range(2):
+        assert (out[True][i] - out[False][i]).abs().max() / out[False][i].abs().max() < 0.03
+    # after the prefill and the decode step both caches hold the same convolution window and close recurrent states
+    a, b = (c.get_conv_state(0, state_idx=0) for c in (caches[False], caches[True]))
+    assert torch.equal(a, b)
+    a, b = (c.get_recurrent_state(0, state_idx=0).float() for c in (caches[False], caches[True]))
+    assert (a - b).abs().max() / a.abs().max() < 0.03
+
+
+@mps
 def test_mlp_and_full_attention_dispatch():
     """The MLP and the full-attention layer's norms through the replaced methods: close to transformers' path in bf16."""
     cfg = tiny_config("0.8b")

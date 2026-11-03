@@ -8,10 +8,13 @@ part is off or the inputs are outside what its kernels take:
     Qwen3_5RMSNorm.forward          -> macai.layer.RMSNORM
     Qwen3_5RMSNormGated.forward     -> macai.layer.GATED_NORM
     Qwen3_5MLP.forward              -> macai.layer.SWIGLU (the projections stay module calls, in the original order)
-    Qwen3_5GatedDeltaNet.forward    -> macai.layer.CONV and macai.layer.GATES, for the training / prefill path without a cache
-                                       (with a cache, or with packed rows, the original runs). The projections stay module
-                                       calls in the original order (PEFT's LoRA layers and their dropout draws are unchanged);
-                                       the rule is called through the module's own name for it (macai.patch swaps that name).
+    Qwen3_5GatedDeltaNet.forward    -> macai.layer.CONV and macai.layer.GATES, for a forward with no cache or with a cache
+                                       that holds no state of this layer yet (a prefill, and every training forward: the
+                                       Trainer's use_cache hands each forward a fresh cache), which is then filled as
+                                       transformers fills it; with a cache holding this layer's states (decoding, a continued
+                                       prefill) or packed rows, the original runs. The projections stay module calls in the
+                                       original order (PEFT's LoRA layers and their dropout draws are unchanged); the rule is
+                                       called through the module's own name for it (macai.patch swaps that name).
 """
 import hashlib
 import importlib
@@ -109,7 +112,13 @@ def gated_delta_net_forward(self, hidden_states, cache_params=None, attention_ma
     s = _settings()
     use_conv = (s.CONV and self.activation == "silu" and self.conv1d.bias is None
                 and self.conv_kernel_size == _conv.K)
-    if (cache_params is not None or kwargs.get("cu_seq_lens_q") is not None or not (use_conv or s.GATES)
+    # a cache that holds no state of this layer yet (a prefill; also every training forward: transformers' Trainer sets the
+    # model's use_cache from its arguments, so the model hands each forward a fresh cache) takes the parts, and the cache is
+    # filled as transformers fills it; a cache already holding this layer's states (decoding, a continued prefill) takes
+    # transformers' own forward
+    fresh = cache_params is None or (cache_params.get_conv_state(self.layer_idx, state_idx=0) is None
+                                     and cache_params.get_recurrent_state(self.layer_idx, state_idx=0) is None)
+    if (not fresh or kwargs.get("cu_seq_lens_q") is not None or not (use_conv or s.GATES)
             or hidden_states.device.type != "mps"):
         return _inner["gated_delta_net"](self, hidden_states, cache_params=cache_params, attention_mask=attention_mask,
                                          **kwargs)
@@ -124,11 +133,20 @@ def gated_delta_net_forward(self, hidden_states, cache_params=None, attention_ma
     a = self.in_proj_a(hidden_states)
     rep = self.num_v_heads // self.num_k_heads
     if use_conv and _conv.supported(mixed_qkv, self.conv1d.weight, self.key_dim, self.head_k_dim, rep, self.head_v_dim):
+        if cache_params is not None:
+            # the cache keeps the projection's last steps for decoding, stored as transformers stores them; with no earlier
+            # state the convolution's history is zeros either way, so the fused kernel needs nothing it returns
+            cache_params.update_conv_state(mixed_qkv.transpose(1, 2), self.layer_idx, conv_kernel_size=self.conv_kernel_size)
         # q, k [B, T, H_v, D_k] (repeated over the value heads), v [B, T, H_v, D_v] float32: the rule's inputs as it reads them
         query, key, value = conv_path(mixed_qkv, self.conv1d.weight, self.key_dim, self.head_k_dim, rep, self.head_v_dim)
     else:
-        mixed_qkv = M.causal_conv1d_fn(mixed_qkv.transpose(1, 2), self.conv1d.weight.squeeze(1), self.conv1d.bias,
+        mixed_qkv = mixed_qkv.transpose(1, 2)
+        if cache_params is not None:
+            mixed_qkv = cache_params.update_conv_state(mixed_qkv, self.layer_idx, conv_kernel_size=self.conv_kernel_size)
+        mixed_qkv = M.causal_conv1d_fn(mixed_qkv, self.conv1d.weight.squeeze(1), self.conv1d.bias,
                                        activation=self.activation, **kwargs)
+        if cache_params is not None:
+            mixed_qkv = mixed_qkv[:, :, -seq_len:]
         mixed_qkv = mixed_qkv.transpose(1, 2)
         query, key, value = torch.split(mixed_qkv, [self.key_dim, self.key_dim, self.value_dim], dim=-1)
         query = query.reshape(batch_size, seq_len, -1, self.head_k_dim)
@@ -142,9 +160,11 @@ def gated_delta_net_forward(self, hidden_states, cache_params=None, attention_ma
     else:
         beta = b.sigmoid()
         g = -self.A_log.float().exp() * F.softplus(a.float() + self.dt_bias)
-    core_attn_out, _ = M.torch_chunk_gated_delta_rule(
-        query, key, value, g=g, beta=beta, initial_state=None, output_final_state=False, use_qk_l2norm_in_kernel=True,
-        cu_seqlens=kwargs.pop("cu_seq_lens_q", None), **kwargs)
+    core_attn_out, last_recurrent_state = M.torch_chunk_gated_delta_rule(
+        query, key, value, g=g, beta=beta, initial_state=None, output_final_state=cache_params is not None,
+        use_qk_l2norm_in_kernel=True, cu_seqlens=kwargs.pop("cu_seq_lens_q", None), **kwargs)
+    if cache_params is not None:
+        cache_params.update_recurrent_state(last_recurrent_state, self.layer_idx)
     core_attn_out = core_attn_out.reshape(-1, self.head_v_dim)
     z = z.reshape(-1, self.head_v_dim)
     core_attn_out = self.norm(core_attn_out, z)

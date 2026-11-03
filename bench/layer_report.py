@@ -21,6 +21,10 @@ LOGS = os.path.join(HERE, "layer_logs")
 RUN_08 = "d4_0.8b_2x8_100steps"
 RUN_9 = "d4_9b_1x16_25steps"
 PROFILE = "profile_d4_0.8b_2x8"
+# the first integration chain: launched with every part on, but every training forward carries a fresh cache and the linear-
+# attention forward then fell back to transformers' own (the convolution path and beta / g did not run): the norms and SwiGLU
+FIRST = {"run_08": "d4_norms_swiglu_0.8b_2x8_100steps", "run_9": "d4_norms_swiglu_9b_1x16_25steps",
+         "profile": "profile_d4_norms_swiglu_0.8b_2x8"}
 D2M_08 = os.path.join(HERE, "memory_logs", "confirm_recompute_0.8b_2x8_100steps")
 D2M_9 = os.path.join(HERE, "memory_logs", "confirm_recompute_9b_1x16_100steps")
 BARS = {"speedup": 1.5, "parity_ratio": 2.0, "footprint_08_gb": 53.5, "footprint_9_gb": 74.6}
@@ -101,8 +105,8 @@ def parts_table(rec):
     return out, admitted
 
 
-def integration_08(p4):
-    r = MR.read(LOGS, RUN_08)
+def integration_08(p4, name=RUN_08):
+    r = MR.read(LOGS, name)
     if not MR.ok(r):
         return None
     la, lb, lc = (MR.by_step(p4[k], "loss") for k in ("ref_a", "ref_b", "ref_c"))
@@ -130,8 +134,8 @@ def integration_08(p4):
             "steps": len(r["steps"]), "wall_s": r["wall_s"]}
 
 
-def integration_9():
-    r = MR.read(LOGS, RUN_9)
+def integration_9(name=RUN_9):
+    r = MR.read(LOGS, name)
     if not MR.ok(r):
         return None
     d2m = MR.read(*os.path.split(D2M_9))
@@ -150,8 +154,8 @@ def integration_9():
             "steps": len(r["steps"]), "wall_s": r["wall_s"]}
 
 
-def reprofile():
-    path = os.path.join(LOGS, PROFILE + ".json")
+def reprofile(name=PROFILE):
+    path = os.path.join(LOGS, name + ".json")
     if not os.path.exists(path):
         return None
     new = PR.report("0.8b", path, D2M_08 + ".json")
@@ -181,6 +185,9 @@ def main():
     out["integration_0.8b"] = integration_08(p4)
     out["integration_9b"] = integration_9()
     out["reprofile_0.8b"] = reprofile()
+    out["first_chain_norms_and_swiglu_only"] = {"integration_0.8b": integration_08(p4, FIRST["run_08"]),
+                                                "integration_9b": integration_9(FIRST["run_9"]),
+                                                "reprofile_0.8b": reprofile(FIRST["profile"])}
     print(json.dumps(out, indent=1, default=str))
     with open(os.path.join(LOGS, "d4_results.json"), "w", encoding="utf-8") as fh:
         json.dump(out, fh, indent=1, default=str)

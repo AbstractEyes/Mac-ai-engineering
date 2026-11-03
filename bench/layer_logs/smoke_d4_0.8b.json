@@ -1,0 +1,352 @@
+{
+ "name": "smoke_d4_0.8b",
+ "pid": 99470,
+ "model_id": "Qwen/Qwen3.5-0.8B",
+ "arm": "kernels",
+ "memory": "recompute",
+ "epochs": 1.0,
+ "batch": 2,
+ "grad_accum": 2,
+ "sequences_a_step": 4,
+ "n_items": 16,
+ "recipe": {
+  "rank": 32,
+  "alpha": 64,
+  "dropout": 0.05,
+  "lr": 0.0002,
+  "max_len": 2048,
+  "seed": 20261030,
+  "do_ship": false
+ },
+ "warmup_steps_excluded": 10,
+ "started": "2026-11-03 13:16:54 PST",
+ "repo_commit": "a0d3d57",
+ "repo_dirty": false,
+ "env": {
+  "PYTORCH_MPS_HIGH_WATERMARK_RATIO": "0.75",
+  "PYTORCH_MPS_LOW_WATERMARK_RATIO": "0.55",
+  "PYTORCH_ENABLE_MPS_FALLBACK": "1",
+  "HF_HUB_OFFLINE": "1",
+  "OMP_NUM_THREADS": "8"
+ },
+ "runner_patches": [
+  "load_vlm device_map cuda -> mps",
+  "model.gradient_checkpointing_enable -> no-op",
+  "TrainingArguments gradient_checkpointing -> False",
+  "TrainingArguments logging_steps 10 -> 1",
+  "fetch_images -> the fetched pictures folder",
+  "TrainingArguments torch_empty_cache_steps None -> 1"
+ ],
+ "empty_cache_each_micro_batch": true,
+ "steps": [
+  {
+   "step": 1,
+   "t_s": 1.604,
+   "loss": 3.013906717300415,
+   "grad_norm": 18.162748336791992,
+   "learning_rate": 0.0,
+   "epoch": 0.125,
+   "mps_alloc_gb": 0.256,
+   "mps_driver_gb": 8.67,
+   "footprint_gb": 9.925,
+   "footprint_peak_in_step_gb": 10.533,
+   "live_at_forward_end_gb": 4.634,
+   "driver_at_forward_end_gb": 9.279
+  },
+  {
+   "step": 2,
+   "t_s": 2.883,
+   "loss": 2.9921340942382812,
+   "grad_norm": 25.487394332885742,
+   "learning_rate": 0.0002,
+   "epoch": 0.25,
+   "mps_alloc_gb": 0.248,
+   "mps_driver_gb": 8.912,
+   "footprint_gb": 10.188,
+   "footprint_peak_in_step_gb": 11.194,
+   "live_at_forward_end_gb": 5.049,
+   "driver_at_forward_end_gb": 10.529
+  },
+  {
+   "step": 3,
+   "t_s": 4.24,
+   "loss": 2.4744479656219482,
+   "grad_norm": 6.176098346710205,
+   "learning_rate": 0.0001900968867902419,
+   "epoch": 0.375,
+   "mps_alloc_gb": 0.253,
+   "mps_driver_gb": 8.826,
+   "footprint_gb": 10.093,
+   "footprint_peak_in_step_gb": 10.953,
+   "live_at_forward_end_gb": 4.84,
+   "driver_at_forward_end_gb": 9.685
+  },
+  {
+   "step": 4,
+   "t_s": 5.709,
+   "loss": 2.133023500442505,
+   "grad_norm": 5.939359664916992,
+   "learning_rate": 0.00016234898018587337,
+   "epoch": 0.5,
+   "mps_alloc_gb": 0.256,
+   "mps_driver_gb": 11.467,
+   "footprint_gb": 12.748,
+   "footprint_peak_in_step_gb": 12.748,
+   "live_at_forward_end_gb": 6.572,
+   "driver_at_forward_end_gb": 11.076
+  },
+  {
+   "step": 5,
+   "t_s": 7.055,
+   "loss": 1.7348599433898926,
+   "grad_norm": 5.454990863800049,
+   "learning_rate": 0.00012225209339563145,
+   "epoch": 0.625,
+   "mps_alloc_gb": 0.254,
+   "mps_driver_gb": 11.045,
+   "footprint_gb": 12.358,
+   "footprint_peak_in_step_gb": 12.764,
+   "live_at_forward_end_gb": 5.66,
+   "driver_at_forward_end_gb": 11.467
+  },
+  {
+   "step": 6,
+   "t_s": 8.559,
+   "loss": 1.740285873413086,
+   "grad_norm": 5.18740177154541,
+   "learning_rate": 7.774790660436858e-05,
+   "epoch": 0.75,
+   "mps_alloc_gb": 0.254,
+   "mps_driver_gb": 10.951,
+   "footprint_gb": 12.266,
+   "footprint_peak_in_step_gb": 13.359,
+   "live_at_forward_end_gb": 5.811,
+   "driver_at_forward_end_gb": 12.045
+  },
+  {
+   "step": 7,
+   "t_s": 9.988,
+   "loss": 1.3846616744995117,
+   "grad_norm": 6.590311527252197,
+   "learning_rate": 3.7651019814126654e-05,
+   "epoch": 0.875,
+   "mps_alloc_gb": 0.256,
+   "mps_driver_gb": 10.615,
+   "footprint_gb": 11.924,
+   "footprint_peak_in_step_gb": 12.297,
+   "live_at_forward_end_gb": 5.478,
+   "driver_at_forward_end_gb": 10.982
+  },
+  {
+   "step": 8,
+   "t_s": 11.212,
+   "loss": 1.2778762578964233,
+   "grad_norm": 8.498079299926758,
+   "learning_rate": 9.903113209758096e-06,
+   "epoch": 1.0,
+   "mps_alloc_gb": 0.251,
+   "mps_driver_gb": 9.115,
+   "footprint_gb": 10.425,
+   "footprint_peak_in_step_gb": 11.924,
+   "live_at_forward_end_gb": 3.834,
+   "driver_at_forward_end_gb": 10.615
+  }
+ ],
+ "final_logs": [
+  {
+   "train_runtime": 11.2145,
+   "train_samples_per_second": 2.853,
+   "train_steps_per_second": 0.713,
+   "total_flos": 52119557280000.0,
+   "train_loss": 2.093899503350258,
+   "epoch": 1.0
+  }
+ ],
+ "patched_modules": [
+  "transformers.models.qwen3_5.modeling_qwen3_5",
+  "transformers.models.qwen3_5_moe.modeling_qwen3_5_moe",
+  "transformers.models.qwen3_next.modeling_qwen3_next"
+ ],
+ "macai": {
+  "version": "0.2.0",
+  "KERNEL": "chunked",
+  "KERNEL_BWD": "chunked",
+  "FUSED_NORM": true,
+  "chunk": 16,
+  "SIZE_CLASSES": false,
+  "RECOMPUTE_STATES": true,
+  "layer_option": "all",
+  "layer": {
+   "RMSNORM": true,
+   "CONV": true,
+   "GATED_NORM": true,
+   "GATES": true,
+   "SWIGLU": true
+  },
+  "layer_patches": [
+   "rmsnorm",
+   "gated_norm",
+   "mlp",
+   "gated_delta_net"
+  ]
+ },
+ "gated_delta_rule": "macai.gated_delta.op.chunk_gated_delta_rule",
+ "versions": {
+  "torch": "2.15.0",
+  "transformers": "5.22.1",
+  "peft": "0.21.2",
+  "qwen_symbolic_thinking": "0.1.35",
+  "python": "3.12.16"
+ },
+ "mps_recommended_max_gb": 107.52,
+ "sample": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/sample_every55.json",
+ "pictures": {
+  "items": 16,
+  "pictures_by_locator": {
+   "url": 16
+  }
+ },
+ "examples": 32,
+ "accelerator": {
+  "mixed_precision": "bf16",
+  "native_amp": true,
+  "device": "mps"
+ },
+ "footprint_peak_before_training_gb": 2.437,
+ "checks": {
+  "modules_checkpointing": [],
+  "logging_steps": 1,
+  "args_gradient_checkpointing": false,
+  "torch_empty_cache_steps": 1,
+  "linear_attention_layers": 18,
+  "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule",
+  "layer_methods_at_train_begin": {
+   "Qwen3_5RMSNorm": "macai.layer._qwen3_5",
+   "Qwen3_5RMSNormGated": "macai.layer._qwen3_5",
+   "Qwen3_5MLP": "macai.layer._qwen3_5",
+   "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"
+  },
+  "trainable_parameters": 20447232,
+  "model_dtype": "torch.bfloat16",
+  "device": "mps:0",
+  "lora_A_abs_sum": 92600.390625,
+  "lora_A_first_values": [
+   -0.018311,
+   -0.003616,
+   -0.015747,
+   -0.001778
+  ],
+  "PYTHONHASHSEED": null
+ },
+ "trainer": {
+  "package": "0.1.35",
+  "steps": 8,
+  "train_loss": 2.093899503350258,
+  "s_per_step": 1.55,
+  "train_min": 0.2,
+  "items": 16,
+  "items_with_picture": 16,
+  "examples": 32,
+  "examples_by_form": {
+   "short": 16,
+   "full": 16
+  },
+  "collated_examples": 32,
+  "examples_cut_at_max_len": 0,
+  "longest_example_tokens": 615,
+  "lora_modules": {
+   "out_proj": 18,
+   "in_proj_qkv": 18,
+   "in_proj_z": 18,
+   "gate_proj": 24,
+   "up_proj": 24,
+   "down_proj": 24,
+   "q_proj": 6,
+   "k_proj": 6,
+   "v_proj": 6,
+   "o_proj": 6
+  },
+  "adapter_dir": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/phase4/Qwen3.5-0.8B_r32_20261103_211658_smoke_d4_0.8b/adapter"
+ },
+ "trainer_log": [
+  {
+   "step": 1,
+   "spent_s": 2,
+   "left_s": 11,
+   "s_per_step": 1.6,
+   "loss": 3.013906717300415,
+   "learning_rate": 0.0
+  },
+  {
+   "step": 2,
+   "spent_s": 3,
+   "left_s": 9,
+   "s_per_step": 1.44,
+   "loss": 2.9921340942382812,
+   "learning_rate": 0.0002
+  },
+  {
+   "step": 3,
+   "spent_s": 4,
+   "left_s": 7,
+   "s_per_step": 1.41,
+   "loss": 2.4744479656219482,
+   "learning_rate": 0.0001900968867902419
+  },
+  {
+   "step": 4,
+   "spent_s": 6,
+   "left_s": 6,
+   "s_per_step": 1.43,
+   "loss": 2.133023500442505,
+   "learning_rate": 0.00016234898018587337
+  },
+  {
+   "step": 5,
+   "spent_s": 7,
+   "left_s": 4,
+   "s_per_step": 1.41,
+   "loss": 1.7348599433898926,
+   "learning_rate": 0.00012225209339563145
+  },
+  {
+   "step": 6,
+   "spent_s": 9,
+   "left_s": 3,
+   "s_per_step": 1.43,
+   "loss": 1.740285873413086,
+   "learning_rate": 7.774790660436858e-05
+  },
+  {
+   "step": 7,
+   "spent_s": 10,
+   "left_s": 1,
+   "s_per_step": 1.43,
+   "loss": 1.3846616744995117,
+   "learning_rate": 3.7651019814126654e-05
+  },
+  {
+   "step": 8,
+   "spent_s": 11,
+   "left_s": 0,
+   "s_per_step": 1.4,
+   "loss": 1.2778762578964233,
+   "learning_rate": 9.903113209758096e-06
+  },
+  {
+   "step": 8,
+   "spent_s": 11,
+   "left_s": 0,
+   "s_per_step": 1.4
+  }
+ ],
+ "s_per_step_steady_trainer_clock": null,
+ "s_per_step_steady_runner_clock": null,
+ "loss_final_step": 1.2778762578964233,
+ "mps_driver_peak_gb": 11.467,
+ "live_at_forward_end_peak_gb": 6.572,
+ "footprint_peak_at_steps_gb": 12.748,
+ "footprint_peak_in_steps_gb": 13.359,
+ "wall_s": 15.9,
+ "ended": "2026-11-03 13:17:10 PST"
+}
