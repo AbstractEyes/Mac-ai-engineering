@@ -660,6 +660,11 @@ comparable step by step (registered: the footprint and the step only). As a chai
 (step 0) and the parts' share 9% -> the parts take 4.9 s of a 51.1 s step (-9.6%), inside the predicted 45-49 s; the memory moves
 as at 0.8B (live tensors -3.3 GiB, the footprint -3.9 GB).
 
+Phase 4's 9B runs are one epoch as well (the same 25-step schedule), so the loss does compare step by step there (a reading added
+after the report, from the same records): the root mean square of the step-loss difference over steps 1-25 against Phase 4's 9B
+reference run (`bench/phase4_logs/p42_9b_ref_1x16.json`) is .0013 (Phase 4's kernels against the same run .0021, the first chain
+.0028); step 25 0.5455 against the reference's 0.5452.
+
 ### The step profile again, 0.8B with every part on (`profile_d4_0.8b_2x8.json`, steps 3, 5, 7)
 
 The same profiler, options and steps as step 0's run of record (`bench/profile_step.py`, steps 3, 5, 7 of 8, every micro-batch
@@ -837,6 +842,8 @@ measuring what they measured (the rule against transformers' reference; transfor
 `bench/phase4_train.py` keeps every part off unless `--layer` says otherwise (the runs before D4 reproduce).
 
 ### Next
-D4 is done and on by default. D5 (the products and the adapters' path) at his word: the LoRA adapters' extra work is now 12.8% of
-a 0.8B micro-batch (135 ms), in_proj_qkv's LoRA-B backward no longer an outlier. The two proposed entries outside D3-D5 wait for
-his word too, now larger shares of a shorter step (0.8B: the LM head and the loss 25.6%, the vision tower 12.7%).
+D4 is done and on by default. The two entries proposed outside D3-D5 were registered after step 0 as D8 (the LM head and the
+loss at labelled positions only) and D9 (the frozen vision tower's output cached per picture); they come next, now larger shares
+of a shorter step (0.8B: the LM head and the loss 25.6%, the vision tower 12.7%). Then D5 (the products and the adapters' path:
+the LoRA adapters' extra work is now 12.8% of a 0.8B micro-batch, 135 ms, in_proj_qkv's LoRA-B backward no longer an outlier),
+then D3. The order: D8, D9, D5, D3.
