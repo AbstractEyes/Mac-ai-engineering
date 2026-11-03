@@ -21,6 +21,11 @@ Around the trainer the runner changes these things, the same way for both arms, 
 6. with --empty-cache, the Trainer's own torch_empty_cache_steps=1: the Metal allocator's cached buffers are released between
    each micro-batch's forward and backward (on PyTorch 2.15 the Trainer calls torch.mps.empty_cache() only). Without it the
    allocator's heaps, fragmented by batches of changing lengths, outgrow the high watermark with checkpointing off.
+
+The kernels arm takes --memory, the kernels' memory design (docs/series_memory.md): stored (both settings off), classes
+(op.SIZE_CLASSES), recompute (op.RECOMPUTE_STATES) or classes+recompute; the run records it. --logdir puts the record elsewhere
+(bench/phase4_run.sh passes its LOGS). The first line the runner prints is its own process id: stop a run by hand with SIGINT to
+that id only (the record is still written).
 """
 import argparse
 import ctypes
@@ -29,6 +34,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 import traceback
 
@@ -44,6 +50,9 @@ EXAMPLES = 400         # the sample's examples (382 items; 18 carry two forms): 
 WARMUP_STEPS = 10      # the steady time a step is measured after this many optimizer steps, the same window in every run
 MODULE = "transformers.models.qwen3_5.modeling_qwen3_5"
 SAMPLE = "sample_every55.json"
+# the kernels' memory designs (op.SIZE_CLASSES, op.RECOMPUTE_STATES); docs/series_memory.md
+MEMORY = {"stored": (False, False), "classes": (True, False), "recompute": (False, True), "classes+recompute": (True, True)}
+PEAK_POLL_S = 0.25     # the runner's own footprint poll (the guard's is 2 s): each step's peak
 
 
 class _RusageInfoV2(ctypes.Structure):
@@ -64,6 +73,28 @@ def footprint_gb() -> float:
     if _LIBPROC.proc_pid_rusage(os.getpid(), 2, ctypes.byref(buf)) != 0:
         return -1.0
     return round(buf.ri_phys_footprint / 2 ** 30, 3)
+
+
+class FootprintPeaks:
+    """This process's footprint read every PEAK_POLL_S seconds on a thread; take() returns the peak since the last take()."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.peak = 0.0
+        self.done = threading.Event()
+        threading.Thread(target=self._poll, daemon=True).start()
+
+    def _poll(self):
+        while not self.done.wait(PEAK_POLL_S):
+            fp = footprint_gb()
+            with self.lock:
+                self.peak = max(self.peak, fp)
+
+    def take(self) -> float:
+        fp = footprint_gb()
+        with self.lock:
+            peak, self.peak = max(self.peak, fp), 0.0
+        return peak
 
 
 def git(*args) -> str:
@@ -110,10 +141,14 @@ def steady(by_step: dict, warmup: int = WARMUP_STEPS):
 
 
 def main() -> int:
+    print(f"[phase4] runner pid {os.getpid()}", flush=True)
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True)
     ap.add_argument("--model", choices=sorted(MODELS), required=True)
     ap.add_argument("--arm", choices=("reference", "kernels"), required=True)
+    ap.add_argument("--memory", choices=sorted(MEMORY), default=None,
+                    help="the kernels' memory design (sets op.SIZE_CLASSES and op.RECOMPUTE_STATES); default: op's own settings")
+    ap.add_argument("--logdir", default=os.path.join(HERE, "phase4_logs"), help="where the run's record (<name>.json) goes")
     ap.add_argument("--epochs", type=float, required=True)
     ap.add_argument("--batch", type=int, required=True)
     ap.add_argument("--accum", type=int, required=True)
@@ -127,10 +162,14 @@ def main() -> int:
     ap.add_argument("--data", default=os.path.expanduser("~/mirel/data/mac_bench/reader_train"),
                     help="the folder holding the sample file, its fetched pictures (out/images) and the runs' outputs (phase4)")
     a = ap.parse_args()
+    if a.memory is not None and a.arm != "kernels":
+        ap.error("--memory is a setting of the kernels arm")
 
-    os.makedirs(os.path.join(HERE, "phase4_logs"), exist_ok=True)
-    out_json = os.path.join(HERE, "phase4_logs", f"{a.name}.json")
-    rec = {"name": a.name, "model_id": MODELS[a.model], "arm": a.arm, "epochs": a.epochs, "batch": a.batch, "grad_accum": a.accum,
+    os.makedirs(a.logdir, exist_ok=True)
+    out_json = os.path.join(a.logdir, f"{a.name}.json")
+    peaks = FootprintPeaks()
+    rec = {"name": a.name, "pid": os.getpid(), "model_id": MODELS[a.model], "arm": a.arm, "memory": a.memory, "epochs": a.epochs,
+           "batch": a.batch, "grad_accum": a.accum,
            "sequences_a_step": a.batch * a.accum, "n_items": a.n_items, "recipe": RECIPE, "warmup_steps_excluded": WARMUP_STEPS,
            "started": time.strftime("%Y-%m-%d %H:%M:%S %Z"), "repo_commit": git("rev-parse", "--short", "HEAD"),
            "repo_dirty": bool(git("status", "--porcelain", "--untracked-files=no")),
@@ -156,8 +195,12 @@ def main() -> int:
             from macai.gated_delta import _chunked, op
             rec["patched_modules"] = macai.patch.install()          # before the model loads
             assert MODULE in rec["patched_modules"], rec["patched_modules"]
+            if a.memory is not None:
+                op.SIZE_CLASSES, op.RECOMPUTE_STATES = MEMORY[a.memory]
             rec["macai"] = {"version": macai.__version__, "KERNEL": op.KERNEL, "KERNEL_BWD": op.KERNEL_BWD,
-                            "FUSED_NORM": op.FUSED_NORM, "chunk": _chunked.C}
+                            "FUSED_NORM": op.FUSED_NORM, "chunk": _chunked.C, "SIZE_CLASSES": op.SIZE_CLASSES,
+                            "RECOMPUTE_STATES": op.RECOMPUTE_STATES}
+            print(f"[phase4] macai {json.dumps(rec['macai'])}", flush=True)
         M = importlib.import_module(MODULE)
         fn = M.torch_chunk_gated_delta_rule
         rec["gated_delta_rule"] = f"{fn.__module__}.{fn.__qualname__}"
@@ -214,6 +257,7 @@ def main() -> int:
 
             def on_train_begin(self, args, state, control, model=None, **kw):
                 self.t0 = time.time()
+                rec["footprint_peak_before_training_gb"] = round(peaks.take(), 3)    # the model's load
                 model.register_forward_hook(self.at_forward_end)
                 ckpt = [n for n, m in model.named_modules() if getattr(m, "gradient_checkpointing", False) is True]
                 rec["checks"] = {
@@ -242,6 +286,7 @@ def main() -> int:
                 row.update({k: logs[k] for k in ("loss", "grad_norm", "learning_rate", "epoch") if k in logs})
                 row.update(mps_alloc_gb=round(torch.mps.current_allocated_memory() / 2 ** 30, 3),
                            mps_driver_gb=round(torch.mps.driver_allocated_memory() / 2 ** 30, 3), footprint_gb=footprint_gb(),
+                           footprint_peak_in_step_gb=round(peaks.take(), 3),
                            live_at_forward_end_gb=round(self.live / 2 ** 30, 3),
                            driver_at_forward_end_gb=round(self.driver / 2 ** 30, 3))
                 self.live = self.driver = 0
@@ -282,6 +327,7 @@ def main() -> int:
         rec["mps_driver_peak_gb"] = max((r["mps_driver_gb"] for r in rec["steps"]), default=None)
         rec["live_at_forward_end_peak_gb"] = max((r["live_at_forward_end_gb"] for r in rec["steps"]), default=None)
         rec["footprint_peak_at_steps_gb"] = max((r["footprint_gb"] for r in rec["steps"]), default=None)
+        rec["footprint_peak_in_steps_gb"] = max((r["footprint_peak_in_step_gb"] for r in rec["steps"]), default=None)
         print(f"[phase4] {a.name}: {summ.get('steps')} steps, final loss {rec['loss_final_step']}, steady "
               f"{rec['s_per_step_steady_trainer_clock']} s a step (trainer clock, steps {WARMUP_STEPS + 1}-{summ.get('steps')})",
               flush=True)

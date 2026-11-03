@@ -3,9 +3,14 @@ reference path against the Metal kernels (each kernel choice: the token-at-a-tim
 forward and forward + backward, at LoRA-training shapes (the layer's weights frozen, the gradient flowing to its input).
 
     python bench/bench_gated_delta.py            # writes bench/results/gated_delta_<stamp>.json
+    python bench/bench_gated_delta.py --memory   # the memory designs only: bench/memory_logs/function_cost.json
+
+--memory times the rule (forward, forward + backward) under each memory design of the default kernels (op.SIZE_CLASSES,
+op.RECOMPUTE_STATES; docs/series_memory.md) in interleaved rounds, and measures what one forward keeps for its backward.
 """
 import json
 import os
+import statistics
 import sys
 import time
 
@@ -23,6 +28,11 @@ T, WARM, REPS = 1024, 2, 5
 CHOICES = {"d0": dict(KERNEL="auto", KERNEL_BWD="column", FUSED_NORM=False),
            "chunked": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=False),
            "chunked_fused_norm": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True)}
+# the memory designs, each on the default kernels (chunked, fused prologue)
+MEMORY = {name: dict(CHOICES["chunked_fused_norm"], SIZE_CLASSES=c, RECOMPUTE_STATES=r)
+          for name, (c, r) in {"stored": (False, False), "classes": (True, False), "recompute": (False, True),
+                               "classes+recompute": (True, True)}.items()}
+MEMORY_ROUNDS = 5
 
 
 def timed(fn, x0):
@@ -90,6 +100,57 @@ def text_config(model_id):
     return cfg.get("text_config", cfg)
 
 
+def kept_by_forward(base) -> dict:
+    """The allocator's live bytes one forward adds and keeps until its backward (its output held), and the driver's."""
+    xs = [x.detach().clone().requires_grad_(True) for x in base]
+    torch.mps.synchronize()
+    torch.mps.empty_cache()
+    live0, drv0 = torch.mps.current_allocated_memory(), torch.mps.driver_allocated_memory()
+    o = chunk_gated_delta_rule(*xs, use_qk_l2norm_in_kernel=True)[0]
+    torch.mps.synchronize()
+    out = {"kept_mib": round((torch.mps.current_allocated_memory() - live0) / 2 ** 20, 1),
+           "driver_growth_mib": round((torch.mps.driver_allocated_memory() - drv0) / 2 ** 20, 1)}
+    o.float().sum().backward()
+    del o, xs
+    torch.mps.synchronize()
+    return out
+
+
+def memory_main():
+    """The rule's cost and what its forward keeps under each memory design, at the training shapes."""
+    out = {"tokens": T, "torch": torch.__version__, "designs": MEMORY, "rounds": MEMORY_ROUNDS, "warm": WARM, "reps": REPS,
+           "shapes": {}}
+    warm_gpu(2.0)
+    for name, spec in SHAPES.items():
+        tc = text_config(spec["model"])
+        B, H = spec["batch"], tc["linear_num_value_heads"]
+        DK, DV = tc["linear_key_head_dim"], tc["linear_value_head_dim"]
+        gen = torch.Generator().manual_seed(0)
+        q0, k0 = (torch.randn(B, T, H, DK, generator=gen).to("mps", torch.bfloat16) for _ in range(2))
+        v0 = torch.randn(B, T, H, DV, generator=gen).to("mps", torch.bfloat16)
+        g0 = (-torch.rand(B, T, H, generator=gen)).to("mps")
+        b0 = torch.rand(B, T, H, generator=gen).to("mps", torch.bfloat16)
+        base = (q0, k0, v0, g0, b0)
+        r = {"batch": B, "heads": H, "dk": DK, "dv": DV, "rounds": {d: [] for d in MEMORY}}
+        for _ in range(MEMORY_ROUNDS):
+            for design, values in MEMORY.items():
+                with settings(values):
+                    r["rounds"][design].append(timed_function(chunk_gated_delta_rule, base))
+        for design, values in MEMORY.items():
+            rows = r["rounds"][design]
+            r[design] = {k: round(statistics.median(x[k] for x in rows), 2) for k in ("fwd_ms", "fwd_bwd_ms")}
+            with settings(values):
+                r[design].update(kept_by_forward(base))
+        for design in MEMORY:
+            r[design]["fwd_bwd_over_stored"] = round(r[design]["fwd_bwd_ms"] / r["stored"]["fwd_bwd_ms"], 3)
+        print(name, json.dumps({d: r[d] for d in MEMORY}), flush=True)
+        out["shapes"][name] = r
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory_logs", "function_cost.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    json.dump(out, open(path, "w"), indent=1)
+    print("wrote", path)
+
+
 def main():
     from transformers.models.qwen3_5 import modeling_qwen3_5 as M
     from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5TextConfig
@@ -135,4 +196,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    memory_main() if "--memory" in sys.argv[1:] else main()

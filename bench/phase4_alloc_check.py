@@ -4,10 +4,12 @@ rule called by 24 layers (every call's saved tensors alive until the backward), 
 allocator's pool (driver memory) and its live tensors read after each micro-batch; the cache emptied between each micro-
 batch's forward and backward, as in the training runs. The 9B shape (1 x T x 32 heads x 128).
 
-    python bench/phase4_alloc_check.py      # prints and writes bench/phase4_logs/alloc_check.json
+    python bench/phase4_alloc_check.py              # prints and writes bench/phase4_logs/alloc_check.json
+    python bench/phase4_alloc_check.py --designs    # with the memory designs as arms: bench/memory_logs/alloc_check.json
 
 Arms: the reference; the kernels; the kernels with every length padded up to a multiple of 64 tokens before the call (the
-reference pads to its chunk of 64 inside the call), to see whether the number of distinct buffer sizes is what grows the pool.
+reference pads to its chunk of 64 inside the call), to see whether the number of distinct buffer sizes is what grows the pool;
+with --designs also the kernels under each memory design (size classes, the states recomputed, both; docs/series_memory.md).
 """
 import json
 import os
@@ -19,7 +21,7 @@ import torch.nn.functional as F
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "src"))
-from macai.gated_delta import chunk_gated_delta_rule  # noqa: E402
+from macai.gated_delta import chunk_gated_delta_rule, op  # noqa: E402
 
 H, D, LAYERS, MICRO = 32, 128, 24, 24
 GB = 2 ** 30
@@ -62,15 +64,31 @@ def main():
     from transformers.models.qwen3_5 import modeling_qwen3_5 as M
     lengths = random.Random(0).sample(range(400, 1300), MICRO)
     out = {"shape": {"heads": H, "head_dim": D, "layers": LAYERS, "micro_batches": MICRO}, "lengths": lengths, "arms": {}}
-    for name, fn in (("reference", M.torch_chunk_gated_delta_rule), ("kernels", chunk_gated_delta_rule),
-                     ("kernels, lengths padded to 64", padded64(chunk_gated_delta_rule))):
-        rows = run(fn, lengths)
+    designs = "--designs" in sys.argv[1:]
+    stored = dict(SIZE_CLASSES=False, RECOMPUTE_STATES=False)
+    arms = [("reference", M.torch_chunk_gated_delta_rule, stored), ("kernels", chunk_gated_delta_rule, stored),
+            ("kernels, lengths padded to 64", padded64(chunk_gated_delta_rule), stored)]
+    if designs:
+        # the kernels' memory designs (docs/series_memory.md), op's settings in force for the whole arm
+        arms += [("kernels, size classes", chunk_gated_delta_rule, dict(SIZE_CLASSES=True, RECOMPUTE_STATES=False)),
+                 ("kernels, states recomputed", chunk_gated_delta_rule, dict(SIZE_CLASSES=False, RECOMPUTE_STATES=True)),
+                 ("kernels, both", chunk_gated_delta_rule, dict(SIZE_CLASSES=True, RECOMPUTE_STATES=True))]
+    for name, fn, values in arms:
+        old = {k: getattr(op, k) for k in values}
+        for k, v in values.items():
+            setattr(op, k, v)
+        try:
+            rows = run(fn, lengths)
+        finally:
+            for k, v in old.items():
+                setattr(op, k, v)
         out["arms"][name] = rows
         print(f"{name:30s} live at the forward's end {min(r['live_at_forward_end_gb'] for r in rows):.2f}-"
               f"{max(r['live_at_forward_end_gb'] for r in rows):.2f} GiB; pool after micro-batch 1 / 8 / {MICRO}: "
               f"{rows[0]['pool_gb']:.2f} / {rows[7]['pool_gb']:.2f} / {rows[-1]['pool_gb']:.2f} GiB", flush=True)
-    os.makedirs(os.path.join(HERE, "phase4_logs"), exist_ok=True)
-    with open(os.path.join(HERE, "phase4_logs", "alloc_check.json"), "w", encoding="utf-8") as fh:
+    folder = os.path.join(HERE, "memory_logs" if designs else "phase4_logs")
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, "alloc_check.json"), "w", encoding="utf-8") as fh:
         json.dump(out, fh, indent=1)
 
 
