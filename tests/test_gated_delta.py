@@ -57,7 +57,8 @@ def test_matches_transformers(dtype):
 
 
 @mps
-@pytest.mark.parametrize("kernel,kernel_bwd", [("auto", "column"), ("auto", "head"), ("column", "column")])
+@pytest.mark.parametrize("kernel,kernel_bwd", [("auto", "column"), ("auto", "head"), ("column", "column"), ("chunked", "chunked"),
+                                               ("auto", "chunked"), ("chunked", "column")])
 def test_every_kernel_pair_matches(kernel, kernel_bwd):
     from macai.gated_delta import op
     old = op.KERNEL, op.KERNEL_BWD

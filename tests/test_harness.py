@@ -1,20 +1,29 @@
 """Phase 2: the correctness harness for the gated delta rule kernels. Every kernel pairing against a float64 step-by-step
-reference on the CPU: shapes (lengths that are and are not multiples of the block, batch, heads, head widths), starting states,
-numerical stress (beta at 0 and near 1, no decay and very strong decay, long sequences), input dtypes through the drop-in, the
-packed-rows guard, and the run-to-run spread of the atomics-reduced backward."""
+reference on the CPU: shapes (lengths that are and are not multiples of the block and the chunk, batch, heads, head widths),
+starting states, numerical stress (beta at 0 and near 1, no decay and very strong decay, keys nearly parallel, long sequences),
+input dtypes through the drop-in, the packed-rows guard, the run-to-run spread of the atomics-reduced backward, and the
+bitwise run-to-run identity of the chunked backward (no atomics)."""
 import pytest
 import torch
 
 from macai.gated_delta import chunk_gated_delta_rule, l2norm, op, recurrent_reference
 
 mps = pytest.mark.skipif(not torch.backends.mps.is_available(), reason="needs an Apple GPU")
-PAIRS = [("auto", "column"), ("auto", "head"), ("column", "column")]
+# (forward, backward): the token-at-a-time kernels (auto = one threadgroup a head, column), the chunked kernels, and the mixed
+# pairs (a token-at-a-time forward's checkpoints read by the chunked backward; the chunked forward's 8-token states read by
+# the token-at-a-time backwards)
+PAIRS = [("auto", "column"), ("auto", "head"), ("column", "column"), ("chunked", "chunked"), ("auto", "chunked"),
+         ("column", "chunked"), ("chunked", "column"), ("chunked", "head")]
 
 
-def make(B, T, H, DK, DV, seed=0, beta=None, g=None, state=True):
+def make(B, T, H, DK, DV, seed=0, beta=None, g=None, state=True, corr=0.0):
+    """corr > 0: every key is a shared direction plus (1 - corr) noise, so k_i . k_j -> 1 (the chunked inverse's hard case)."""
     gen = torch.Generator().manual_seed(seed)
     q = l2norm(torch.randn(B, T, H, DK, generator=gen, dtype=torch.float64)) * DK ** -0.5
-    k = l2norm(torch.randn(B, T, H, DK, generator=gen, dtype=torch.float64))
+    k = torch.randn(B, T, H, DK, generator=gen, dtype=torch.float64)
+    if corr:
+        k = corr * torch.randn(B, 1, H, DK, generator=gen, dtype=torch.float64) + (1 - corr) * k
+    k = l2norm(k)
     v = torch.randn(B, T, H, DV, generator=gen, dtype=torch.float64)
     gg = (-torch.rand(B, T, H, generator=gen, dtype=torch.float64)) if g is None else torch.full((B, T, H), float(g), dtype=torch.float64)
     bb = torch.rand(B, T, H, generator=gen, dtype=torch.float64) if beta is None else torch.full((B, T, H), float(beta), dtype=torch.float64)
@@ -73,14 +82,26 @@ def test_stress(beta, g, pair):
 
 
 @mps
-@pytest.mark.parametrize("pair", PAIRS[:2])
+@pytest.mark.parametrize("pair", PAIRS)
+@pytest.mark.parametrize("beta,g", [(None, None), (1.0 - 1e-6, 0.0), (1.0 - 1e-6, None)])
+def test_correlated_keys(beta, g, pair):
+    """Keys nearly parallel (k_i . k_j about 0.99): the off-diagonal entries of the chunked inverse's matrix approach 1."""
+    xs = make(1, 96, 2, 128, 128, beta=beta, g=g, corr=0.9, seed=6)
+    assert (xs[1][0, 1:, 0] * xs[1][0, :-1, 0]).sum(-1).min() > 0.95
+    check(xs, pair, rtol=5e-4)
+
+
+@mps
+@pytest.mark.parametrize("pair", PAIRS)
 def test_long_sequence(pair):
     check(make(1, 2048, 1, 128, 128, seed=3), pair, rtol=1e-3)
 
 
 @mps
+@pytest.mark.parametrize("kernel", ["auto", "column", "chunked"])
 @pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16, torch.float16])
-def test_dropin_dtypes(dtype):
+def test_dropin_dtypes(dtype, kernel, monkeypatch):
+    monkeypatch.setattr(op, "KERNEL", kernel)
     gen = torch.Generator().manual_seed(4)
     B, T, H, D = 2, 50, 3, 128
     q, k, v = (torch.randn(B, T, H, D, generator=gen).to("mps", dtype) for _ in range(3))
@@ -123,10 +144,37 @@ def test_run_to_run_spread():
 
 
 @mps
+def test_chunked_backward_is_deterministic():
+    """The chunked backward has one writer for every gradient element (no atomics): repeated runs are bitwise identical."""
+    xs64 = make(2, 100, 2, 128, 128, seed=5)
+    old = op.KERNEL, op.KERNEL_BWD
+    op.KERNEL, op.KERNEL_BWD = "chunked", "chunked"
+    try:
+        grads = []
+        for _ in range(3):
+            xs = [x.float().to("mps").requires_grad_(True) for x in xs64]
+            o, sT = op.GatedDeltaRule.apply(*xs, True)
+            (o.sum() + sT.sum()).backward()
+            grads.append([x.grad.clone() for x in xs])
+        assert all(torch.equal(a, b) for i in (1, 2) for a, b in zip(grads[0], grads[i]))
+    finally:
+        op.KERNEL, op.KERNEL_BWD = old
+
+
+@mps
 @pytest.mark.parametrize("pair", PAIRS)
-def test_wide_keys_forward_only(pair):
-    """DK 256: the forward runs; the backward is refused (its threadgroup sums would exceed 32 KB)."""
+def test_wide_keys(pair):
+    """DK 256: every forward runs; the chunked backward runs too; the token-at-a-time backwards are refused (their
+    threadgroup sums would exceed 32 KB)."""
     xs64 = make(1, 33, 2, 256, 128)
+    if pair[1] == "chunked":
+        check(xs64, pair)
+        return
     check(xs64, pair, grads=False)
-    with pytest.raises(NotImplementedError):
-        op.GatedDeltaRule.apply(*[x.float().to("mps").requires_grad_(True) for x in xs64], True)
+    old = op.KERNEL, op.KERNEL_BWD
+    op.KERNEL, op.KERNEL_BWD = pair
+    try:
+        with pytest.raises(NotImplementedError):
+            op.GatedDeltaRule.apply(*[x.float().to("mps").requires_grad_(True) for x in xs64], True)
+    finally:
+        op.KERNEL, op.KERNEL_BWD = old
