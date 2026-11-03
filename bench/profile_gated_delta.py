@@ -1,5 +1,7 @@
-"""Phase 1 profile of the gated delta rule on the Apple GPU: transformers' chunked reference stage by stage (forward), its
-forward and backward totals and operator counts, and the baseline Metal kernels (D0) with their pipeline limits and rooflines.
+"""Profile of the gated delta rule on the Apple GPU: transformers' chunked reference stage by stage (forward), its forward and
+backward totals and operator counts, the baseline Metal kernels (D0) and the chunked kernels (D1 forward, D2 backward) with
+their pipeline limits and rooflines, and the rule's forward + backward through the autograd function and through the drop-in
+under each kernel pairing.
 
     python bench/profile_gated_delta.py      # writes bench/results/profile_gated_delta_<stamp>.json
 """
@@ -13,9 +15,9 @@ import torch
 import torch.nn.functional as F
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
-from macai.gated_delta import l2norm, op  # noqa: E402
+from macai.gated_delta import _chunked, chunk_gated_delta_rule, l2norm, op  # noqa: E402
 from macai.gated_delta._metal import BLK, library  # noqa: E402
-from macai.instruments import gpu_ms, pipeline, roofline  # noqa: E402
+from macai.instruments import gpu_ms, pipeline, roofline, warm_gpu  # noqa: E402
 
 SHAPES = {"qwen3.5-0.8b": (4, 1024, 16), "qwen3.5-9b": (2, 1024, 32)}
 DK = DV = 128
@@ -84,6 +86,129 @@ def reference_stages(q, k, v, g, beta):
     return {n: round(e[marks[n] - 1].elapsed_time(e[marks[n]]), 3) for n in names}
 
 
+MMA = 2 * 8 * 8 * 8        # FLOPs of one 8 x 8 x 8 simdgroup product
+
+
+def chunked_work(B, T, H, dk, dv, c):
+    """FLOPs (the 8 x 8 x 8 products each kernel runs) and the least device bytes (every input read once, every output
+    written once) of the chunked kernels, by kernel."""
+    nt = math.ceil(T / c)
+    n = B * H * nt
+    R, Kb, Vb = c // 8, dk // 8, dv // 8
+    L = R * (R + 1) // 2
+    merges = sum((R - d) * (d + 1) for d in range(1, R))
+    w2 = sum(bj + 1 for bi in range(R) for bj in range(bi + 1)) + sum(R - bi for bi in range(R) for bj in range(bi + 1))
+    f4 = 4.0
+    out = {
+        "gdc_prep": ((2 * L * Kb + merges) * MMA, f4 * (2 * c * dk + 2 * c + c + 3 * c * c)),
+        "gdc_fwd_save0": ((3 * Kb * R * Vb + 2 * L * Vb) * MMA, f4 * (2 * c * dk + c * dv + 2 * c * c + 2 * c + c * dv)),
+        "gdc_fwd_save1": ((3 * Kb * R * Vb + 2 * L * Vb) * MMA,
+                          f4 * (2 * c * dk + c * dv + 2 * c * c + 2 * c + c * dv + dk * dv + 2 * c * dv)),
+        "gdc_bwd_state": ((3 * Kb * R * Vb + 2 * L * Vb) * MMA, f4 * (2 * c * dk + c * dv + 2 * c * c + 2 * c + dk * dv + c * dv)),
+        "gdc_bwd_chunk": ((2 * L * Vb + w2 + 3 * R * Vb * Kb + 5 * L * Kb + L * Vb) * MMA,
+                          f4 * (2 * c * dk + 4 * c * dv + 2 * dk * dv + 3 * c * c + 2 * c + 2 * c * dk + c * dv + 2 * c)),
+    }
+    return {k: (fl * n, by * n) for k, (fl, by) in out.items()}
+
+
+def chunked_profile(B, T, H):
+    """The chunked kernels alone (back-to-back times) on float32 inputs prepared as the drop-in prepares them."""
+    lib = _chunked.library(DK)
+    c = _chunked.C
+    nt = math.ceil(T / c)
+    f32 = dict(device="mps", dtype=torch.float32)
+    g0 = torch.Generator().manual_seed(1)
+    q = (l2norm(torch.randn(B, T, H, DK, generator=g0)) * DK ** -0.5).to("mps")
+    k = l2norm(torch.randn(B, T, H, DK, generator=g0)).to("mps")
+    v = torch.randn(B, T, H, DV, generator=g0).to("mps")
+    g = (-torch.rand(B, T, H, generator=g0)).to("mps")
+    beta = torch.rand(B, T, H, generator=g0).to("mps")
+    s0 = torch.zeros(B, H, DK, DV, **f32)
+    dout = torch.randn(B, T, H, DV, generator=g0).to("mps")
+    dsT = torch.zeros(B, H, DK, DV, **f32)
+    gc = torch.empty(B, H, nt, c, **f32)
+    a, m, kg = (torch.empty(B, H, nt, c, c, **f32) for _ in range(3))
+    o, sT = torch.empty(B, T, H, DV, **f32), torch.empty(B, H, DK, DV, **f32)
+    sc = torch.empty(B, H, nt, DK, DV, **f32)
+    vn = torch.empty(B, H, nt * c, DV, **f32)
+    xu = torch.empty_like(vn)
+    none = torch.empty(4, **f32)
+    dsn, dvn = torch.empty_like(sc), torch.empty_like(vn)
+    ds0 = torch.empty(B, H, DK, DV, **f32)
+    dq, dk, dv = torch.empty_like(q), torch.empty_like(k), torch.empty_like(v)
+    dg, dbeta = torch.empty_like(beta), torch.empty_like(beta)
+    grid = op._state_grid(DV, H, B)
+    nb = 32 * _chunked.NSGB
+    run = {
+        "gdc_prep": lambda: lib.gdc_prep(q, k, g, beta, gc, a, m, kg, T, H, threads=(nt * 128, H, B), group_size=(128, 1, 1)),
+        "gdc_fwd_save0": lambda: lib.gdc_fwd(q, k, v, beta, s0, gc, a, m, o, sT, none, none, none, none, T, H, DV, 0, 1, nt, **grid),
+        "gdc_fwd_save1": lambda: lib.gdc_fwd(q, k, v, beta, s0, gc, a, m, o, sT, sc, vn, xu, none, T, H, DV, 1, 1, nt, **grid),
+        "gdc_bwd_state": lambda: lib.gdc_bwd_state(q, k, beta, dout, dsT, gc, a, m, dsn, dvn, ds0, T, H, DV, **grid),
+        "gdc_bwd_chunk": lambda: lib.gdc_bwd_chunk(q, k, beta, dout, gc, a, kg, m, sc, dsn, vn, xu, dvn, dq, dk, dv, dg, dbeta,
+                                                   T, H, DV, 1, nt, threads=(nt * nb, H, B), group_size=(nb, 1, 1)),
+    }
+    for name in ("gdc_prep", "gdc_fwd_save1", "gdc_bwd_state", "gdc_bwd_chunk"):
+        run[name]()
+    work = chunked_work(B, T, H, DK, DV, c)
+    r = {"chunk": c, "state_pass_threadgroups": grid["threads"][0] // grid["group_size"][0] * H * B,
+         "state_pass_threads_a_threadgroup": grid["group_size"][0]}
+    for name, fn in run.items():
+        t = gpu_ms(fn, reps=10, warm=2, inner=5)
+        r[name] = dict(t, roofline=roofline(*work[name], t["median_ms"]))
+    combos = {"forward_with_states": (("gdc_prep", "gdc_fwd_save1")), "forward_without_states": ("gdc_prep", "gdc_fwd_save0"),
+              "backward": ("gdc_bwd_state", "gdc_bwd_chunk")}
+    for name, parts in combos.items():
+        t = gpu_ms(lambda: [run[p]() for p in parts], reps=10, warm=2, inner=5)
+        fl = sum(work[p][0] for p in parts)
+        by = sum(work[p][1] for p in parts)
+        r[name] = dict(t, roofline=roofline(fl, by, t["median_ms"]))
+    return r
+
+
+def rule_through_autograd(B, T, H):
+    """GatedDeltaRule (prepared float32 inputs, every input needing its gradient) and the drop-in (bf16 inputs, l2 norm in the
+    call), forward + backward, under each kernel pairing."""
+    g0 = torch.Generator().manual_seed(2)
+    q = (l2norm(torch.randn(B, T, H, DK, generator=g0)) * DK ** -0.5).to("mps")
+    k = l2norm(torch.randn(B, T, H, DK, generator=g0)).to("mps")
+    v = torch.randn(B, T, H, DV, generator=g0).to("mps")
+    g = (-torch.rand(B, T, H, generator=g0)).to("mps")
+    beta = torch.rand(B, T, H, generator=g0).to("mps")
+    s0 = torch.zeros(B, H, DK, DV, device="mps")
+    dout = torch.randn(B, T, H, DV, generator=g0).to("mps")
+    raw = inputs(B, T, H, seed=3)
+    out = {}
+    for label, pair in PAIRINGS.items():
+        old = op.KERNEL, op.KERNEL_BWD
+        op.KERNEL, op.KERNEL_BWD = pair
+        try:
+            xs = [x.detach().clone().requires_grad_(True) for x in (q, k, v, g, beta, s0)]
+
+            def fn_fwd():
+                with torch.no_grad():
+                    op.GatedDeltaRule.apply(*xs, False)
+
+            def fn_fb():
+                y, _ = op.GatedDeltaRule.apply(*xs, True)
+                y.backward(dout)
+
+            def drop_fwd():
+                with torch.no_grad():
+                    chunk_gated_delta_rule(*raw, use_qk_l2norm_in_kernel=True)
+
+            def drop_fb():
+                ys = [x.detach().clone().requires_grad_(True) for x in raw]
+                chunk_gated_delta_rule(*ys, use_qk_l2norm_in_kernel=True)[0].float().sum().backward()
+            out[label] = {"function_fwd": gpu_ms(fn_fwd), "function_fwd_bwd": gpu_ms(fn_fb),
+                          "dropin_fwd": gpu_ms(drop_fwd), "dropin_fwd_bwd": gpu_ms(drop_fb)}
+        finally:
+            op.KERNEL, op.KERNEL_BWD = old
+    return out
+
+
+PAIRINGS = {"d0_head_fwd_column_bwd": ("auto", "column"), "chunked": ("chunked", "chunked")}
+
+
 def op_counts(fn):
     from torch.profiler import ProfilerActivity, profile
     with profile(activities=[ProfilerActivity.CPU]) as prof:
@@ -96,8 +221,13 @@ def main():
     from transformers.models.qwen3_5 import modeling_qwen3_5 as M
     ref = getattr(M.torch_chunk_gated_delta_rule, "__wrapped__", M.torch_chunk_gated_delta_rule)
     lib = library(DK)
+    clib = _chunked.library(DK)
     out = {"chunk": C, "blk": BLK, "pipelines": {name: pipeline(getattr(lib, name)) for name in ("gdr_fwd", "gdr_bwd", "gdr_fwd8", "gdr_bwd8")},
+           "chunked_settings": {"C": _chunked.C, "NCB": _chunked.NCB, "NSG": _chunked.NSG, "STAGE": _chunked.STAGE,
+                                "HWLOAD": _chunked.HWLOAD, "NSGB": _chunked.NSGB, "KGRP": _chunked.KGRP},
            "shapes": {}}
+    out["pipelines"].update({name: pipeline(getattr(clib, name)) for name in ("gdc_prep", "gdc_fwd", "gdc_bwd_state", "gdc_bwd_chunk")})
+    warm_gpu(2.0)
     for name, (B, T, H) in SHAPES.items():
         xs = inputs(B, T, H)
         r = {"batch": B, "tokens": T, "heads": H}
@@ -143,6 +273,9 @@ def main():
                 kern(q, k, v, g, beta, ckpt, dout, sT, *grads, T, H, DV, threads=threads, group_size=group)
             t = gpu_ms(run)
             r[kname] = dict(t, roofline=roofline(flops_bwd, bytes_fwd * 2 + bytes_ckpt, t["median_ms"]))
+        del ckpt, grads
+        r["chunked"] = chunked_profile(B, T, H)
+        r["rule_fwd_bwd"] = rule_through_autograd(B, T, H)
         print(name, json.dumps(r)[:1500], flush=True)
         out["shapes"][name] = r
     d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
