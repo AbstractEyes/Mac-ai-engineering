@@ -1,0 +1,4 @@
+reference autocast off: o 1.1e-06, dq 1.1e-06, dk 1.1e-06, dv 1.2e-06, dg 1.0e-06, dbeta 7.5e-07
+reference autocast on : o 7.2e-03, dq 6.9e-03, dk 5.6e-03, dv 5.9e-03, dg 4.3e-03, dbeta 3.4e-03
+kernels   autocast off: o 3.9e-07, dq 4.3e-07, dk 6.2e-07, dv 3.9e-07, dg 3.5e-07, dbeta 4.1e-07
+kernels   autocast on : o 3.9e-07, dq 4.3e-07, dk 6.2e-07, dv 3.9e-07, dg 3.5e-07, dbeta 4.1e-07

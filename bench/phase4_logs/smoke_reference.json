@@ -1,0 +1,200 @@
+{
+ "name": "smoke_reference",
+ "model_id": "Qwen/Qwen3.5-0.8B",
+ "arm": "reference",
+ "epochs": 1.0,
+ "batch": 4,
+ "grad_accum": 4,
+ "sequences_a_step": 16,
+ "n_items": 24,
+ "recipe": {
+  "rank": 32,
+  "alpha": 64,
+  "dropout": 0.05,
+  "lr": 0.0002,
+  "max_len": 2048,
+  "seed": 20261030,
+  "do_ship": false
+ },
+ "warmup_steps_excluded": 10,
+ "started": "2026-11-02 20:45:49 PST",
+ "repo_commit": "eac41c3",
+ "repo_dirty": false,
+ "env": {
+  "PYTORCH_MPS_HIGH_WATERMARK_RATIO": "0.75",
+  "PYTORCH_MPS_LOW_WATERMARK_RATIO": "0.55",
+  "PYTORCH_ENABLE_MPS_FALLBACK": "1",
+  "HF_HUB_OFFLINE": "1",
+  "OMP_NUM_THREADS": "8"
+ },
+ "runner_patches": [
+  "load_vlm device_map cuda -> mps",
+  "model.gradient_checkpointing_enable -> no-op",
+  "TrainingArguments gradient_checkpointing -> False",
+  "TrainingArguments logging_steps 10 -> 1",
+  "fetch_images -> the fetched pictures folder"
+ ],
+ "steps": [
+  {
+   "step": 1,
+   "t_s": 9.82,
+   "loss": 2.819260358810425,
+   "grad_norm": 8.064811706542969,
+   "learning_rate": 0.0,
+   "epoch": 0.36363636363636365,
+   "mps_alloc_gb": 0.317,
+   "mps_driver_gb": 41.412,
+   "footprint_gb": 42.249,
+   "live_at_forward_end_gb": 23.005,
+   "driver_at_forward_end_gb": 38.537
+  },
+  {
+   "step": 2,
+   "t_s": 18.68,
+   "loss": 2.687394380569458,
+   "grad_norm": 9.622777938842773,
+   "learning_rate": 0.0002,
+   "epoch": 0.7272727272727273,
+   "mps_alloc_gb": 0.315,
+   "mps_driver_gb": 50.531,
+   "footprint_gb": 51.595,
+   "live_at_forward_end_gb": 24.161,
+   "driver_at_forward_end_gb": 50.531
+  },
+  {
+   "step": 3,
+   "t_s": 23.545,
+   "loss": 2.443118095397949,
+   "grad_norm": 5.692440509796143,
+   "learning_rate": 0.0001,
+   "epoch": 1.0,
+   "mps_alloc_gb": 0.285,
+   "mps_driver_gb": 50.498,
+   "footprint_gb": 51.625,
+   "live_at_forward_end_gb": 20.433,
+   "driver_at_forward_end_gb": 50.531
+  }
+ ],
+ "final_logs": [
+  {
+   "train_runtime": 23.5482,
+   "train_samples_per_second": 1.784,
+   "train_steps_per_second": 0.127,
+   "total_flos": 99223486944000.0,
+   "train_loss": 2.6499242782592773,
+   "epoch": 1.0
+  }
+ ],
+ "gated_delta_rule": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule",
+ "versions": {
+  "torch": "2.15.0",
+  "transformers": "5.22.1",
+  "peft": "0.21.2",
+  "qwen_symbolic_thinking": "0.1.35",
+  "python": "3.12.16"
+ },
+ "mps_recommended_max_gb": 107.52,
+ "sample": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/sample_every55.json",
+ "pictures": {
+  "items": 24,
+  "pictures_by_locator": {
+   "url": 18
+  }
+ },
+ "examples": 42,
+ "accelerator": {
+  "mixed_precision": "bf16",
+  "native_amp": true,
+  "device": "mps"
+ },
+ "checks": {
+  "modules_checkpointing": [],
+  "logging_steps": 1,
+  "args_gradient_checkpointing": false,
+  "linear_attention_layers": 18,
+  "gated_delta_rule_at_train_begin": "__main__.main.<locals>.counted",
+  "trainable_parameters": 20447232,
+  "model_dtype": "torch.bfloat16",
+  "device": "mps:0",
+  "lora_A_abs_sum": 92568.6875,
+  "lora_A_first_values": [
+   -0.012756,
+   -0.009033,
+   -0.02124,
+   0.003189
+  ],
+  "PYTHONHASHSEED": null
+ },
+ "trainer": {
+  "package": "0.1.35",
+  "steps": 3,
+  "train_loss": 2.6499242782592773,
+  "s_per_step": 8.18,
+  "train_min": 0.4,
+  "items": 24,
+  "items_with_picture": 18,
+  "examples": 42,
+  "examples_by_form": {
+   "full": 18,
+   "short": 18,
+   "spec_full": 6
+  },
+  "collated_examples": 42,
+  "examples_cut_at_max_len": 0,
+  "longest_example_tokens": 778,
+  "lora_modules": {
+   "out_proj": 18,
+   "in_proj_qkv": 18,
+   "in_proj_z": 18,
+   "gate_proj": 24,
+   "up_proj": 24,
+   "down_proj": 24,
+   "q_proj": 6,
+   "k_proj": 6,
+   "v_proj": 6,
+   "o_proj": 6
+  },
+  "adapter_dir": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/phase4/Qwen3.5-0.8B_r32_20261103_044552_smoke_reference/adapter"
+ },
+ "trainer_log": [
+  {
+   "step": 1,
+   "spent_s": 10,
+   "left_s": 20,
+   "s_per_step": 9.82,
+   "loss": 2.819260358810425,
+   "learning_rate": 0.0
+  },
+  {
+   "step": 2,
+   "spent_s": 19,
+   "left_s": 9,
+   "s_per_step": 9.34,
+   "loss": 2.687394380569458,
+   "learning_rate": 0.0002
+  },
+  {
+   "step": 3,
+   "spent_s": 24,
+   "left_s": 0,
+   "s_per_step": 7.85,
+   "loss": 2.443118095397949,
+   "learning_rate": 0.0001
+  },
+  {
+   "step": 3,
+   "spent_s": 24,
+   "left_s": 0,
+   "s_per_step": 7.85
+  }
+ ],
+ "s_per_step_steady_trainer_clock": null,
+ "s_per_step_steady_runner_clock": null,
+ "loss_final_step": 2.443118095397949,
+ "mps_driver_peak_gb": 50.531,
+ "live_at_forward_end_peak_gb": 24.161,
+ "footprint_peak_at_steps_gb": 51.625,
+ "gated_delta_rule_calls": 198,
+ "wall_s": 27.1,
+ "ended": "2026-11-02 20:46:16 PST"
+}

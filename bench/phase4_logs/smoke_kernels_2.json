@@ -1,0 +1,211 @@
+{
+ "name": "smoke_kernels_2",
+ "model_id": "Qwen/Qwen3.5-0.8B",
+ "arm": "kernels",
+ "epochs": 1.0,
+ "batch": 4,
+ "grad_accum": 4,
+ "sequences_a_step": 16,
+ "n_items": 24,
+ "recipe": {
+  "rank": 32,
+  "alpha": 64,
+  "dropout": 0.05,
+  "lr": 0.0002,
+  "max_len": 2048,
+  "seed": 20261030,
+  "do_ship": false
+ },
+ "warmup_steps_excluded": 10,
+ "started": "2026-11-02 20:46:42 PST",
+ "repo_commit": "eac41c3",
+ "repo_dirty": false,
+ "env": {
+  "PYTORCH_MPS_HIGH_WATERMARK_RATIO": "0.75",
+  "PYTORCH_MPS_LOW_WATERMARK_RATIO": "0.55",
+  "PYTORCH_ENABLE_MPS_FALLBACK": "1",
+  "HF_HUB_OFFLINE": "1",
+  "OMP_NUM_THREADS": "8"
+ },
+ "runner_patches": [
+  "load_vlm device_map cuda -> mps",
+  "model.gradient_checkpointing_enable -> no-op",
+  "TrainingArguments gradient_checkpointing -> False",
+  "TrainingArguments logging_steps 10 -> 1",
+  "fetch_images -> the fetched pictures folder"
+ ],
+ "steps": [
+  {
+   "step": 1,
+   "t_s": 7.363,
+   "loss": 2.819641590118408,
+   "grad_norm": 7.990212440490723,
+   "learning_rate": 0.0,
+   "epoch": 0.36363636363636365,
+   "mps_alloc_gb": 0.317,
+   "mps_driver_gb": 44.959,
+   "footprint_gb": 46.417,
+   "live_at_forward_end_gb": 20.964,
+   "driver_at_forward_end_gb": 42.021
+  },
+  {
+   "step": 2,
+   "t_s": 13.864,
+   "loss": 2.689140796661377,
+   "grad_norm": 9.563090324401855,
+   "learning_rate": 0.0002,
+   "epoch": 0.7272727272727273,
+   "mps_alloc_gb": 0.315,
+   "mps_driver_gb": 53.914,
+   "footprint_gb": 55.509,
+   "live_at_forward_end_gb": 21.659,
+   "driver_at_forward_end_gb": 53.914
+  },
+  {
+   "step": 3,
+   "t_s": 17.561,
+   "loss": 2.442748546600342,
+   "grad_norm": 5.608503818511963,
+   "learning_rate": 0.0001,
+   "epoch": 1.0,
+   "mps_alloc_gb": 0.285,
+   "mps_driver_gb": 54.039,
+   "footprint_gb": 55.65,
+   "live_at_forward_end_gb": 18.412,
+   "driver_at_forward_end_gb": 54.039
+  }
+ ],
+ "final_logs": [
+  {
+   "train_runtime": 17.5637,
+   "train_samples_per_second": 2.391,
+   "train_steps_per_second": 0.171,
+   "total_flos": 99223486944000.0,
+   "train_loss": 2.650510311126709,
+   "epoch": 1.0
+  }
+ ],
+ "patched_modules": [
+  "transformers.models.qwen3_5.modeling_qwen3_5",
+  "transformers.models.qwen3_5_moe.modeling_qwen3_5_moe",
+  "transformers.models.qwen3_next.modeling_qwen3_next"
+ ],
+ "macai": {
+  "version": "0.2.0",
+  "KERNEL": "chunked",
+  "KERNEL_BWD": "chunked",
+  "FUSED_NORM": true,
+  "chunk": 16
+ },
+ "gated_delta_rule": "macai.gated_delta.op.chunk_gated_delta_rule",
+ "versions": {
+  "torch": "2.15.0",
+  "transformers": "5.22.1",
+  "peft": "0.21.2",
+  "qwen_symbolic_thinking": "0.1.35",
+  "python": "3.12.16"
+ },
+ "mps_recommended_max_gb": 107.52,
+ "sample": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/sample_every55.json",
+ "pictures": {
+  "items": 24,
+  "pictures_by_locator": {
+   "url": 18
+  }
+ },
+ "examples": 42,
+ "accelerator": {
+  "mixed_precision": "bf16",
+  "native_amp": true,
+  "device": "mps"
+ },
+ "checks": {
+  "modules_checkpointing": [],
+  "logging_steps": 1,
+  "args_gradient_checkpointing": false,
+  "linear_attention_layers": 18,
+  "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule",
+  "trainable_parameters": 20447232,
+  "model_dtype": "torch.bfloat16",
+  "device": "mps:0",
+  "lora_A_abs_sum": 92600.6875,
+  "lora_A_first_values": [
+   -0.007324,
+   -0.00071,
+   -0.012634,
+   0.01355
+  ],
+  "PYTHONHASHSEED": null
+ },
+ "trainer": {
+  "package": "0.1.35",
+  "steps": 3,
+  "train_loss": 2.650510311126709,
+  "s_per_step": 6.19,
+  "train_min": 0.3,
+  "items": 24,
+  "items_with_picture": 18,
+  "examples": 42,
+  "examples_by_form": {
+   "full": 18,
+   "short": 18,
+   "spec_full": 6
+  },
+  "collated_examples": 42,
+  "examples_cut_at_max_len": 0,
+  "longest_example_tokens": 778,
+  "lora_modules": {
+   "out_proj": 18,
+   "in_proj_qkv": 18,
+   "in_proj_z": 18,
+   "gate_proj": 24,
+   "up_proj": 24,
+   "down_proj": 24,
+   "q_proj": 6,
+   "k_proj": 6,
+   "v_proj": 6,
+   "o_proj": 6
+  },
+  "adapter_dir": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/phase4/Qwen3.5-0.8B_r32_20261103_044644_smoke_kernels_2/adapter"
+ },
+ "trainer_log": [
+  {
+   "step": 1,
+   "spent_s": 7,
+   "left_s": 15,
+   "s_per_step": 7.36,
+   "loss": 2.819641590118408,
+   "learning_rate": 0.0
+  },
+  {
+   "step": 2,
+   "spent_s": 14,
+   "left_s": 7,
+   "s_per_step": 6.93,
+   "loss": 2.689140796661377,
+   "learning_rate": 0.0002
+  },
+  {
+   "step": 3,
+   "spent_s": 18,
+   "left_s": 0,
+   "s_per_step": 5.85,
+   "loss": 2.442748546600342,
+   "learning_rate": 0.0001
+  },
+  {
+   "step": 3,
+   "spent_s": 18,
+   "left_s": 0,
+   "s_per_step": 5.85
+  }
+ ],
+ "s_per_step_steady_trainer_clock": null,
+ "s_per_step_steady_runner_clock": null,
+ "loss_final_step": 2.442748546600342,
+ "mps_driver_peak_gb": 54.039,
+ "live_at_forward_end_peak_gb": 21.659,
+ "footprint_peak_at_steps_gb": 55.65,
+ "wall_s": 21.2,
+ "ended": "2026-11-02 20:47:03 PST"
+}

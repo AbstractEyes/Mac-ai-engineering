@@ -1,0 +1,42 @@
+[guard] start 20:46:42 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.15 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/phase4_train.py --name smoke_kernels_2 --model 0.8b --arm kernels --epochs 1 --batch 4 --accum 4 --n-items 24
+W1102 20:46:43.951000 95483 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+  6 pictures did not answer (first ['art-075014', 'art-076023', 'art-070017', 'art-043029', 'art-081041']: ['no locator', 'no locator', 'no locator', 'no locator', 'no locator'])
+train 20261103_044644_smoke_kernels_2: 24 items (18 with a picture), 42 examples by form {'full': 18, 'short': 18, 'spec_full': 6}; images fetched in 0 s
+Loading weights:   0%|          | 0/473 [00:00<?, ?it/s]Loading weights:  36%|███▌      | 169/473 [00:00<00:00, 1551.26it/s]Loading weights: 100%|██████████| 473/473 [00:00<00:00, 3243.19it/s]
+LoRA modules by name: {'out_proj': 18, 'in_proj_qkv': 18, 'in_proj_z': 18, 'gate_proj': 24, 'up_proj': 24, 'down_proj': 24, 'q_proj': 6, 'k_proj': 6, 'v_proj': 6, 'o_proj': 6}
+trainable params: 20,447,232 || all params: 873,433,152 || trainable%: 2.3410
+  a mixed batch (a picture row, a specification row) encodes: input_ids (2, 749)
+  3 steps of 4 x 4 sequences; 1.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "linear_attention_layers": 18, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "trainable_parameters": 20447232, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 92600.6875, "lora_A_first_values": [-0.007324, -0.00071, -0.012634, 0.01355], "PYTHONHASHSEED": null}
+  0%|          | 0/3 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+ 33%|███▎      | 1/3 [00:07<00:14,  7.34s/it]  step 1/3: loss 2.8196, 7 s spent, 15 s left, 7.36 s/step
+                                             {'loss': '2.82', 'grad_norm': '7.99', 'learning_rate': '0', 'epoch': '0.3636'}
+ 33%|███▎      | 1/3 [00:07<00:14,  7.34s/it] 67%|██████▋   | 2/3 [00:13<00:06,  6.85s/it]  step 2/3: loss 2.6891, 14 s spent, 7 s left, 6.93 s/step
+                                             {'loss': '2.689', 'grad_norm': '9.563', 'learning_rate': '0.0002', 'epoch': '0.7273'}
+ 67%|██████▋   | 2/3 [00:13<00:06,  6.85s/it]100%|██████████| 3/3 [00:17<00:00,  5.41s/it]  step 3/3: loss 2.4427, 18 s spent, 0 s left, 5.85 s/step
+                                             {'loss': '2.443', 'grad_norm': '5.609', 'learning_rate': '0.0001', 'epoch': '1'}
+100%|██████████| 3/3 [00:17<00:00,  5.41s/it]  step 3/3: loss nan, 18 s spent, 0 s left, 5.85 s/step
+                                             {'train_runtime': '17.56', 'train_samples_per_second': '2.391', 'train_steps_per_second': '0.171', 'train_loss': '2.651', 'epoch': '1'}
+100%|██████████| 3/3 [00:17<00:00,  5.41s/it]100%|██████████| 3/3 [00:17<00:00,  5.85s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-0.8B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 42 collated (the longest 778 tokens)
+
+trained in 0.3 min: 3 steps, loss 2.6505, 6.19 s/step
+[phase4] smoke_kernels_2: 3 steps, final loss 2.442748546600342, steady None s a step (trainer clock, steps 11-3)
+[phase4] wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/phase4_logs/smoke_kernels_2.json
+[guard] end 20:47:04 rc 0 peak footprint 55.55 GB wall 22 s
