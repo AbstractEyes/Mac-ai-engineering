@@ -24,6 +24,9 @@ class GatedDeltaRule(torch.autograd.Function):
         DV = v.shape[-1]
         if DV % 32 != 0:
             raise ValueError(f"the value head width must be a multiple of 32, got {DV}")
+        if save and DK > 128:
+            # the backward sums 32 columns x DK rows in threadgroup memory: DK 256 needs 33,024 bytes of the 32,768 allowed
+            raise NotImplementedError(f"the backward supports key head widths up to 128 (got {DK}); the forward runs any multiple of 32")
         lib = library(DK)
         o = torch.empty(B, T, H, DV, device=q.device, dtype=torch.float32)
         sT = torch.empty(B, H, DK, DV, device=q.device, dtype=torch.float32)
@@ -72,6 +75,10 @@ def chunk_gated_delta_rule(query, key, value, g, beta, chunk_size: int = 64, ini
     """Drop-in for transformers' torch_chunk_gated_delta_rule: query, key [B, T, H, DK]; value [B, T, H, DV]; g (log decay, <= 0)
     and beta [B, T, H]; initial_state [B, H, DK, DV] or None. Returns the output [B, T, H, DV] in the query's dtype and the final
     state (float32) when output_final_state, else None. chunk_size is accepted and unused (the kernel steps one token at a time)."""
+    if kwargs.get("cu_seqlens") is not None:
+        # packed rows (several sequences in one row, their boundaries in cu_seqlens): the state must restart at each
+        # boundary; not implemented yet, and running without it would silently carry state across sequences
+        raise NotImplementedError("macai's gated delta rule does not take packed rows (cu_seqlens) yet")
     dtype = query.dtype
     q, k, v = query.float(), key.float(), value.float()
     if use_qk_l2norm_in_kernel:
