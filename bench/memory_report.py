@@ -140,6 +140,9 @@ def main():
         "kernels_steady_11_25_s": steady(p4["kernels"], 11, 25),
         "kernels_live_peak_by_step_25_gib": window_max(p4["kernels"], "live_at_forward_end_gb", 1, 25),
         "reference_live_peak_by_step_25_gib": [window_max(r, "live_at_forward_end_gb", 1, 25) for r in refs],
+        "kernels_guard_peak_through_step_25_gb": guard_peak_through(p4["kernels"]["guard"], 25),
+        "reference_guard_peak_through_step_25_gb": [guard_peak_through(r["guard"], 25) for r in refs],
+        "kernels_steady_11_25_runner_s": round((by_step(p4["kernels"], "t_s")[25] - by_step(p4["kernels"], "t_s")[10]) / 15, 3),
     }
     ref_mean20 = statistics.mean(ref_drv20)
     excess_k = k_drv20 - ref_mean20
@@ -166,10 +169,14 @@ def main():
             t = steady(r, 11, 25)
             eq = steps_1_2_equal(r, p4["kernels"])
             verdict = drv20 is not None and drv20 <= BARS["screen_driver_by_step20_gb"]
+            tr = by_step(r, "t_s")
+            t_run = round((tr[25] - tr[10]) / 15, 3) if 25 in tr and 10 in tr else None
             s.update(driver_max_by_step_20_gb=drv20, excess_over_reference_gb=round(drv20 - ref_mean20, 3),
                      excess_vs_phase4_kernels=round((drv20 - ref_mean20) / excess_k, 3), live_peak_by_step_25_gib=live25,
                      live_vs_phase4_kernels=round(live25 / k_live25, 4), steady_11_25_s=t,
-                     steady_vs_phase4_kernels_same_steps=round(t / k_t, 4) if t else None,
+                     steady_vs_phase4_kernels_same_steps=round(t / k_t, 4) if t else None, steady_11_25_runner_s=t_run,
+                     steady_runner_vs_phase4_kernels_same_steps=(round(t_run / out["phase4"]["kernels_steady_11_25_runner_s"], 4)
+                                                                 if t_run else None),
                      footprint_peak_in_steps_by_25_gb=window_max(r, "footprint_peak_in_step_gb", 1, 25),
                      steps_1_2_vs_phase4_kernels=eq, passes=verdict)
             if verdict:

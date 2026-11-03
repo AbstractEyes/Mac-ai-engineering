@@ -1,0 +1,333 @@
+{
+ "bars": {
+  "screen_driver_by_step20_gb": 43.3,
+  "confirm_08_footprint_gb": 53.5,
+  "confirm_08_steady_s": 11.39,
+  "confirm_9_footprint_steps_1_25_gb": 74.6,
+  "confirm_9_steady_11_25_s": 52.7,
+  "long_run_growth_gb": 2.0
+ },
+ "predictions": {
+  "classes": {
+   "step_time_within": 0.01,
+   "live_up_at_most": 0.05,
+   "excess_cut_at_least": 0.5
+  },
+  "recompute": {
+   "step_08_s": [
+    11.1,
+    11.3
+   ],
+   "step_9_s": [
+    51.5,
+    52.0
+   ],
+   "live_08_gib": 15.5,
+   "live_9_gib": 21.0,
+   "live_cut_08_gib": 3.0,
+   "live_cut_9_gib": 4.0
+  }
+ },
+ "phase4": {
+  "reference_driver_max_by_step_20_gb": [
+   35.627,
+   36.572,
+   39.377
+  ],
+  "kernels_driver_max_by_step_20_gb": 45.068,
+  "reference_driver_mean_by_step_20_gb": 37.192,
+  "bars_recomputed": {
+   "screen_driver_by_step20_gb": 43.31,
+   "confirm_08_footprint_gb": 53.52,
+   "confirm_08_steady_s": 11.39,
+   "confirm_9_footprint_steps_1_25_gb": 74.56,
+   "confirm_9_steady_11_25_s": 52.74
+  },
+  "reference_peak_footprint_gb": [
+   47.31,
+   49.99,
+   50.86
+  ],
+  "kernels_peak_footprint_gb": 57.7,
+  "kernels_steady_11_25_s": 11.2,
+  "kernels_live_peak_by_step_25_gib": 18.46,
+  "reference_live_peak_by_step_25_gib": [
+   20.429,
+   20.443,
+   20.445
+  ],
+  "kernels_guard_peak_through_step_25_gb": 49.81,
+  "reference_guard_peak_through_step_25_gb": [
+   40.12,
+   44.43,
+   41.11
+  ],
+  "kernels_steady_11_25_runner_s": 11.254
+ },
+ "screen": {
+  "classes": {
+   "name": "screen_classes_0.8b_2x8_25steps",
+   "memory": "classes",
+   "model_id": "Qwen/Qwen3.5-0.8B",
+   "epochs": 1.0,
+   "batch": 2,
+   "grad_accum": 8,
+   "repo_commit": "70aef3d",
+   "repo_dirty": false,
+   "error": null,
+   "s_per_step_steady_trainer_clock": 11.2,
+   "loss_final_step": 0.84564608335495,
+   "live_at_forward_end_peak_gb": 19.022,
+   "mps_driver_peak_gb": 46.373,
+   "footprint_peak_in_steps_gb": 50.937,
+   "footprint_peak_before_training_gb": 3.273,
+   "wall_s": 279.4,
+   "macai": {
+    "version": "0.2.0",
+    "KERNEL": "chunked",
+    "KERNEL_BWD": "chunked",
+    "FUSED_NORM": true,
+    "chunk": 16,
+    "SIZE_CLASSES": true,
+    "RECOMPUTE_STATES": false
+   },
+   "guard": {
+    "rc": 0,
+    "peak_footprint_gb": 50.66,
+    "wall_s": 280,
+    "stops": []
+   },
+   "train_loss": 1.1689015650749206,
+   "driver_max_by_step_20_gb": 46.373,
+   "excess_over_reference_gb": 9.181,
+   "excess_vs_phase4_kernels": 1.166,
+   "live_peak_by_step_25_gib": 19.022,
+   "live_vs_phase4_kernels": 1.0304,
+   "steady_11_25_s": 11.2,
+   "steady_vs_phase4_kernels_same_steps": 1.0,
+   "steady_11_25_runner_s": 11.183,
+   "steady_runner_vs_phase4_kernels_same_steps": 0.9937,
+   "footprint_peak_in_steps_by_25_gb": 50.937,
+   "steps_1_2_vs_phase4_kernels": {
+    "steps": {
+     "1": [
+      2.5623860359191895,
+      2.5623860359191895
+     ],
+     "2": [
+      2.4255459308624268,
+      2.4255459308624268
+     ]
+    },
+    "equal": true
+   },
+   "passes": false
+  },
+  "recompute": {
+   "name": "screen_recompute_0.8b_2x8_25steps",
+   "memory": "recompute",
+   "model_id": "Qwen/Qwen3.5-0.8B",
+   "epochs": 1.0,
+   "batch": 2,
+   "grad_accum": 8,
+   "repo_commit": "70aef3d",
+   "repo_dirty": false,
+   "error": null,
+   "s_per_step_steady_trainer_clock": 11.133,
+   "loss_final_step": 0.8451173901557922,
+   "live_at_forward_end_peak_gb": 15.084,
+   "mps_driver_peak_gb": 33.092,
+   "footprint_peak_in_steps_gb": 37.533,
+   "footprint_peak_before_training_gb": 3.267,
+   "wall_s": 280.2,
+   "macai": {
+    "version": "0.2.0",
+    "KERNEL": "chunked",
+    "KERNEL_BWD": "chunked",
+    "FUSED_NORM": true,
+    "chunk": 16,
+    "SIZE_CLASSES": false,
+    "RECOMPUTE_STATES": true
+   },
+   "guard": {
+    "rc": 0,
+    "peak_footprint_gb": 37.53,
+    "wall_s": 282,
+    "stops": []
+   },
+   "train_loss": 1.1704050827026367,
+   "driver_max_by_step_20_gb": 33.092,
+   "excess_over_reference_gb": -4.1,
+   "excess_vs_phase4_kernels": -0.521,
+   "live_peak_by_step_25_gib": 15.084,
+   "live_vs_phase4_kernels": 0.8171,
+   "steady_11_25_s": 11.133,
+   "steady_vs_phase4_kernels_same_steps": 0.994,
+   "steady_11_25_runner_s": 11.13,
+   "steady_runner_vs_phase4_kernels_same_steps": 0.989,
+   "footprint_peak_in_steps_by_25_gb": 37.533,
+   "steps_1_2_vs_phase4_kernels": {
+    "steps": {
+     "1": [
+      2.5623860359191895,
+      2.5623860359191895
+     ],
+     "2": [
+      2.4255459308624268,
+      2.4255459308624268
+     ]
+    },
+    "equal": true
+   },
+   "passes": true
+  },
+  "classes+recompute": {
+   "name": "screen_classes_recompute_0.8b_2x8_25steps",
+   "memory": "classes+recompute",
+   "model_id": "Qwen/Qwen3.5-0.8B",
+   "epochs": 1.0,
+   "batch": 2,
+   "grad_accum": 8,
+   "repo_commit": "70aef3d",
+   "repo_dirty": false,
+   "error": null,
+   "s_per_step_steady_trainer_clock": 11.133,
+   "loss_final_step": 0.844519853591919,
+   "live_at_forward_end_peak_gb": 15.253,
+   "mps_driver_peak_gb": 32.842,
+   "footprint_peak_in_steps_gb": 38.312,
+   "footprint_peak_before_training_gb": 3.281,
+   "wall_s": 279.6,
+   "macai": {
+    "version": "0.2.0",
+    "KERNEL": "chunked",
+    "KERNEL_BWD": "chunked",
+    "FUSED_NORM": true,
+    "chunk": 16,
+    "SIZE_CLASSES": true,
+    "RECOMPUTE_STATES": true
+   },
+   "guard": {
+    "rc": 0,
+    "peak_footprint_gb": 35.95,
+    "wall_s": 282,
+    "stops": []
+   },
+   "train_loss": 1.1696080541610718,
+   "driver_max_by_step_20_gb": 32.842,
+   "excess_over_reference_gb": -4.35,
+   "excess_vs_phase4_kernels": -0.552,
+   "live_peak_by_step_25_gib": 15.253,
+   "live_vs_phase4_kernels": 0.8263,
+   "steady_11_25_s": 11.133,
+   "steady_vs_phase4_kernels_same_steps": 0.994,
+   "steady_11_25_runner_s": 11.113,
+   "steady_runner_vs_phase4_kernels_same_steps": 0.9875,
+   "footprint_peak_in_steps_by_25_gb": 38.312,
+   "steps_1_2_vs_phase4_kernels": {
+    "steps": {
+     "1": [
+      2.5623860359191895,
+      2.5623860359191895
+     ],
+     "2": [
+      2.4255459308624268,
+      2.4255459308624268
+     ]
+    },
+    "equal": true
+   },
+   "passes": true
+  }
+ },
+ "confirm_0.8b": {
+  "recompute": {
+   "name": "confirm_recompute_0.8b_2x8_100steps",
+   "memory": "recompute",
+   "model_id": "Qwen/Qwen3.5-0.8B",
+   "epochs": 4.0,
+   "batch": 2,
+   "grad_accum": 8,
+   "repo_commit": "be84664",
+   "repo_dirty": false,
+   "error": null,
+   "s_per_step_steady_trainer_clock": 10.978,
+   "loss_final_step": 0.1982882022857666,
+   "live_at_forward_end_peak_gb": 15.102,
+   "mps_driver_peak_gb": 41.756,
+   "footprint_peak_in_steps_gb": 46.322,
+   "footprint_peak_before_training_gb": 3.281,
+   "wall_s": 1101.1,
+   "macai": {
+    "version": "0.2.0",
+    "KERNEL": "chunked",
+    "KERNEL_BWD": "chunked",
+    "FUSED_NORM": true,
+    "chunk": 16,
+    "SIZE_CLASSES": false,
+    "RECOMPUTE_STATES": true
+   },
+   "guard": {
+    "rc": 0,
+    "peak_footprint_gb": 46.32,
+    "wall_s": 1103,
+    "stops": []
+   },
+   "train_loss": 0.5773304073512554,
+   "footprint_gb": 46.32,
+   "footprint_met": true,
+   "reference_mean_footprint_gb": 48.650000000000006,
+   "footprint_over_reference": 0.952,
+   "steady_s": 10.978,
+   "steady_met": true,
+   "steady_vs_phase4_kernels": 0.9929,
+   "rms_loss_difference": {
+    "D-A": 0.0029147329475700313,
+    "D-B": 0.0030329773443164053,
+    "D-C": 0.0034728007512276372,
+    "D-kernels": 0.003008615892875338,
+    "A-B": 0.003400504859714968,
+    "A-C": 0.003374812679093743,
+    "B-C": 0.0033544886194843398
+   },
+   "final_loss": 0.1982882022857666,
+   "final_loss_reference": 0.19666124880313873,
+   "final_loss_rel": 0.00827287273181346,
+   "mean_loss": 0.5773304073512554,
+   "mean_loss_reference": 0.5775558854639531,
+   "mean_loss_rel": 0.0003904005107948267,
+   "driver_peak_gb": 41.756,
+   "reference_driver_peak_gb": [
+    42.406,
+    43.838,
+    46.742
+   ],
+   "phase4_kernels_driver_peak_gb": 51.16,
+   "live_peak_gib": 15.102,
+   "phase4_kernels_live_peak_gib": 18.46,
+   "reference_live_peak_gib": [
+    20.429,
+    20.443,
+    20.445
+   ],
+   "steps_1_2_vs_phase4_kernels": {
+    "steps": {
+     "1": [
+      2.5623860359191895,
+      2.5623860359191895
+     ],
+     "2": [
+      2.4255459308624268,
+      2.4255459308624268
+     ]
+    },
+    "equal": true
+   }
+  }
+ },
+ "confirm_9b": {},
+ "screen_passed_in_order": [
+  "recompute",
+  "classes+recompute"
+ ]
+}
