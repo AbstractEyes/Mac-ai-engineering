@@ -12,16 +12,18 @@ kernels under 1 ms the single-call figure overstates by up to 3x. The training s
 ## The registered predictions and where they stand
 
 Registered before any code (series journal, 2026-11-02 19:3x PST). Baselines: the 0.2.0 kernels (D0), profiled in phase 1.
+Measured in the final profile and benchmark (entry 8); Metal-event times unless marked wall clock.
 
-| prediction | registered | measured now (0.8B / 9B) | verdict |
+| prediction | registered | measured (0.8B / 9B) | verdict |
 |---|---|---|---|
-| D1, the forward with its states stored | 2.5-4.0 ms, and >= 1.2x D0's 4.6 ms, else not adopted | 3.20 / 3.26 ms; D0 4.50 / 4.59 ms: 1.41x | met |
-| D2, the backward | 6-10 ms, and >= 2x D0's 26.6 ms | 4.55 / 4.57 ms; D0 25.9 ms: 5.7x | met, faster than the range |
-| the rule's forward + backward through the drop-in | 15-25 ms (0.2.0: about 40; the reference about 66) | 15.6 / 15.6 ms; 0.2.0 39.3 / 38.4; reference 68.3 / 69.0 | met |
-| a whole linear-attention layer, forward + backward | >= 1.4x the reference (0.2.0: 1.22-1.23x) | 0.8B 1.72x (116.8 -> 67.8 ms); 9B 1.37-1.40x across runs (251.3-258.4 -> 184.0-184.8 ms) | met at 0.8B; at the bar at 9B |
-| parity | the phase 2 harness at its bars (2e-4, stress 5e-4, 2,048 tokens 1e-3) | 192 tests pass; worst relative error of the chunked pairs 1.1e-6 to 6.9e-6 | met |
+| D1, the forward with its states stored | 2.5-4.0 ms, and >= 1.2x D0's 4.6 ms, else not adopted | 3.09 / 3.12 ms; D0 4.54 / 4.66 ms: 1.47x / 1.49x | met |
+| D2, the backward | 6-10 ms, and >= 2x D0's 26.6 ms | 4.40 / 4.37 ms; D0 26.2 / 26.3 ms: 6.0x | met; faster than the registered range |
+| the rule's forward + backward through the drop-in | 15-25 ms (0.2.0: about 40; the reference about 66) | D1 + D2: 14.9 / 15.0 ms (wall clock 15.6 / 16.9); with the fused query / key prologue (entry 7): 9.9 / 9.7 ms (wall clock 10.5 / 11.0); 0.2.0 37.6 / 37.8; reference 65.3 / 65.1 | met (at the range's floor; under it with the prologue) |
+| a whole linear-attention layer, forward + backward (wall clock) | >= 1.4x the reference (0.2.0: 1.22-1.23x) | D1 + D2: 1.65-1.72x / 1.37-1.40x across three runs; with the fused prologue: 1.94x / 1.43x (113.7 -> 58.6 ms; 254.6 -> 177.7 ms) | met at 0.8B; at 9B D1 + D2 alone sit at the bar, and the prologue fusion clears it |
+| parity | the phase 2 harness at its bars (2e-4, stress 5e-4, 2,048 tokens 1e-3) | 203 tests pass; worst relative error of the pairs with chunked kernels 3e-7 to 6.9e-6 | met |
 
-The defaults are `op.KERNEL = "chunked"`, `op.KERNEL_BWD = "chunked"` (the fastest pair that passes the whole harness).
+The defaults are `op.KERNEL = "chunked"`, `op.KERNEL_BWD = "chunked"`, `op.FUSED_NORM = True` (the fastest settings that pass
+the whole harness).
 
 ## The design as built
 
@@ -182,3 +184,75 @@ Where the time goes now: the per-chunk backward runs at 89% of the bandwidth cei
 states and their gradients, 2 x 268 MB); the state passes are bound by one head's chain of chunks (two rounds of 64 heads on 40
 cores); the drop-in adds about 6.6 ms around the 9 ms of kernels (the casts, the l2 normalization and its backward as separate
 PyTorch operations).
+
+### 7. 20:1x: the drop-in's query / key prologue fused (commit 7f4d6df)
+Design: with `use_qk_l2norm_in_kernel=True` (what transformers passes) the drop-in ran the float32 casts, the l2 normalization
+and the query scaling as about a dozen PyTorch operations forward and backward. `macai.gated_delta._norm` does the forward in one
+pass (one simdgroup a head vector: y = x rsqrt(sum(x^2) + 1e-6) scale, float32 out from float32, float16 or bfloat16 in) and the
+backward in one pass (dx = scale r (dy - x_hat (x_hat . dy)), written in the input's dtype). `op.FUSED_NORM` switches it. This
+overlaps the series plan's later D4 (the layer's normalization and scaling), so the benchmark reports the chunked kernels with
+and without it. Prediction (from entry 6's 6.6 ms of overhead): about 4-5 ms saved a call. Parity: the prologue against float64
+at three input dtypes; the drop-in's every gradient end to end against float64 (fused and not, two kernel pairs, float32 and
+bfloat16 inputs).
+
+| 0.8B / 9B | PyTorch prologue | fused prologue |
+|---|---|---|
+| the drop-in's forward, Metal events | 4.55 / 4.53 ms | 3.25 / 3.23 ms |
+| the drop-in's forward + backward, Metal events | 14.9 / 15.0 ms | 9.86 / 9.72 ms |
+| the layer's forward + backward, wall clock | 68.9 / 185.1 ms | 58.6 / 177.7 ms |
+
+Verdict: adopted (5.1-5.3 ms saved a call, above the prediction).
+
+### 8. 20:2x: the final measurements (profile_gated_delta_20261102_202127, gated_delta_20261102_201859)
+
+Pipeline limits (none flagged for register pressure: every kernel keeps 1,024 threads a threadgroup):
+
+| kernel | max threads a threadgroup | threadgroup memory | launched with |
+|---|---|---|---|
+| `gdc_prep` | 1,024 | 2,048 B | 128 threads, one (chunk, head, row) |
+| `gdc_fwd` | 1,024 | 16,384 B | 512 threads, one (head, row) |
+| `gdc_bwd_state` | 1,024 | 16,384 B | 512 threads, one (head, row) |
+| `gdc_bwd_chunk` | 1,024 | 7,200 B | 256 threads, one (chunk, head, row) |
+| `l2n_fwd_*`, `l2n_bwd_*` | 1,024 | 0 | 256 threads, eight head vectors |
+
+Rooflines, back-to-back (FLOPs = the 8 x 8 x 8 products each kernel runs; bytes = every input read once, every output written
+once; ceilings 13.78 TFLOP/s and 356 GB/s), 0.8B (the 9B shape within 7%):
+
+| kernel | ms | GFLOP | TFLOP/s (of peak) | MB | GB/s (of ceiling) |
+|---|---|---|---|---|---|
+| `gdc_prep` | 0.30 | 0.41 | 1.36 (10%) | 80 | 266 (75%) |
+| `gdc_fwd`, no states | 2.16 | 6.85 | 3.17 (23%) | 143 | 66 (19%) |
+| `gdc_fwd`, states | 2.85 | 6.85 | 2.40 (17%) | 479 | 168 (47%) |
+| `gdc_bwd_state` | 1.84 | 6.85 | 3.71 (27%) | 412 | 223 (63%) |
+| `gdc_bwd_chunk` | 2.53 | 8.09 | 3.20 (23%) | 852 | 337 (95%) |
+| forward without states | 2.39 | 7.26 | 3.03 (22%) | 224 | 93 (26%) |
+| forward with states | 3.09 | 7.26 | 2.35 (17%) | 559 | 181 (51%) |
+| backward | 4.40 | 14.93 | 3.39 (25%) | 1,264 | 287 (81%) |
+| D0: head forward with states; column backward | 4.54; 26.2 | | 1.89 (14%); 1.15 (8%) | | |
+
+| forward + backward, 0.8B / 9B, ms | reference | 0.2.0 | D1 + D2 | D1 + D2 + fused prologue |
+|---|---|---|---|---|
+| the rule (`GatedDeltaRule`, float32 inputs prepared) | | 31.2 / 31.4 | 8.49 / 8.51 | 8.47 / 8.52 |
+| the drop-in (bf16 inputs, l2 norm in the call), Metal events | 65.3 / 65.1 | 37.6 / 37.8 | 14.9 / 15.0 | 9.86 / 9.72 |
+| the drop-in, wall clock | 67.0 / 65.5 | 41.5 / 40.5 | 15.6 / 16.9 | 10.5 / 11.0 |
+| a whole linear-attention layer, wall clock | 113.7 / 254.6 | 93.1 / 206.8 | 68.9 / 185.1 | 58.6 / 177.7 |
+| the layer against the reference | | 1.22x / 1.23x | 1.65x / 1.38x | 1.94x / 1.43x |
+
+Where the time goes now, as causal chains:
+- The per-chunk backward runs at 95% of the bandwidth ceiling -> its time is its bytes -> 536 of its 852 MB are the chunk states
+  and their gradients (every 16 tokens, 64 KB each) -> fewer stored states is the lever.
+- The state passes run one threadgroup a head -> 64 heads on 40 cores take two rounds, and a core is saturated by one
+  threadgroup's instruction stream (one head alone: about 1.1 ms) -> the forward without states sits at 23% of the compute peak.
+- At 9B the rule is now about 11 of the layer's 178 ms -> the layer's other parts (projections, MLP, the short convolution, the
+  gated norm) decide the layer from here.
+
+### Next (not done here)
+1. States every 32 tokens with the chunk-16 algebra: the per-chunk backward takes two chunks a threadgroup and rebuilds the
+   middle state and its gradient from the stored ones with small C x C products (S_b = exp(G_last) S_a + K_a^T diag(e) Vn_a;
+   dS_b from the backward state update), so dO S^T, dVn S^T and Vn dS^T keep their two big right operands per 32 tokens.
+   Estimate: 536 MB less traffic (forward, backward state pass, per-chunk backward), about 1.5 ms of the 7.5 ms of kernels.
+2. Double-buffered staging in the state passes (one barrier a chunk; the next chunk's loads under this chunk's products):
+   estimate 5-10% of the state passes.
+3. Chunk 8 for forwards without states (inference): 2.17 against 2.40 ms (entry 5).
+4. Packed rows (cu_seqlens): the chunk index per sequence (still refused by the drop-in).
+5. Phase 4: the readers' LoRA training with the patch against the reference path (loss step for step, memory, step time).

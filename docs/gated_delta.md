@@ -52,7 +52,23 @@ both forwards save the same state layout, so either backward reads it. Parity: 8
 | Qwen3.5-0.8B, 4 x 1,024 | 10.7 / 64.2 ms | 6.1 / 40.4 ms (1.77x / 1.59x) | 112.9 ms | 91.7 ms (1.23x) |
 | Qwen3.5-9B, 2 x 1,024 | 10.9 / 64.5 ms | 6.0 / 39.6 ms (1.81x / 1.63x) | 250.5 ms | 204.9 ms (1.22x) |
 
+## Series phase 3: the chunked kernels (now the default)
+The chunked (WY / UT) algorithm on 8 x 8 simdgroup matrices, float32 throughout, chunks of 16 tokens: a per-chunk kernel for the
+decayed Gram matrices and the triangular inverse, a forward state pass and a backward state pass (one threadgroup a head, each
+chunk's keys and queries staged in threadgroup memory), and a per-chunk backward with one writer for every gradient (no atomics;
+bitwise identical run to run). The drop-in's query / key normalization runs as one fused pass each way. Design, every variant
+tried and the measurements: [series_phase3.md](series_phase3.md). Parity: the phase 2 harness, 203 tests.
+
+| 0.8B (4 x 1,024) / 9B (2 x 1,024), ms | reference | 0.2.0 | chunked |
+|---|---|---|---|
+| the rule's forward with states (kernels) | | 4.54 / 4.66 | 3.09 / 3.12 |
+| the rule's backward (kernels) | | 26.2 / 26.3 | 4.40 / 4.37 |
+| the rule forward + backward through the drop-in | 65.3 / 65.1 | 37.6 / 37.8 | 9.86 / 9.72 |
+| a whole linear-attention layer, forward + backward (wall clock) | 113.7 / 254.6 | 93.1 / 206.8 | 58.6 / 177.7 (1.94x / 1.43x) |
+
 ## Next
-- The backward (~34 ms of the rule's 40): a chunked (WY-form) algorithm on simdgroup matrices, the shape GPUs run best, in place
-  of one token at a time.
-- The layer's other parts on this GPU: the input projections (13 ms), the gated norm (6 ms), the short convolution (5 ms).
+- Fewer stored chunk states (the per-chunk backward is bandwidth-bound on them) and double-buffered staging in the state
+  passes: series_phase3.md, "Next".
+- The layer's other parts on this GPU: the input projections, the gated norm, the short convolution; at 9B the rule is now
+  about 11 of the layer's 178 ms.
+- Packed rows (cu_seqlens), refused until supported.
