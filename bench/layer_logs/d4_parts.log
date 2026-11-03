@@ -1,0 +1,31 @@
+[guard] start 13:10:06 limit 96.0 GB, swap +1.0 GB, wall 3000 s, swap at start 0.14 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/bench_layer.py
+[bench_layer] pid 98464
+W1103 13:10:09.882000 98464 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+0.8b input_layernorm  pytorch   0.733 /   2.297 ms  kernel   0.050 /   0.143 ms  x16.063  floor 0.1178 (1.21x)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+0.8b conv             pytorch   2.783 /   9.126 ms  kernel   0.365 /   0.978 ms  x9.331  floor 0.7067 (1.38x)
+0.8b gates            pytorch   0.057 /   0.131 ms  kernel   0.026 /   0.082 ms  x1.598  floor None (Nonex)
+0.8b gated_norm       pytorch   2.375 /   6.708 ms  kernel   0.200 /   0.489 ms  x13.718  floor 0.3769 (1.3x)
+0.8b swiglu           pytorch   0.383 /   1.185 ms  kernel   0.242 /   0.714 ms  x1.66  floor 0.6596 (1.08x)
+0.8b q_norm           pytorch   1.563 /   4.744 ms  kernel   0.108 /   0.277 ms  x17.126  floor 0.2356 (1.18x)
+0.8b k_norm           pytorch   0.385 /   1.138 ms  kernel   0.081 /   0.158 ms  x7.203  floor 0.0589 (2.68x)
+[guard]      30 s footprint   4.44 GB (peak   4.44) swap +0.00 GB pressure 1
+0.8b layer linear off   24.92 /   61.88 ms  on   18.77 /   42.17 ms  x1.467
+0.8b layer full   off   25.87 /   63.38 ms  on   22.75 /   52.97 ms  x1.196
+[guard]      60 s footprint   4.48 GB (peak   4.48) swap +0.00 GB pressure 1
+9b input_layernorm  pytorch   1.482 /   4.529 ms  kernel   0.079 /   0.240 ms  x18.871  floor 0.2356 (1.02x)
+9b conv             pytorch   2.841 /   8.235 ms  kernel   0.296 /   0.829 ms  x9.934  floor 0.4711 (1.76x)
+9b gates            pytorch   0.065 /   0.142 ms  kernel   0.033 /   0.089 ms  x1.596  floor None (Nonex)
+9b gated_norm       pytorch   2.412 /   6.753 ms  kernel   0.211 /   0.516 ms  x13.087  floor 0.3769 (1.37x)
+9b swiglu           pytorch   0.746 /   2.154 ms  kernel   0.432 /   1.273 ms  x1.692  floor 1.1307 (1.13x)
+9b q_norm           pytorch   1.649 /   4.859 ms  kernel   0.110 /   0.270 ms  x17.996  floor 0.2356 (1.15x)
+9b k_norm           pytorch   0.352 /   1.098 ms  kernel   0.049 /   0.130 ms  x8.446  floor 0.0589 (2.21x)
+[guard]      91 s footprint   5.24 GB (peak   5.88) swap +0.00 GB pressure 1
+[guard]     121 s footprint   6.24 GB (peak   6.24) swap +0.00 GB pressure 1
+9b layer linear off   87.57 /  183.17 ms  on   79.90 /  159.56 ms  x1.148
+[guard]     151 s footprint   5.44 GB (peak   6.24) swap +0.00 GB pressure 1
+[guard]     181 s footprint   5.44 GB (peak   6.24) swap +0.00 GB pressure 1
+9b layer full   off   84.98 /  182.40 ms  on   80.42 /  166.09 ms  x1.098
+in_proj_qkv LoRA 2x903: transposed gradient 6.746 ms, contiguous 5.327 ms (x1.266)
+wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/layer_logs/d4_parts.json
+[guard] end 13:13:29 rc 0 peak footprint 6.24 GB wall 203 s

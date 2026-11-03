@@ -23,7 +23,9 @@ Around the trainer the runner changes these things, the same way for both arms, 
    allocator's heaps, fragmented by batches of changing lengths, outgrow the high watermark with checkpointing off.
 
 The kernels arm takes --memory, the kernels' memory design (docs/series_memory.md): stored (both settings off), classes
-(op.SIZE_CLASSES), recompute (op.RECOMPUTE_STATES) or classes+recompute; the run records it. --logdir puts the record elsewhere
+(op.SIZE_CLASSES), recompute (op.RECOMPUTE_STATES) or classes+recompute; and --layer, the layer parts (macai.layer, series
+design D4, docs/series_layer.md): off by default (every part off, as in the runs before D4), 'default' (the library's own
+settings), 'all' or part names; the run records both. --logdir puts the record elsewhere
 (bench/phase4_run.sh passes its LOGS). The first line the runner prints is its own process id: stop a run by hand with SIGINT to
 that id only (the record is still written).
 """
@@ -52,6 +54,8 @@ MODULE = "transformers.models.qwen3_5.modeling_qwen3_5"
 SAMPLE = "sample_every55.json"
 # the kernels' memory designs (op.SIZE_CLASSES, op.RECOMPUTE_STATES); docs/series_memory.md
 MEMORY = {"stored": (False, False), "classes": (True, False), "recompute": (False, True), "classes+recompute": (True, True)}
+# the layer parts (macai.layer.PARTS; series design D4, docs/series_layer.md), chosen by --layer
+LAYER_PARTS = ("RMSNORM", "CONV", "GATED_NORM", "GATES", "SWIGLU")
 PEAK_POLL_S = 0.25     # the runner's own footprint poll (the guard's is 2 s): each step's peak
 
 
@@ -151,6 +155,10 @@ def main(argv=None, customize=None) -> int:
     ap.add_argument("--arm", choices=("reference", "kernels"), required=True)
     ap.add_argument("--memory", choices=sorted(MEMORY), default=None,
                     help="the kernels' memory design (sets op.SIZE_CLASSES and op.RECOMPUTE_STATES); default: op's own settings")
+    ap.add_argument("--layer", default="off",
+                    help="the layer parts of the kernels arm (macai.layer, series design D4): 'off' (every part off: the runs "
+                         "before D4, the default), 'default' (macai.layer's own settings), 'all', or part names joined by commas "
+                         f"({', '.join(LAYER_PARTS)}); recorded with the run")
     ap.add_argument("--logdir", default=os.path.join(HERE, "phase4_logs"), help="where the run's record (<name>.json) goes")
     ap.add_argument("--epochs", type=float, required=True)
     ap.add_argument("--batch", type=int, required=True)
@@ -167,6 +175,10 @@ def main(argv=None, customize=None) -> int:
     a = ap.parse_args(argv)
     if a.memory is not None and a.arm != "kernels":
         ap.error("--memory is a setting of the kernels arm")
+    if a.layer != "off" and a.arm != "kernels":
+        ap.error("--layer is a setting of the kernels arm")
+    if a.layer not in ("off", "default", "all") and not set(a.layer.split(",")) <= set(LAYER_PARTS):
+        ap.error(f"--layer: 'off', 'default', 'all' or part names from {LAYER_PARTS}")
 
     os.makedirs(a.logdir, exist_ok=True)
     out_json = os.path.join(a.logdir, f"{a.name}.json")
@@ -200,9 +212,17 @@ def main(argv=None, customize=None) -> int:
             assert MODULE in rec["patched_modules"], rec["patched_modules"]
             if a.memory is not None:
                 op.SIZE_CLASSES, op.RECOMPUTE_STATES = MEMORY[a.memory]
+            from macai import layer as L
+            if a.layer == "off":
+                L.configure(**dict.fromkeys(L.PARTS, False))
+            elif a.layer == "all":
+                L.configure(**dict.fromkeys(L.PARTS, True))
+            elif a.layer != "default":
+                L.configure(**{p: p in a.layer.split(",") for p in L.PARTS})
             rec["macai"] = {"version": macai.__version__, "KERNEL": op.KERNEL, "KERNEL_BWD": op.KERNEL_BWD,
                             "FUSED_NORM": op.FUSED_NORM, "chunk": _chunked.C, "SIZE_CLASSES": op.SIZE_CLASSES,
-                            "RECOMPUTE_STATES": op.RECOMPUTE_STATES}
+                            "RECOMPUTE_STATES": op.RECOMPUTE_STATES, "layer_option": a.layer, "layer": L.settings(),
+                            "layer_patches": macai.patch.layer_patches()}
             print(f"[phase4] macai {json.dumps(rec['macai'])}", flush=True)
         M = importlib.import_module(MODULE)
         fn = M.torch_chunk_gated_delta_rule
@@ -269,6 +289,8 @@ def main(argv=None, customize=None) -> int:
                     "torch_empty_cache_steps": args.torch_empty_cache_steps,
                     "linear_attention_layers": sum(type(m).__name__ == "Qwen3_5GatedDeltaNet" for m in model.modules()),
                     "gated_delta_rule_at_train_begin": (lambda f: f"{f.__module__}.{f.__qualname__}")(M.torch_chunk_gated_delta_rule),
+                    "layer_methods_at_train_begin": {c: getattr(M, c).forward.__module__ for c in (
+                        "Qwen3_5RMSNorm", "Qwen3_5RMSNormGated", "Qwen3_5MLP", "Qwen3_5GatedDeltaNet")},
                     "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
                     "model_dtype": str(next(model.parameters()).dtype), "device": str(next(model.parameters()).device)}
                 # the LoRA A matrices as initialized (B starts at zero): whether two runs of the same seed start alike

@@ -80,6 +80,15 @@ def build_instrument(inst: Instrument, model, M, detail: set):
     inst.function(M, "causal_conv1d_fn", "lin.conv")
     inst.function(M, "torch_chunk_gated_delta_rule", "lin.rule")
     inst.function(M, "apply_rotary_pos_emb", "full.rotary")
+    # the layer parts' functions (macai.layer, series design D4) that the replaced linear-attention forward calls: the fused
+    # convolution path under step 0's name for the convolution, beta and g apart (the norms and the SwiGLU keep their modules)
+    try:
+        from macai.layer import _qwen3_5 as layer_q
+    except ImportError:
+        layer_q = None
+    if layer_q is not None:
+        inst.function(layer_q, "conv_path", "lin.conv")
+        inst.function(layer_q, "gates_path", "lin.gates")
     # the attention call, through transformers' attention registry (the vision tower uses it too)
     af = M.ALL_ATTENTION_FUNCTIONS
     orig_get = af.get_interface
