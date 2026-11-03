@@ -1,0 +1,137 @@
+{
+ "name": "p42_9b_ref_1x16",
+ "model_id": "Qwen/Qwen3.5-9B",
+ "arm": "reference",
+ "epochs": 1.0,
+ "batch": 1,
+ "grad_accum": 16,
+ "sequences_a_step": 16,
+ "n_items": null,
+ "recipe": {
+  "rank": 32,
+  "alpha": 64,
+  "dropout": 0.05,
+  "lr": 0.0002,
+  "max_len": 2048,
+  "seed": 20261030,
+  "do_ship": false
+ },
+ "warmup_steps_excluded": 10,
+ "started": "2026-11-02 20:55:55 PST",
+ "repo_commit": "3259497",
+ "repo_dirty": false,
+ "env": {
+  "PYTORCH_MPS_HIGH_WATERMARK_RATIO": "0.75",
+  "PYTORCH_MPS_LOW_WATERMARK_RATIO": "0.55",
+  "PYTORCH_ENABLE_MPS_FALLBACK": "1",
+  "HF_HUB_OFFLINE": "1",
+  "OMP_NUM_THREADS": "8"
+ },
+ "runner_patches": [
+  "load_vlm device_map cuda -> mps",
+  "model.gradient_checkpointing_enable -> no-op",
+  "TrainingArguments gradient_checkpointing -> False",
+  "TrainingArguments logging_steps 10 -> 1",
+  "fetch_images -> the fetched pictures folder"
+ ],
+ "steps": [
+  {
+   "step": 1,
+   "t_s": 54.317,
+   "loss": 2.222827434539795,
+   "grad_norm": 2.8140194416046143,
+   "learning_rate": 0.0,
+   "epoch": 0.04,
+   "mps_alloc_gb": 1.165,
+   "mps_driver_gb": 51.939,
+   "footprint_gb": 53.723,
+   "live_at_forward_end_gb": 26.11,
+   "driver_at_forward_end_gb": 51.939
+  },
+  {
+   "step": 2,
+   "t_s": 114.248,
+   "loss": 2.069880723953247,
+   "grad_norm": 2.7633988857269287,
+   "learning_rate": 0.0002,
+   "epoch": 0.08,
+   "mps_alloc_gb": 1.184,
+   "mps_driver_gb": 57.69,
+   "footprint_gb": 59.871,
+   "live_at_forward_end_gb": 26.761,
+   "driver_at_forward_end_gb": 57.69
+  },
+  {
+   "step": 3,
+   "t_s": 163.907,
+   "loss": 1.6937402486801147,
+   "grad_norm": 1.8549413681030273,
+   "learning_rate": 0.00019914448613738106,
+   "epoch": 0.12,
+   "mps_alloc_gb": 1.14,
+   "mps_driver_gb": 60.634,
+   "footprint_gb": 63.036,
+   "live_at_forward_end_gb": 22.496,
+   "driver_at_forward_end_gb": 60.634
+  },
+  {
+   "step": 4,
+   "t_s": 237.392,
+   "loss": 1.5521020889282227,
+   "grad_norm": 1.2634137868881226,
+   "learning_rate": 0.00019659258262890683,
+   "epoch": 0.16,
+   "mps_alloc_gb": 1.197,
+   "mps_driver_gb": 73.847,
+   "footprint_gb": 76.392,
+   "live_at_forward_end_gb": 23.896,
+   "driver_at_forward_end_gb": 73.847
+  }
+ ],
+ "final_logs": [],
+ "gated_delta_rule": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule",
+ "versions": {
+  "torch": "2.15.0",
+  "transformers": "5.22.1",
+  "peft": "0.21.2",
+  "qwen_symbolic_thinking": "0.1.35",
+  "python": "3.12.16"
+ },
+ "mps_recommended_max_gb": 107.52,
+ "sample": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/sample_every55.json",
+ "pictures": {
+  "items": 382,
+  "pictures_by_locator": {
+   "url": 357,
+   "zip_member": 15
+  }
+ },
+ "examples": 400,
+ "accelerator": {
+  "mixed_precision": "bf16",
+  "native_amp": true,
+  "device": "mps"
+ },
+ "checks": {
+  "modules_checkpointing": [],
+  "logging_steps": 1,
+  "args_gradient_checkpointing": false,
+  "linear_attention_layers": 24,
+  "gated_delta_rule_at_train_begin": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule",
+  "trainable_parameters": 80216064,
+  "model_dtype": "torch.bfloat16",
+  "device": "mps:0",
+  "lora_A_abs_sum": 228791.109375,
+  "lora_A_first_values": [
+   -0.005859,
+   0.014648,
+   0.014404,
+   -0.014221
+  ],
+  "PYTHONHASHSEED": null
+ },
+ "error": "RuntimeError: MPS backend out of memory (MPS allocated: 62.67 GiB, other allocations: 17.63 GiB, max allowed: 80.64 GiB). Tried to allocate 896.00 MiB on shared pool. Use PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 to disable upper limit for memory allocations (may cause system failure).",
+ "traceback": "Traceback (most recent call last):\n  File \"/Users/philipcoelho/mirel/mac_ai_engineering/bench/phase4_train.py\", line 258, in main\n    summ = T.run(model_id=MODELS[a.model], inputs=[sample], out_dir=os.path.join(a.data, \"phase4\"), epochs=a.epochs,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/qwen_symbolic_thinking/train.py\", line 327, in run\n    result = trainer.train()\n             ^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1559, in train\n    return inner_training_loop(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1643, in _inner_training_loop\n    self._run_epoch(\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1889, in _run_epoch\n    tr_loss_step = self.training_step(model, inputs, num_items_in_batch)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 2098, in training_step\n    self.accelerator.backward(loss, **kwargs)\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/accelerate/accelerator.py\", line 2861, in backward\n    loss.backward(**kwargs)\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/_tensor.py\", line 623, in backward\n    torch.autograd.backward(\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/autograd/__init__.py\", line 395, in backward\n    _engine_run_backward(\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/autograd/graph.py\", line 1113, in _engine_run_backward\n    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: MPS backend out of memory (MPS allocated: 62.67 GiB, other allocations: 17.63 GiB, max allowed: 80.64 GiB). Tried to allocate 896.00 MiB on shared pool. Use PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 to disable upper limit for memory allocations (may cause system failure).\n",
+ "wall_s": 301.6,
+ "ended": "2026-11-02 21:00:57 PST"
+}

@@ -1,0 +1,36 @@
+[guard] start 21:01:19 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.15 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/phase4_train.py --name p42_9b_kernels_1x16 --model 9b --arm kernels --epochs 1 --batch 1 --accum 16
+W1102 21:01:21.496000 98539 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+  10 pictures did not answer (first ['art-075014', 'art-076023', 'art-070017', 'art-043029', 'art-081041']: ['no locator', 'no locator', 'no locator', 'no locator', 'no locator'])
+train 20261103_050122_p42_9b_kernels_1x16: 382 items (372 with a picture), 400 examples by form {'full': 335, 'spec_full': 10, 'short': 55}; images fetched in 0 s
+Loading weights:   0%|          | 0/760 [00:00<?, ?it/s]Loading weights:  16%|█▋        | 124/760 [00:00<00:00, 713.87it/s]Loading weights:  26%|██▌       | 196/760 [00:00<00:00, 626.18it/s]Loading weights:  34%|███▍      | 258/760 [00:00<00:01, 469.06it/s]Loading weights:  40%|████      | 307/760 [00:00<00:01, 392.43it/s]Loading weights:  46%|████▌     | 348/760 [00:00<00:01, 381.88it/s]Loading weights:  52%|█████▏    | 396/760 [00:00<00:01, 354.85it/s]Loading weights: 100%|██████████| 760/760 [00:01<00:00, 743.27it/s]
+LoRA modules by name: {'out_proj': 24, 'in_proj_qkv': 24, 'in_proj_z': 24, 'gate_proj': 32, 'up_proj': 32, 'down_proj': 32, 'q_proj': 8, 'k_proj': 8, 'v_proj': 8, 'o_proj': 8}
+trainable params: 80,216,064 || all params: 9,490,029,808 || trainable%: 0.8453
+  a mixed batch (a picture row, a specification row) encodes: input_ids (2, 751)
+  25 steps of 1 x 16 sequences; 1.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "linear_attention_layers": 24, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "trainable_parameters": 80216064, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 228767.890625, "lora_A_first_values": [-0.003128, 0.008972, -0.003967, -0.009888], "PYTHONHASHSEED": null}
+  0%|          | 0/25 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[guard]      30 s footprint  44.09 GB (peak  44.09) swap +0.00 GB pressure 1
+  4%|▍         | 1/25 [00:44<17:55, 44.82s/it]  step 1/25: loss 2.2249, 45 s spent, 1077 s left, 44.86 s/step
+                                              {'loss': '2.225', 'grad_norm': '2.913', 'learning_rate': '0', 'epoch': '0.04'}
+  4%|▍         | 1/25 [00:44<17:55, 44.82s/it][guard]      60 s footprint  58.49 GB (peak  58.57) swap +0.00 GB pressure 1
+[guard]      91 s footprint  65.09 GB (peak  65.09) swap +0.00 GB pressure 1
+  8%|▊         | 2/25 [01:33<18:07, 47.28s/it]  step 2/25: loss 2.0694, 94 s spent, 1079 s left, 46.93 s/step
+                                              {'loss': '2.069', 'grad_norm': '2.832', 'learning_rate': '0.0002', 'epoch': '0.08'}
+  8%|▊         | 2/25 [01:33<18:07, 47.28s/it][guard]     121 s footprint  68.93 GB (peak  68.93) swap +0.00 GB pressure 1
+/opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+[note] stopped by hand at step 3 (21:03:4x), with its chain, after the 1 x 16 reference ran out of the allowed GPU memory at step 5; the guard wrote no end line

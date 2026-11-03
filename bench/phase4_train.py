@@ -17,7 +17,10 @@ Around the trainer the runner changes these things, the same way for both arms, 
    to start when one is missing, so nothing is downloaded; the run's own outputs (the adapter) go to <data>/phase4;
 5. a callback records each step's time (after the Trainer's logging synchronizes the GPU), the Trainer's whole log (loss,
    gradient norm, learning rate) and the memory: the Metal allocator's figures and the process's physical footprint at each
-   step, and (a forward hook on the model) the allocator's live tensors when each micro-batch's forward returns.
+   step, and (a forward hook on the model) the allocator's live tensors when each micro-batch's forward returns;
+6. with --empty-cache, the Trainer's own torch_empty_cache_steps=1: the Metal allocator's cached buffers are released between
+   each micro-batch's forward and backward (on PyTorch 2.15 the Trainer calls torch.mps.empty_cache() only). Without it the
+   allocator's heaps, fragmented by batches of changing lengths, outgrow the high watermark with checkpointing off.
 """
 import argparse
 import ctypes
@@ -117,6 +120,10 @@ def main() -> int:
     ap.add_argument("--n-items", type=int, default=None, help="only the sample's first n items (smoke runs)")
     ap.add_argument("--count-calls", action="store_true",
                     help="count the calls of the model's gated delta rule (smoke runs; adds one Python call a layer)")
+    ap.add_argument("--empty-cache", action="store_true",
+                    help="the Trainer's torch_empty_cache_steps=1: the Metal allocator's cached buffers released between each "
+                         "micro-batch's forward and backward (against the fragmentation that ran checkpointing-off runs out of "
+                         "memory; docs/series_phase4.md entry 4)")
     ap.add_argument("--data", default=os.path.expanduser("~/mirel/data/mac_bench/reader_train"),
                     help="the folder holding the sample file, its fetched pictures (out/images) and the runs' outputs (phase4)")
     a = ap.parse_args()
@@ -131,7 +138,9 @@ def main() -> int:
                                                   "PYTORCH_ENABLE_MPS_FALLBACK", "HF_HUB_OFFLINE", "OMP_NUM_THREADS")},
            "runner_patches": ["load_vlm device_map cuda -> mps", "model.gradient_checkpointing_enable -> no-op",
                               "TrainingArguments gradient_checkpointing -> False", "TrainingArguments logging_steps 10 -> 1",
-                              "fetch_images -> the fetched pictures folder"],
+                              "fetch_images -> the fetched pictures folder"]
+                             + (["TrainingArguments torch_empty_cache_steps None -> 1"] if a.empty_cache else []),
+           "empty_cache_each_micro_batch": a.empty_cache,
            "steps": [], "final_logs": []}
     t_start = time.time()
     rc = 0
@@ -185,6 +194,8 @@ def main() -> int:
             def __post_init__(self):
                 self.logging_steps = 1               # 3. the loss at every optimizer step
                 self.gradient_checkpointing = False  # 2. checkpointing off (the Trainer's call)
+                if a.empty_cache:                    # 6. the Trainer's own option: the allocator's cache emptied each micro-batch
+                    self.torch_empty_cache_steps = 1
                 super().__post_init__()
 
         class Recorder(transformers.TrainerCallback):
@@ -208,6 +219,7 @@ def main() -> int:
                 rec["checks"] = {
                     "modules_checkpointing": ckpt[:5], "logging_steps": args.logging_steps,
                     "args_gradient_checkpointing": args.gradient_checkpointing,
+                    "torch_empty_cache_steps": args.torch_empty_cache_steps,
                     "linear_attention_layers": sum(type(m).__name__ == "Qwen3_5GatedDeltaNet" for m in model.modules()),
                     "gated_delta_rule_at_train_begin": (lambda f: f"{f.__module__}.{f.__qualname__}")(M.torch_chunk_gated_delta_rule),
                     "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),

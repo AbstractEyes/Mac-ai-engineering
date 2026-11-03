@@ -101,3 +101,34 @@ registered 2 x 8 (its activations are larger: if its reference runs out of memor
 63 GiB under the high watermark for everything else, and two sequences without checkpointing needed more. The pair runs at 1 x 16
 (the ladder's last rung; the same 16 sequences a step), the reference first: 54-60 s a step in its first steps, footprint 54-60 GB.
 The registered 9B time prediction (made for 2 x 8) is read against 1 x 16 below.
+
+### 4. 20:55-21:06: the 9B also runs out at 1 x 16; the cause is the allocator's fragmentation; the cache emptied each micro-batch
+At 1 x 16 the 9B reference ran 4 steps (54-60 s a step) and ran out in the backward of step 5 ("MPS allocated: 62.67 GiB, other
+allocations: 17.63 GiB, max allowed: 80.64 GiB. Tried to allocate 896.00 MiB"; `p42_9b_1x16_ref_oom`). Its kernels twin was stopped
+by hand at step 3 (45 and 49 s for steps 1-2; `p42_9b_1x16_kernels_stopped.log`).
+
+The cause, from the runner's memory records:
+
+| run | live tensors when a forward returns, GiB | the allocator's pool at the step's end, GiB |
+|---|---|---|
+| 0.8B reference, 4 x 4, steps 1-7 | 32.1-38.6 (+1.7 of weights) | 63.1 -> 75.5 |
+| 9B reference, 1 x 16, steps 1-4 | 22.5-26.8 (+17.6 of weights) | 51.9 -> 57.7 -> 60.6 -> 73.8 |
+
+- The step needs far less than the allocator holds: about 45 GiB at 9B 1 x 16 against a pool of 74 GiB that grows with every step.
+- Every micro-batch has a new length -> new tensor sizes -> the Metal allocator caches the freed buffers by size in heaps that
+  stay partly occupied -> the pool outgrows the high watermark (80.6 GiB with the weights) although the live tensors fit.
+- So the lever is the cache, not the batch: the Trainer's own option `torch_empty_cache_steps=1` releases the cached buffers
+  between each micro-batch's forward and backward (`--empty-cache`; on PyTorch 2.15 it calls `torch.mps.empty_cache()` only).
+
+Smoke runs with it (the first 24 items, 4 x 4; `smoke_*_emptycache`):
+
+| arm | loss, steps 1 / 2 | seconds, steps 1 / 2 / 3: cache kept -> emptied | the pool at the steps' ends, GiB: kept -> emptied | live at a forward's end, GiB | guard's peak footprint, GB: kept -> emptied |
+|---|---|---|---|---|---|
+| reference | 2.81926 / 2.68739 either way | 9.82 / 8.86 / 4.87 -> 10.42 / 9.41 / 5.15 | 41-51 -> 26-33 | 20.4-24.2 either way | 51.6 -> 34.4 |
+| kernels | 2.81964 / 2.68914 either way | 7.34 / 6.59 / 3.68 -> 7.75 / 6.87 / 3.92 | 45-54 -> 32-34 | 18.4-21.7 either way | 55.6 -> 41.8 |
+
+The computation is unchanged (the same losses at steps 1-2), the step costs about 5-6% more in both arms (the kernels' advantage
+per step stays 1.34-1.37x), and the pool shrinks by a third. Every registered run from here on uses it, at the registered micro-
+batches: 0.8B 4 x 4 and 9B 2 x 8 (if the 9B reference still runs out at 2 x 8, the pair runs at 1 x 16, both arms alike). The
+footprint stays the registered memory measure; with the cache emptied it shows the kernels' extra transient buffers more (41.8
+against 34.4 GB here) while their live tensors are fewer (21.7 against 24.2 GiB).
