@@ -1,0 +1,5765 @@
+{
+ "torch": "2.15.0",
+ "started": "2026-11-03 12:23:40 PST",
+ "rate_tflops": 11.505,
+ "bandwidth_gbps": 356.1,
+ "reps": 7,
+ "lora": {
+  "r": 32,
+  "alpha": 64,
+  "dropout": 0.05
+ },
+ "lora_targets": [
+  "in_proj_qkv",
+  "in_proj_z",
+  "out_proj",
+  "q_proj",
+  "k_proj",
+  "v_proj",
+  "o_proj",
+  "gate_proj",
+  "up_proj",
+  "down_proj"
+ ],
+ "models": {
+  "0.8b": {
+   "frozen 4x1024": {
+    "linear_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.681,
+       "fwd_bwd_ms": 2.21,
+       "bwd_ms": 1.529,
+       "bytes_fwd": 16777216,
+       "bytes_bwd": 25165824,
+       "flops_fwd": 16777216,
+       "flops_bwd": 33554432,
+       "floor_fwd_ms": 0.0471,
+       "floor_fwd_bwd_ms": 0.1178,
+       "over_floor_fwd_bwd": 18.76,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        7,
+        5
+       ]
+      },
+      {
+       "part": "in_proj_qkv",
+       "fwd_ms": 4.193,
+       "fwd_bwd_ms": 8.315,
+       "bwd_ms": 4.122,
+       "bytes_fwd": 71303168,
+       "bytes_bwd": 71303168,
+       "flops_fwd": 51539607552,
+       "flops_bwd": 51539607552,
+       "floor_fwd_ms": 4.4798,
+       "floor_fwd_bwd_ms": 8.9595,
+       "over_floor_fwd_bwd": 0.93,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_z",
+       "fwd_ms": 1.44,
+       "fwd_bwd_ms": 2.841,
+       "bwd_ms": 1.401,
+       "bytes_fwd": 29360128,
+       "bytes_bwd": 29360128,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 17179869184,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 2.9865,
+       "over_floor_fwd_bwd": 0.95,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "in_proj_b",
+       "fwd_ms": 0.04,
+       "fwd_bwd_ms": 0.076,
+       "bwd_ms": 0.036,
+       "bytes_fwd": 8552448,
+       "bytes_bwd": 8552448,
+       "flops_fwd": 134217728,
+       "flops_bwd": 134217728,
+       "floor_fwd_ms": 0.024,
+       "floor_fwd_bwd_ms": 0.048,
+       "over_floor_fwd_bwd": 1.58,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        37,
+        26
+       ]
+      },
+      {
+       "part": "in_proj_a",
+       "fwd_ms": 0.04,
+       "fwd_bwd_ms": 0.073,
+       "bwd_ms": 0.033,
+       "bytes_fwd": 8552448,
+       "bytes_bwd": 8552448,
+       "flops_fwd": 134217728,
+       "flops_bwd": 134217728,
+       "floor_fwd_ms": 0.024,
+       "floor_fwd_bwd_ms": 0.048,
+       "over_floor_fwd_bwd": 1.52,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        41,
+        25
+       ]
+      },
+      {
+       "part": "in_proj_qkv, output transposed as the layer uses it",
+       "fwd_ms": 4.13,
+       "fwd_bwd_ms": 9.128,
+       "bwd_ms": 4.998,
+       "bytes_fwd": 71303168,
+       "bytes_bwd": 71303168,
+       "flops_fwd": 51539607552,
+       "flops_bwd": 51539607552,
+       "floor_fwd_ms": 4.4798,
+       "floor_fwd_bwd_ms": 8.9595,
+       "over_floor_fwd_bwd": 1.02,
+       "bound": "compute",
+       "note": "the gradient arrives as the transpose of a contiguous [B, C, T] tensor",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "conv path (causal_conv1d_fn + SiLU)",
+       "fwd_ms": 1.592,
+       "fwd_bwd_ms": 6.032,
+       "bwd_ms": 4.44,
+       "bytes_fwd": 100663296,
+       "bytes_bwd": 150994944,
+       "flops_fwd": 301989888,
+       "flops_bwd": 603979776,
+       "floor_fwd_ms": 0.2827,
+       "floor_fwd_bwd_ms": 0.7067,
+       "over_floor_fwd_bwd": 8.54,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "glue (transposes, split, reshape, beta, g, repeat)",
+       "fwd_ms": 0.062,
+       "fwd_bwd_ms": 0.465,
+       "bwd_ms": 0.403,
+       "bytes_fwd": 101449728,
+       "bytes_bwd": 151781376,
+       "flops_fwd": 786432,
+       "flops_bwd": 1572864,
+       "floor_fwd_ms": 0.2849,
+       "floor_fwd_bwd_ms": 0.7111,
+       "over_floor_fwd_bwd": 0.65,
+       "bound": "bandwidth",
+       "note": "as a standalone pass; fused into its neighbours its floor is ~0",
+       "inner": [
+        31,
+        9
+       ]
+      },
+      {
+       "part": "rule (gated delta, chunked kernels)",
+       "fwd_ms": 4.361,
+       "fwd_bwd_ms": 12.17,
+       "bwd_ms": 7.809,
+       "bytes_fwd": 67633152,
+       "bytes_bwd": 135266304,
+       "flops_fwd": 7247757312,
+       "flops_bwd": 21743271936,
+       "floor_fwd_ms": 0.63,
+       "floor_fwd_bwd_ms": 2.5199,
+       "over_floor_fwd_bwd": 4.83,
+       "bound": "compute",
+       "note": "FLOPs: the chunk-16 algorithm, roughly; the backward recomputes the states",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "gated norm (RMSNormGated)",
+       "fwd_ms": 2.416,
+       "fwd_bwd_ms": 6.641,
+       "bwd_ms": 4.225,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 83886080,
+       "flops_bwd": 167772160,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 17.62,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "out_proj",
+       "fwd_ms": 1.453,
+       "fwd_bwd_ms": 2.958,
+       "bwd_ms": 1.505,
+       "bytes_fwd": 29360128,
+       "bytes_bwd": 29360128,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 17179869184,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 2.9865,
+       "over_floor_fwd_bwd": 0.99,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.032,
+       "fwd_bwd_ms": 0.051,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 25165824,
+       "bytes_bwd": 0,
+       "flops_fwd": 4194304,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0707,
+       "floor_fwd_bwd_ms": 0.0707,
+       "over_floor_fwd_bwd": 0.72,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        38,
+        33
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.719,
+       "fwd_bwd_ms": 2.258,
+       "bwd_ms": 1.539,
+       "bytes_fwd": 16777216,
+       "bytes_bwd": 25165824,
+       "flops_fwd": 16777216,
+       "flops_bwd": 33554432,
+       "floor_fwd_ms": 0.0471,
+       "floor_fwd_bwd_ms": 0.1178,
+       "over_floor_fwd_bwd": 19.17,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        5
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 2.471,
+       "fwd_bwd_ms": 4.992,
+       "bwd_ms": 2.521,
+       "bytes_fwd": 45088768,
+       "bytes_bwd": 45088768,
+       "flops_fwd": 30064771072,
+       "flops_bwd": 30064771072,
+       "floor_fwd_ms": 2.6132,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 0.96,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 2.432,
+       "fwd_bwd_ms": 4.815,
+       "bwd_ms": 2.383,
+       "bytes_fwd": 45088768,
+       "bytes_bwd": 45088768,
+       "flops_fwd": 30064771072,
+       "flops_bwd": 30064771072,
+       "floor_fwd_ms": 2.6132,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.37,
+       "fwd_bwd_ms": 1.098,
+       "bwd_ms": 0.728,
+       "bytes_fwd": 88080384,
+       "bytes_bwd": 146800640,
+       "flops_fwd": 88080384,
+       "flops_bwd": 176160768,
+       "floor_fwd_ms": 0.2473,
+       "floor_fwd_bwd_ms": 0.6596,
+       "over_floor_fwd_bwd": 1.66,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        14,
+        6
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 2.489,
+       "fwd_bwd_ms": 4.857,
+       "bwd_ms": 2.368,
+       "bytes_fwd": 45088768,
+       "bytes_bwd": 45088768,
+       "flops_fwd": 30064771072,
+       "flops_bwd": 30064771072,
+       "floor_fwd_ms": 2.6132,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 0.93,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.031,
+       "fwd_bwd_ms": 0.05,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 25165824,
+       "bytes_bwd": 0,
+       "flops_fwd": 4194304,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0707,
+       "floor_fwd_bwd_ms": 0.0707,
+       "over_floor_fwd_bwd": 0.71,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        39,
+        33
+       ]
+      }
+     ],
+     "whole_fwd_ms": 24.993,
+     "whole_fwd_bwd_ms": 62.976,
+     "parts_sum_fwd_ms": 24.822,
+     "parts_sum_fwd_bwd_ms": 59.902,
+     "parts_sum_over_whole_fwd_bwd": 0.9512,
+     "floor_sum_fwd_bwd_ms": 36.059
+    },
+    "full_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.721,
+       "fwd_bwd_ms": 2.164,
+       "bwd_ms": 1.443,
+       "bytes_fwd": 16777216,
+       "bytes_bwd": 25165824,
+       "flops_fwd": 16777216,
+       "flops_bwd": 33554432,
+       "floor_fwd_ms": 0.0471,
+       "floor_fwd_bwd_ms": 0.1178,
+       "over_floor_fwd_bwd": 18.37,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        10,
+        4
+       ]
+      },
+      {
+       "part": "q_proj",
+       "fwd_ms": 2.782,
+       "fwd_bwd_ms": 5.496,
+       "bwd_ms": 2.714,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 34359738368,
+       "flops_bwd": 34359738368,
+       "floor_fwd_ms": 2.9865,
+       "floor_fwd_bwd_ms": 5.973,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "k_proj",
+       "fwd_ms": 0.386,
+       "fwd_bwd_ms": 0.749,
+       "bwd_ms": 0.363,
+       "bytes_fwd": 13631488,
+       "bytes_bwd": 13631488,
+       "flops_fwd": 4294967296,
+       "flops_bwd": 4294967296,
+       "floor_fwd_ms": 0.3733,
+       "floor_fwd_bwd_ms": 0.7466,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        14,
+        10
+       ]
+      },
+      {
+       "part": "v_proj",
+       "fwd_ms": 0.383,
+       "fwd_bwd_ms": 0.799,
+       "bwd_ms": 0.416,
+       "bytes_fwd": 13631488,
+       "bytes_bwd": 13631488,
+       "flops_fwd": 4294967296,
+       "flops_bwd": 4294967296,
+       "floor_fwd_ms": 0.3733,
+       "floor_fwd_bwd_ms": 0.7466,
+       "over_floor_fwd_bwd": 1.07,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        17,
+        10
+       ]
+      },
+      {
+       "part": "attention glue before (chunk, views)",
+       "fwd_ms": 0.054,
+       "fwd_bwd_ms": 0.36,
+       "bwd_ms": 0.306,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 67108864,
+       "flops_fwd": 0,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1885,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 0.96,
+       "bound": "bandwidth",
+       "note": "views and the copies the reshapes make",
+       "inner": [
+        28,
+        9
+       ]
+      },
+      {
+       "part": "q_norm",
+       "fwd_ms": 1.645,
+       "fwd_bwd_ms": 4.805,
+       "bwd_ms": 3.16,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 20.4,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "k_norm",
+       "fwd_ms": 0.352,
+       "fwd_bwd_ms": 1.153,
+       "bwd_ms": 0.801,
+       "bytes_fwd": 8388608,
+       "bytes_bwd": 12582912,
+       "flops_fwd": 8388608,
+       "flops_bwd": 16777216,
+       "floor_fwd_ms": 0.0236,
+       "floor_fwd_bwd_ms": 0.0589,
+       "over_floor_fwd_bwd": 19.58,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        16,
+        8
+       ]
+      },
+      {
+       "part": "rotary (apply_rotary_pos_emb)",
+       "fwd_ms": 0.568,
+       "fwd_bwd_ms": 1.467,
+       "bwd_ms": 0.899,
+       "bytes_fwd": 41943040,
+       "bytes_bwd": 41943040,
+       "flops_fwd": 31457280,
+       "flops_bwd": 31457280,
+       "floor_fwd_ms": 0.1178,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 6.23,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        12,
+        5
+       ]
+      },
+      {
+       "part": "attention (scaled dot-product, sdpa)",
+       "fwd_ms": 8.361,
+       "fwd_bwd_ms": 23.915,
+       "bwd_ms": 15.554,
+       "bytes_fwd": 41943040,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 42949672960,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 4.58,
+       "bound": "compute",
+       "note": "bytes: the flash-style minimum (no T x T matrix); FLOPs: the causal half",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "attention glue after (reshape, output gate)",
+       "fwd_ms": 0.193,
+       "fwd_bwd_ms": 0.657,
+       "bwd_ms": 0.464,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 41943040,
+       "flops_bwd": 83886080,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 1.74,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        22,
+        12
+       ]
+      },
+      {
+       "part": "o_proj",
+       "fwd_ms": 1.447,
+       "fwd_bwd_ms": 2.95,
+       "bwd_ms": 1.503,
+       "bytes_fwd": 29360128,
+       "bytes_bwd": 29360128,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 17179869184,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 2.9865,
+       "over_floor_fwd_bwd": 0.99,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.032,
+       "fwd_bwd_ms": 0.051,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 25165824,
+       "bytes_bwd": 0,
+       "flops_fwd": 4194304,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0707,
+       "floor_fwd_bwd_ms": 0.0707,
+       "over_floor_fwd_bwd": 0.72,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        41,
+        33
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.71,
+       "fwd_bwd_ms": 2.237,
+       "bwd_ms": 1.527,
+       "bytes_fwd": 16777216,
+       "bytes_bwd": 25165824,
+       "flops_fwd": 16777216,
+       "flops_bwd": 33554432,
+       "floor_fwd_ms": 0.0471,
+       "floor_fwd_bwd_ms": 0.1178,
+       "over_floor_fwd_bwd": 18.99,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        10,
+        4
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 2.433,
+       "fwd_bwd_ms": 4.818,
+       "bwd_ms": 2.385,
+       "bytes_fwd": 45088768,
+       "bytes_bwd": 45088768,
+       "flops_fwd": 30064771072,
+       "flops_bwd": 30064771072,
+       "floor_fwd_ms": 2.6132,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 2.439,
+       "fwd_bwd_ms": 4.815,
+       "bwd_ms": 2.376,
+       "bytes_fwd": 45088768,
+       "bytes_bwd": 45088768,
+       "flops_fwd": 30064771072,
+       "flops_bwd": 30064771072,
+       "floor_fwd_ms": 2.6132,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.367,
+       "fwd_bwd_ms": 1.19,
+       "bwd_ms": 0.823,
+       "bytes_fwd": 88080384,
+       "bytes_bwd": 146800640,
+       "flops_fwd": 88080384,
+       "flops_bwd": 176160768,
+       "floor_fwd_ms": 0.2473,
+       "floor_fwd_bwd_ms": 0.6596,
+       "over_floor_fwd_bwd": 1.8,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        16,
+        8
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 2.521,
+       "fwd_bwd_ms": 5.017,
+       "bwd_ms": 2.496,
+       "bytes_fwd": 45088768,
+       "bytes_bwd": 45088768,
+       "flops_fwd": 30064771072,
+       "flops_bwd": 30064771072,
+       "floor_fwd_ms": 2.6132,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 0.96,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.032,
+       "fwd_bwd_ms": 0.05,
+       "bwd_ms": 0.018,
+       "bytes_fwd": 25165824,
+       "bytes_bwd": 0,
+       "flops_fwd": 4194304,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0707,
+       "floor_fwd_bwd_ms": 0.0707,
+       "over_floor_fwd_bwd": 0.71,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        39,
+        36
+       ]
+      }
+     ],
+     "whole_fwd_ms": 25.535,
+     "whole_fwd_bwd_ms": 62.048,
+     "parts_sum_fwd_ms": 25.426,
+     "parts_sum_fwd_bwd_ms": 62.693,
+     "parts_sum_over_whole_fwd_bwd": 1.0104,
+     "floor_sum_fwd_bwd_ms": 33.679
+    },
+    "masks": {
+     "linear": null,
+     "full": null
+    }
+   },
+   "frozen 2x903": {
+    "linear_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.294,
+       "fwd_bwd_ms": 0.923,
+       "bwd_ms": 0.629,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 11096064,
+       "flops_fwd": 7397376,
+       "flops_bwd": 14794752,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0519,
+       "over_floor_fwd_bwd": 17.77,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        18,
+        6
+       ]
+      },
+      {
+       "part": "padding mask (apply_mask_to_padding_states)",
+       "fwd_ms": 0.12,
+       "fwd_bwd_ms": 0.234,
+       "bwd_ms": 0.114,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 7397376,
+       "flops_fwd": 1849344,
+       "flops_bwd": 1849344,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0415,
+       "over_floor_fwd_bwd": 5.63,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        32,
+        11
+       ]
+      },
+      {
+       "part": "in_proj_qkv",
+       "fwd_ms": 1.992,
+       "fwd_bwd_ms": 3.932,
+       "bwd_ms": 1.94,
+       "bytes_fwd": 38473728,
+       "bytes_bwd": 38473728,
+       "flops_fwd": 22724739072,
+       "flops_bwd": 22724739072,
+       "floor_fwd_ms": 1.9752,
+       "floor_fwd_bwd_ms": 3.9504,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_z",
+       "fwd_ms": 0.681,
+       "fwd_bwd_ms": 1.415,
+       "bwd_ms": 0.734,
+       "bytes_fwd": 15290368,
+       "bytes_bwd": 15290368,
+       "flops_fwd": 7574913024,
+       "flops_bwd": 7574913024,
+       "floor_fwd_ms": 0.6584,
+       "floor_fwd_bwd_ms": 1.3168,
+       "over_floor_fwd_bwd": 1.07,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        11,
+        7
+       ]
+      },
+      {
+       "part": "in_proj_b",
+       "fwd_ms": 0.034,
+       "fwd_bwd_ms": 0.069,
+       "bwd_ms": 0.035,
+       "bytes_fwd": 3789248,
+       "bytes_bwd": 3789248,
+       "flops_fwd": 59179008,
+       "flops_bwd": 59179008,
+       "floor_fwd_ms": 0.0106,
+       "floor_fwd_bwd_ms": 0.0213,
+       "over_floor_fwd_bwd": 3.24,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        37,
+        26
+       ]
+      },
+      {
+       "part": "in_proj_a",
+       "fwd_ms": 0.034,
+       "fwd_bwd_ms": 0.064,
+       "bwd_ms": 0.03,
+       "bytes_fwd": 3789248,
+       "bytes_bwd": 3789248,
+       "flops_fwd": 59179008,
+       "flops_bwd": 59179008,
+       "floor_fwd_ms": 0.0106,
+       "floor_fwd_bwd_ms": 0.0213,
+       "over_floor_fwd_bwd": 3.01,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        39,
+        33
+       ]
+      },
+      {
+       "part": "in_proj_qkv, output transposed as the layer uses it",
+       "fwd_ms": 1.929,
+       "fwd_bwd_ms": 4.382,
+       "bwd_ms": 2.453,
+       "bytes_fwd": 38473728,
+       "bytes_bwd": 38473728,
+       "flops_fwd": 22724739072,
+       "flops_bwd": 22724739072,
+       "floor_fwd_ms": 1.9752,
+       "floor_fwd_bwd_ms": 3.9504,
+       "over_floor_fwd_bwd": 1.11,
+       "bound": "compute",
+       "note": "the gradient arrives as the transpose of a contiguous [B, C, T] tensor",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "conv path (causal_conv1d_fn + SiLU)",
+       "fwd_ms": 0.736,
+       "fwd_bwd_ms": 3.192,
+       "bwd_ms": 2.456,
+       "bytes_fwd": 44384256,
+       "bytes_bwd": 66576384,
+       "flops_fwd": 133152768,
+       "flops_bwd": 266305536,
+       "floor_fwd_ms": 0.1246,
+       "floor_fwd_bwd_ms": 0.3116,
+       "over_floor_fwd_bwd": 10.24,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        10,
+        3
+       ]
+      },
+      {
+       "part": "glue (transposes, split, reshape, beta, g, repeat)",
+       "fwd_ms": 0.051,
+       "fwd_bwd_ms": 0.251,
+       "bwd_ms": 0.2,
+       "bytes_fwd": 44731008,
+       "bytes_bwd": 66923136,
+       "flops_fwd": 346752,
+       "flops_bwd": 693504,
+       "floor_fwd_ms": 0.1256,
+       "floor_fwd_bwd_ms": 0.3135,
+       "over_floor_fwd_bwd": 0.8,
+       "bound": "bandwidth",
+       "note": "as a standalone pass; fused into its neighbours its floor is ~0",
+       "inner": [
+        35,
+        19
+       ]
+      },
+      {
+       "part": "rule (gated delta, chunked kernels)",
+       "fwd_ms": 1.978,
+       "fwd_bwd_ms": 5.625,
+       "bwd_ms": 3.647,
+       "bytes_fwd": 29820672,
+       "bytes_bwd": 59641344,
+       "flops_fwd": 3195666432,
+       "flops_bwd": 9586999296,
+       "floor_fwd_ms": 0.2778,
+       "floor_fwd_bwd_ms": 1.1111,
+       "over_floor_fwd_bwd": 5.06,
+       "bound": "compute",
+       "note": "FLOPs: the chunk-16 algorithm, roughly; the backward recomputes the states",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "gated norm (RMSNormGated)",
+       "fwd_ms": 0.973,
+       "fwd_bwd_ms": 2.946,
+       "bwd_ms": 1.973,
+       "bytes_fwd": 22192128,
+       "bytes_bwd": 36986880,
+       "flops_fwd": 36986880,
+       "flops_bwd": 73973760,
+       "floor_fwd_ms": 0.0623,
+       "floor_fwd_bwd_ms": 0.1662,
+       "over_floor_fwd_bwd": 17.73,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        8,
+        3
+       ]
+      },
+      {
+       "part": "out_proj",
+       "fwd_ms": 0.705,
+       "fwd_bwd_ms": 1.405,
+       "bwd_ms": 0.7,
+       "bytes_fwd": 15290368,
+       "bytes_bwd": 15290368,
+       "flops_fwd": 7574913024,
+       "flops_bwd": 7574913024,
+       "floor_fwd_ms": 0.6584,
+       "floor_fwd_bwd_ms": 1.3168,
+       "over_floor_fwd_bwd": 1.07,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        10,
+        7
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.019,
+       "fwd_bwd_ms": 0.039,
+       "bwd_ms": 0.02,
+       "bytes_fwd": 11096064,
+       "bytes_bwd": 0,
+       "flops_fwd": 1849344,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0312,
+       "floor_fwd_bwd_ms": 0.0312,
+       "over_floor_fwd_bwd": 1.25,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        45,
+        36
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.296,
+       "fwd_bwd_ms": 0.933,
+       "bwd_ms": 0.637,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 11096064,
+       "flops_fwd": 7397376,
+       "flops_bwd": 14794752,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0519,
+       "over_floor_fwd_bwd": 17.97,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        17,
+        9
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 1.208,
+       "fwd_bwd_ms": 2.336,
+       "bwd_ms": 1.128,
+       "bytes_fwd": 23984128,
+       "bytes_bwd": 23984128,
+       "flops_fwd": 13256097792,
+       "flops_bwd": 13256097792,
+       "floor_fwd_ms": 1.1522,
+       "floor_fwd_bwd_ms": 2.3044,
+       "over_floor_fwd_bwd": 1.01,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 1.133,
+       "fwd_bwd_ms": 2.299,
+       "bwd_ms": 1.166,
+       "bytes_fwd": 23984128,
+       "bytes_bwd": 23984128,
+       "flops_fwd": 13256097792,
+       "flops_bwd": 13256097792,
+       "floor_fwd_ms": 1.1522,
+       "floor_fwd_bwd_ms": 2.3044,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        8,
+        4
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.115,
+       "fwd_bwd_ms": 0.35,
+       "bwd_ms": 0.235,
+       "bytes_fwd": 38836224,
+       "bytes_bwd": 64727040,
+       "flops_fwd": 38836224,
+       "flops_bwd": 77672448,
+       "floor_fwd_ms": 0.1091,
+       "floor_fwd_bwd_ms": 0.2908,
+       "over_floor_fwd_bwd": 1.2,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        27,
+        15
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 1.198,
+       "fwd_bwd_ms": 2.292,
+       "bwd_ms": 1.094,
+       "bytes_fwd": 23984128,
+       "bytes_bwd": 23984128,
+       "flops_fwd": 13256097792,
+       "flops_bwd": 13256097792,
+       "floor_fwd_ms": 1.1522,
+       "floor_fwd_bwd_ms": 2.3044,
+       "over_floor_fwd_bwd": 0.99,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.02,
+       "fwd_bwd_ms": 0.038,
+       "bwd_ms": 0.018,
+       "bytes_fwd": 11096064,
+       "bytes_bwd": 0,
+       "flops_fwd": 1849344,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0312,
+       "floor_fwd_bwd_ms": 0.0312,
+       "over_floor_fwd_bwd": 1.22,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        41,
+        38
+       ]
+      }
+     ],
+     "whole_fwd_ms": 11.247,
+     "whole_fwd_bwd_ms": 28.643,
+     "parts_sum_fwd_ms": 11.587,
+     "parts_sum_fwd_bwd_ms": 28.343,
+     "parts_sum_over_whole_fwd_bwd": 0.9895,
+     "floor_sum_fwd_bwd_ms": 15.941
+    },
+    "full_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.295,
+       "fwd_bwd_ms": 0.906,
+       "bwd_ms": 0.611,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 11096064,
+       "flops_fwd": 7397376,
+       "flops_bwd": 14794752,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0519,
+       "over_floor_fwd_bwd": 17.45,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        19,
+        8
+       ]
+      },
+      {
+       "part": "q_proj",
+       "fwd_ms": 1.295,
+       "fwd_bwd_ms": 2.619,
+       "bwd_ms": 1.324,
+       "bytes_fwd": 26882048,
+       "bytes_bwd": 26882048,
+       "flops_fwd": 15149826048,
+       "flops_bwd": 15149826048,
+       "floor_fwd_ms": 1.3168,
+       "floor_fwd_bwd_ms": 2.6336,
+       "over_floor_fwd_bwd": 0.99,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "k_proj",
+       "fwd_ms": 0.196,
+       "fwd_bwd_ms": 0.377,
+       "bwd_ms": 0.181,
+       "bytes_fwd": 6596608,
+       "bytes_bwd": 6596608,
+       "flops_fwd": 1893728256,
+       "flops_bwd": 1893728256,
+       "floor_fwd_ms": 0.1646,
+       "floor_fwd_bwd_ms": 0.3292,
+       "over_floor_fwd_bwd": 1.15,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        25,
+        16
+       ]
+      },
+      {
+       "part": "v_proj",
+       "fwd_ms": 0.197,
+       "fwd_bwd_ms": 0.372,
+       "bwd_ms": 0.175,
+       "bytes_fwd": 6596608,
+       "bytes_bwd": 6596608,
+       "flops_fwd": 1893728256,
+       "flops_bwd": 1893728256,
+       "floor_fwd_ms": 0.1646,
+       "floor_fwd_bwd_ms": 0.3292,
+       "over_floor_fwd_bwd": 1.13,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        23,
+        16
+       ]
+      },
+      {
+       "part": "attention glue before (chunk, views)",
+       "fwd_ms": 0.036,
+       "fwd_bwd_ms": 0.126,
+       "bwd_ms": 0.09,
+       "bytes_fwd": 29589504,
+       "bytes_bwd": 29589504,
+       "flops_fwd": 0,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0831,
+       "floor_fwd_bwd_ms": 0.1662,
+       "over_floor_fwd_bwd": 0.76,
+       "bound": "bandwidth",
+       "note": "views and the copies the reshapes make",
+       "inner": [
+        38,
+        26
+       ]
+      },
+      {
+       "part": "q_norm",
+       "fwd_ms": 0.707,
+       "fwd_bwd_ms": 2.133,
+       "bwd_ms": 1.426,
+       "bytes_fwd": 14794752,
+       "bytes_bwd": 22192128,
+       "flops_fwd": 14794752,
+       "flops_bwd": 29589504,
+       "floor_fwd_ms": 0.0415,
+       "floor_fwd_bwd_ms": 0.1039,
+       "over_floor_fwd_bwd": 20.54,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        10,
+        5
+       ]
+      },
+      {
+       "part": "k_norm",
+       "fwd_ms": 0.181,
+       "fwd_bwd_ms": 0.508,
+       "bwd_ms": 0.327,
+       "bytes_fwd": 3698688,
+       "bytes_bwd": 5548032,
+       "flops_fwd": 3698688,
+       "flops_bwd": 7397376,
+       "floor_fwd_ms": 0.0104,
+       "floor_fwd_bwd_ms": 0.026,
+       "over_floor_fwd_bwd": 19.56,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        22,
+        13
+       ]
+      },
+      {
+       "part": "rotary (apply_rotary_pos_emb)",
+       "fwd_ms": 0.312,
+       "fwd_bwd_ms": 0.788,
+       "bwd_ms": 0.476,
+       "bytes_fwd": 18493440,
+       "bytes_bwd": 18493440,
+       "flops_fwd": 13870080,
+       "flops_bwd": 13870080,
+       "floor_fwd_ms": 0.0519,
+       "floor_fwd_bwd_ms": 0.1039,
+       "over_floor_fwd_bwd": 7.59,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        18,
+        8
+       ]
+      },
+      {
+       "part": "attention (scaled dot-product, sdpa)",
+       "fwd_ms": 3.931,
+       "fwd_bwd_ms": 10.599,
+       "bwd_ms": 6.668,
+       "bytes_fwd": 18493440,
+       "bytes_bwd": 36986880,
+       "flops_fwd": 6679830528,
+       "flops_bwd": 16699576320,
+       "floor_fwd_ms": 0.5806,
+       "floor_fwd_bwd_ms": 2.0321,
+       "over_floor_fwd_bwd": 5.22,
+       "bound": "compute",
+       "note": "bytes: the flash-style minimum (no T x T matrix); FLOPs: the causal half",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "attention glue after (reshape, output gate)",
+       "fwd_ms": 0.061,
+       "fwd_bwd_ms": 0.214,
+       "bwd_ms": 0.153,
+       "bytes_fwd": 22192128,
+       "bytes_bwd": 36986880,
+       "flops_fwd": 18493440,
+       "flops_bwd": 36986880,
+       "floor_fwd_ms": 0.0623,
+       "floor_fwd_bwd_ms": 0.1662,
+       "over_floor_fwd_bwd": 1.29,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        33,
+        19
+       ]
+      },
+      {
+       "part": "o_proj",
+       "fwd_ms": 0.694,
+       "fwd_bwd_ms": 1.363,
+       "bwd_ms": 0.669,
+       "bytes_fwd": 15290368,
+       "bytes_bwd": 15290368,
+       "flops_fwd": 7574913024,
+       "flops_bwd": 7574913024,
+       "floor_fwd_ms": 0.6584,
+       "floor_fwd_bwd_ms": 1.3168,
+       "over_floor_fwd_bwd": 1.04,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        11,
+        7
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.019,
+       "fwd_bwd_ms": 0.038,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 11096064,
+       "bytes_bwd": 0,
+       "flops_fwd": 1849344,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0312,
+       "floor_fwd_bwd_ms": 0.0312,
+       "over_floor_fwd_bwd": 1.22,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        45,
+        38
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.295,
+       "fwd_bwd_ms": 0.911,
+       "bwd_ms": 0.616,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 11096064,
+       "flops_fwd": 7397376,
+       "flops_bwd": 14794752,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0519,
+       "over_floor_fwd_bwd": 17.54,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        19,
+        6
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 1.132,
+       "fwd_bwd_ms": 2.298,
+       "bwd_ms": 1.166,
+       "bytes_fwd": 23984128,
+       "bytes_bwd": 23984128,
+       "flops_fwd": 13256097792,
+       "flops_bwd": 13256097792,
+       "floor_fwd_ms": 1.1522,
+       "floor_fwd_bwd_ms": 2.3044,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 1.131,
+       "fwd_bwd_ms": 2.287,
+       "bwd_ms": 1.156,
+       "bytes_fwd": 23984128,
+       "bytes_bwd": 23984128,
+       "flops_fwd": 13256097792,
+       "flops_bwd": 13256097792,
+       "floor_fwd_ms": 1.1522,
+       "floor_fwd_bwd_ms": 2.3044,
+       "over_floor_fwd_bwd": 0.99,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.095,
+       "fwd_bwd_ms": 0.342,
+       "bwd_ms": 0.247,
+       "bytes_fwd": 38836224,
+       "bytes_bwd": 64727040,
+       "flops_fwd": 38836224,
+       "flops_bwd": 77672448,
+       "floor_fwd_ms": 0.1091,
+       "floor_fwd_bwd_ms": 0.2908,
+       "over_floor_fwd_bwd": 1.18,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        29,
+        15
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 1.262,
+       "fwd_bwd_ms": 2.356,
+       "bwd_ms": 1.094,
+       "bytes_fwd": 23984128,
+       "bytes_bwd": 23984128,
+       "flops_fwd": 13256097792,
+       "flops_bwd": 13256097792,
+       "floor_fwd_ms": 1.1522,
+       "floor_fwd_bwd_ms": 2.3044,
+       "over_floor_fwd_bwd": 1.02,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.019,
+       "fwd_bwd_ms": 0.038,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 11096064,
+       "bytes_bwd": 0,
+       "flops_fwd": 1849344,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0312,
+       "floor_fwd_bwd_ms": 0.0312,
+       "over_floor_fwd_bwd": 1.22,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        42,
+        40
+       ]
+      }
+     ],
+     "whole_fwd_ms": 11.869,
+     "whole_fwd_bwd_ms": 28.286,
+     "parts_sum_fwd_ms": 11.858,
+     "parts_sum_fwd_bwd_ms": 28.275,
+     "parts_sum_over_whole_fwd_bwd": 0.9996,
+     "floor_sum_fwd_bwd_ms": 14.577
+    },
+    "masks": {
+     "linear": [
+      2,
+      903
+     ],
+     "full": [
+      2,
+      1,
+      903,
+      903
+     ]
+    }
+   },
+   "lora 4x1024": {
+    "linear_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.755,
+       "fwd_bwd_ms": 2.281,
+       "bwd_ms": 1.526,
+       "bytes_fwd": 16777216,
+       "bytes_bwd": 25165824,
+       "flops_fwd": 16777216,
+       "flops_bwd": 33554432,
+       "floor_fwd_ms": 0.0471,
+       "floor_fwd_bwd_ms": 0.1178,
+       "over_floor_fwd_bwd": 19.37,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        7,
+        5
+       ]
+      },
+      {
+       "part": "in_proj_qkv",
+       "fwd_ms": 5.77,
+       "fwd_bwd_ms": 10.977,
+       "bwd_ms": 5.207,
+       "bytes_fwd": 73138176,
+       "bytes_bwd": 81526784,
+       "flops_fwd": 53418655744,
+       "flops_bwd": 55297703936,
+       "floor_fwd_ms": 4.6431,
+       "floor_fwd_bwd_ms": 9.4495,
+       "over_floor_fwd_bwd": 1.16,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_z",
+       "fwd_ms": 2.097,
+       "fwd_bwd_ms": 4.236,
+       "bwd_ms": 2.139,
+       "bytes_fwd": 30146560,
+       "bytes_bwd": 38535168,
+       "flops_fwd": 17985175552,
+       "flops_bwd": 18790481920,
+       "floor_fwd_ms": 1.5632,
+       "floor_fwd_bwd_ms": 3.1965,
+       "over_floor_fwd_bwd": 1.33,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_b",
+       "fwd_ms": 0.04,
+       "fwd_bwd_ms": 0.071,
+       "bwd_ms": 0.031,
+       "bytes_fwd": 8552448,
+       "bytes_bwd": 8552448,
+       "flops_fwd": 134217728,
+       "flops_bwd": 134217728,
+       "floor_fwd_ms": 0.024,
+       "floor_fwd_bwd_ms": 0.048,
+       "over_floor_fwd_bwd": 1.48,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        35,
+        27
+       ]
+      },
+      {
+       "part": "in_proj_a",
+       "fwd_ms": 0.04,
+       "fwd_bwd_ms": 0.072,
+       "bwd_ms": 0.032,
+       "bytes_fwd": 8552448,
+       "bytes_bwd": 8552448,
+       "flops_fwd": 134217728,
+       "flops_bwd": 134217728,
+       "floor_fwd_ms": 0.024,
+       "floor_fwd_bwd_ms": 0.048,
+       "over_floor_fwd_bwd": 1.5,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        38,
+        30
+       ]
+      },
+      {
+       "part": "in_proj_qkv, output transposed as the layer uses it",
+       "fwd_ms": 5.694,
+       "fwd_bwd_ms": 14.476,
+       "bwd_ms": 8.782,
+       "bytes_fwd": 73138176,
+       "bytes_bwd": 81526784,
+       "flops_fwd": 53418655744,
+       "flops_bwd": 55297703936,
+       "floor_fwd_ms": 4.6431,
+       "floor_fwd_bwd_ms": 9.4495,
+       "over_floor_fwd_bwd": 1.53,
+       "bound": "compute",
+       "note": "the gradient arrives as the transpose of a contiguous [B, C, T] tensor",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "conv path (causal_conv1d_fn + SiLU)",
+       "fwd_ms": 1.694,
+       "fwd_bwd_ms": 5.98,
+       "bwd_ms": 4.286,
+       "bytes_fwd": 100663296,
+       "bytes_bwd": 150994944,
+       "flops_fwd": 301989888,
+       "flops_bwd": 603979776,
+       "floor_fwd_ms": 0.2827,
+       "floor_fwd_bwd_ms": 0.7067,
+       "over_floor_fwd_bwd": 8.46,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "glue (transposes, split, reshape, beta, g, repeat)",
+       "fwd_ms": 0.063,
+       "fwd_bwd_ms": 0.451,
+       "bwd_ms": 0.388,
+       "bytes_fwd": 101449728,
+       "bytes_bwd": 151781376,
+       "flops_fwd": 786432,
+       "flops_bwd": 1572864,
+       "floor_fwd_ms": 0.2849,
+       "floor_fwd_bwd_ms": 0.7111,
+       "over_floor_fwd_bwd": 0.63,
+       "bound": "bandwidth",
+       "note": "as a standalone pass; fused into its neighbours its floor is ~0",
+       "inner": [
+        34,
+        15
+       ]
+      },
+      {
+       "part": "rule (gated delta, chunked kernels)",
+       "fwd_ms": 4.317,
+       "fwd_bwd_ms": 12.141,
+       "bwd_ms": 7.824,
+       "bytes_fwd": 67633152,
+       "bytes_bwd": 135266304,
+       "flops_fwd": 7247757312,
+       "flops_bwd": 21743271936,
+       "floor_fwd_ms": 0.63,
+       "floor_fwd_bwd_ms": 2.5199,
+       "over_floor_fwd_bwd": 4.82,
+       "bound": "compute",
+       "note": "FLOPs: the chunk-16 algorithm, roughly; the backward recomputes the states",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "gated norm (RMSNormGated)",
+       "fwd_ms": 2.456,
+       "fwd_bwd_ms": 6.517,
+       "bwd_ms": 4.061,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 83886080,
+       "flops_bwd": 167772160,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 17.29,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "out_proj",
+       "fwd_ms": 2.217,
+       "fwd_bwd_ms": 4.544,
+       "bwd_ms": 2.327,
+       "bytes_fwd": 30146560,
+       "bytes_bwd": 46923776,
+       "flops_fwd": 17985175552,
+       "flops_bwd": 18790481920,
+       "floor_fwd_ms": 1.5632,
+       "floor_fwd_bwd_ms": 3.1965,
+       "over_floor_fwd_bwd": 1.42,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.032,
+       "fwd_bwd_ms": 0.051,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 25165824,
+       "bytes_bwd": 0,
+       "flops_fwd": 4194304,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0707,
+       "floor_fwd_bwd_ms": 0.0707,
+       "over_floor_fwd_bwd": 0.72,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        38,
+        31
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.709,
+       "fwd_bwd_ms": 2.172,
+       "bwd_ms": 1.463,
+       "bytes_fwd": 16777216,
+       "bytes_bwd": 25165824,
+       "flops_fwd": 16777216,
+       "flops_bwd": 33554432,
+       "floor_fwd_ms": 0.0471,
+       "floor_fwd_bwd_ms": 0.1178,
+       "over_floor_fwd_bwd": 18.44,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        4
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 3.42,
+       "fwd_bwd_ms": 6.92,
+       "bwd_ms": 3.5,
+       "bytes_fwd": 46268416,
+       "bytes_bwd": 54657024,
+       "flops_fwd": 31272730624,
+       "flops_bwd": 32480690176,
+       "floor_fwd_ms": 2.7182,
+       "floor_fwd_bwd_ms": 5.5414,
+       "over_floor_fwd_bwd": 1.25,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 3.627,
+       "fwd_bwd_ms": 6.936,
+       "bwd_ms": 3.309,
+       "bytes_fwd": 46268416,
+       "bytes_bwd": 54657024,
+       "flops_fwd": 31272730624,
+       "flops_bwd": 32480690176,
+       "floor_fwd_ms": 2.7182,
+       "floor_fwd_bwd_ms": 5.5414,
+       "over_floor_fwd_bwd": 1.25,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.377,
+       "fwd_bwd_ms": 1.195,
+       "bwd_ms": 0.818,
+       "bytes_fwd": 88080384,
+       "bytes_bwd": 146800640,
+       "flops_fwd": 88080384,
+       "flops_bwd": 176160768,
+       "floor_fwd_ms": 0.2473,
+       "floor_fwd_bwd_ms": 0.6596,
+       "over_floor_fwd_bwd": 1.81,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        14,
+        6
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 3.892,
+       "fwd_bwd_ms": 7.803,
+       "bwd_ms": 3.911,
+       "bytes_fwd": 46268416,
+       "bytes_bwd": 75628544,
+       "flops_fwd": 31272730624,
+       "flops_bwd": 32480690176,
+       "floor_fwd_ms": 2.7182,
+       "floor_fwd_bwd_ms": 5.5414,
+       "over_floor_fwd_bwd": 1.41,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.034,
+       "fwd_bwd_ms": 0.051,
+       "bwd_ms": 0.017,
+       "bytes_fwd": 25165824,
+       "bytes_bwd": 0,
+       "flops_fwd": 4194304,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0707,
+       "floor_fwd_bwd_ms": 0.0707,
+       "over_floor_fwd_bwd": 0.72,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        23,
+        36
+       ]
+      }
+     ],
+     "whole_fwd_ms": 30.892,
+     "whole_fwd_bwd_ms": 75.341,
+     "parts_sum_fwd_ms": 31.54,
+     "parts_sum_fwd_bwd_ms": 72.398,
+     "parts_sum_over_whole_fwd_bwd": 0.9609,
+     "floor_sum_fwd_bwd_ms": 37.914
+    },
+    "full_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.733,
+       "fwd_bwd_ms": 2.302,
+       "bwd_ms": 1.569,
+       "bytes_fwd": 16777216,
+       "bytes_bwd": 25165824,
+       "flops_fwd": 16777216,
+       "flops_bwd": 33554432,
+       "floor_fwd_ms": 0.0471,
+       "floor_fwd_bwd_ms": 0.1178,
+       "over_floor_fwd_bwd": 19.54,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        7,
+        5
+       ]
+      },
+      {
+       "part": "q_proj",
+       "fwd_ms": 4.08,
+       "fwd_bwd_ms": 7.84,
+       "bwd_ms": 3.76,
+       "bytes_fwd": 51642368,
+       "bytes_bwd": 60030976,
+       "flops_fwd": 35701915648,
+       "flops_bwd": 37044092928,
+       "floor_fwd_ms": 3.1032,
+       "floor_fwd_bwd_ms": 6.323,
+       "over_floor_fwd_bwd": 1.24,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "k_proj",
+       "fwd_ms": 0.791,
+       "fwd_bwd_ms": 1.777,
+       "bwd_ms": 0.986,
+       "bytes_fwd": 14024704,
+       "bytes_bwd": 22413312,
+       "flops_fwd": 4697620480,
+       "flops_bwd": 5100273664,
+       "floor_fwd_ms": 0.4083,
+       "floor_fwd_bwd_ms": 0.8516,
+       "over_floor_fwd_bwd": 2.09,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        10,
+        5
+       ]
+      },
+      {
+       "part": "v_proj",
+       "fwd_ms": 0.832,
+       "fwd_bwd_ms": 1.768,
+       "bwd_ms": 0.936,
+       "bytes_fwd": 14024704,
+       "bytes_bwd": 22413312,
+       "flops_fwd": 4697620480,
+       "flops_bwd": 5100273664,
+       "floor_fwd_ms": 0.4083,
+       "floor_fwd_bwd_ms": 0.8516,
+       "over_floor_fwd_bwd": 2.08,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        10,
+        5
+       ]
+      },
+      {
+       "part": "attention glue before (chunk, views)",
+       "fwd_ms": 0.052,
+       "fwd_bwd_ms": 0.335,
+       "bwd_ms": 0.283,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 67108864,
+       "flops_fwd": 0,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1885,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 0.89,
+       "bound": "bandwidth",
+       "note": "views and the copies the reshapes make",
+       "inner": [
+        33,
+        8
+       ]
+      },
+      {
+       "part": "q_norm",
+       "fwd_ms": 1.691,
+       "fwd_bwd_ms": 4.638,
+       "bwd_ms": 2.947,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 19.69,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "k_norm",
+       "fwd_ms": 0.354,
+       "fwd_bwd_ms": 1.066,
+       "bwd_ms": 0.712,
+       "bytes_fwd": 8388608,
+       "bytes_bwd": 12582912,
+       "flops_fwd": 8388608,
+       "flops_bwd": 16777216,
+       "floor_fwd_ms": 0.0236,
+       "floor_fwd_bwd_ms": 0.0589,
+       "over_floor_fwd_bwd": 18.1,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        17,
+        8
+       ]
+      },
+      {
+       "part": "rotary (apply_rotary_pos_emb)",
+       "fwd_ms": 0.569,
+       "fwd_bwd_ms": 1.492,
+       "bwd_ms": 0.923,
+       "bytes_fwd": 41943040,
+       "bytes_bwd": 41943040,
+       "flops_fwd": 31457280,
+       "flops_bwd": 31457280,
+       "floor_fwd_ms": 0.1178,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 6.33,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        12,
+        5
+       ]
+      },
+      {
+       "part": "attention (scaled dot-product, sdpa)",
+       "fwd_ms": 8.0,
+       "fwd_bwd_ms": 23.875,
+       "bwd_ms": 15.875,
+       "bytes_fwd": 41943040,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 42949672960,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 4.57,
+       "bound": "compute",
+       "note": "bytes: the flash-style minimum (no T x T matrix); FLOPs: the causal half",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "attention glue after (reshape, output gate)",
+       "fwd_ms": 0.187,
+       "fwd_bwd_ms": 0.621,
+       "bwd_ms": 0.434,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 41943040,
+       "flops_bwd": 83886080,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 1.65,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        24,
+        11
+       ]
+      },
+      {
+       "part": "o_proj",
+       "fwd_ms": 2.358,
+       "fwd_bwd_ms": 4.762,
+       "bwd_ms": 2.404,
+       "bytes_fwd": 30146560,
+       "bytes_bwd": 46923776,
+       "flops_fwd": 17985175552,
+       "flops_bwd": 18790481920,
+       "floor_fwd_ms": 1.5632,
+       "floor_fwd_bwd_ms": 3.1965,
+       "over_floor_fwd_bwd": 1.49,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.031,
+       "fwd_bwd_ms": 0.049,
+       "bwd_ms": 0.018,
+       "bytes_fwd": 25165824,
+       "bytes_bwd": 0,
+       "flops_fwd": 4194304,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0707,
+       "floor_fwd_bwd_ms": 0.0707,
+       "over_floor_fwd_bwd": 0.69,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        38,
+        38
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.74,
+       "fwd_bwd_ms": 2.283,
+       "bwd_ms": 1.543,
+       "bytes_fwd": 16777216,
+       "bytes_bwd": 25165824,
+       "flops_fwd": 16777216,
+       "flops_bwd": 33554432,
+       "floor_fwd_ms": 0.0471,
+       "floor_fwd_bwd_ms": 0.1178,
+       "over_floor_fwd_bwd": 19.38,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        10,
+        5
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 3.597,
+       "fwd_bwd_ms": 7.007,
+       "bwd_ms": 3.41,
+       "bytes_fwd": 46268416,
+       "bytes_bwd": 54657024,
+       "flops_fwd": 31272730624,
+       "flops_bwd": 32480690176,
+       "floor_fwd_ms": 2.7182,
+       "floor_fwd_bwd_ms": 5.5414,
+       "over_floor_fwd_bwd": 1.26,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 3.616,
+       "fwd_bwd_ms": 7.009,
+       "bwd_ms": 3.393,
+       "bytes_fwd": 46268416,
+       "bytes_bwd": 54657024,
+       "flops_fwd": 31272730624,
+       "flops_bwd": 32480690176,
+       "floor_fwd_ms": 2.7182,
+       "floor_fwd_bwd_ms": 5.5414,
+       "over_floor_fwd_bwd": 1.26,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.395,
+       "fwd_bwd_ms": 1.119,
+       "bwd_ms": 0.724,
+       "bytes_fwd": 88080384,
+       "bytes_bwd": 146800640,
+       "flops_fwd": 88080384,
+       "flops_bwd": 176160768,
+       "floor_fwd_ms": 0.2473,
+       "floor_fwd_bwd_ms": 0.6596,
+       "over_floor_fwd_bwd": 1.7,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        14,
+        7
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 3.724,
+       "fwd_bwd_ms": 7.515,
+       "bwd_ms": 3.791,
+       "bytes_fwd": 46268416,
+       "bytes_bwd": 75628544,
+       "flops_fwd": 31272730624,
+       "flops_bwd": 32480690176,
+       "floor_fwd_ms": 2.7182,
+       "floor_fwd_bwd_ms": 5.5414,
+       "over_floor_fwd_bwd": 1.36,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.031,
+       "fwd_bwd_ms": 0.051,
+       "bwd_ms": 0.02,
+       "bytes_fwd": 25165824,
+       "bytes_bwd": 0,
+       "flops_fwd": 4194304,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0707,
+       "floor_fwd_bwd_ms": 0.0707,
+       "over_floor_fwd_bwd": 0.72,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        38,
+        31
+       ]
+      }
+     ],
+     "whole_fwd_ms": 30.37,
+     "whole_fwd_bwd_ms": 74.891,
+     "parts_sum_fwd_ms": 31.781,
+     "parts_sum_fwd_bwd_ms": 75.509,
+     "parts_sum_over_whole_fwd_bwd": 1.0083,
+     "floor_sum_fwd_bwd_ms": 35.394
+    },
+    "masks": {
+     "linear": null,
+     "full": null
+    }
+   },
+   "lora 2x903": {
+    "linear_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.294,
+       "fwd_bwd_ms": 0.917,
+       "bwd_ms": 0.623,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 11096064,
+       "flops_fwd": 7397376,
+       "flops_bwd": 14794752,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0519,
+       "over_floor_fwd_bwd": 17.66,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        18,
+        8
+       ]
+      },
+      {
+       "part": "padding mask (apply_mask_to_padding_states)",
+       "fwd_ms": 0.115,
+       "fwd_bwd_ms": 0.247,
+       "bwd_ms": 0.132,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 7397376,
+       "flops_fwd": 1849344,
+       "flops_bwd": 1849344,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0415,
+       "over_floor_fwd_bwd": 5.95,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        19
+       ]
+      },
+      {
+       "part": "in_proj_qkv",
+       "fwd_ms": 2.596,
+       "fwd_bwd_ms": 5.185,
+       "bwd_ms": 2.589,
+       "bytes_fwd": 40308736,
+       "bytes_bwd": 44007424,
+       "flops_fwd": 23553245184,
+       "flops_bwd": 24381751296,
+       "floor_fwd_ms": 2.0472,
+       "floor_fwd_bwd_ms": 4.1664,
+       "over_floor_fwd_bwd": 1.24,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_z",
+       "fwd_ms": 0.981,
+       "fwd_bwd_ms": 1.946,
+       "bwd_ms": 0.965,
+       "bytes_fwd": 16076800,
+       "bytes_bwd": 19775488,
+       "flops_fwd": 7929987072,
+       "flops_bwd": 8285061120,
+       "floor_fwd_ms": 0.6893,
+       "floor_fwd_bwd_ms": 1.4094,
+       "over_floor_fwd_bwd": 1.38,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        8,
+        5
+       ]
+      },
+      {
+       "part": "in_proj_b",
+       "fwd_ms": 0.04,
+       "fwd_bwd_ms": 0.084,
+       "bwd_ms": 0.044,
+       "bytes_fwd": 3789248,
+       "bytes_bwd": 3789248,
+       "flops_fwd": 59179008,
+       "flops_bwd": 59179008,
+       "floor_fwd_ms": 0.0106,
+       "floor_fwd_bwd_ms": 0.0213,
+       "over_floor_fwd_bwd": 3.95,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        35,
+        25
+       ]
+      },
+      {
+       "part": "in_proj_a",
+       "fwd_ms": 0.041,
+       "fwd_bwd_ms": 0.075,
+       "bwd_ms": 0.034,
+       "bytes_fwd": 3789248,
+       "bytes_bwd": 3789248,
+       "flops_fwd": 59179008,
+       "flops_bwd": 59179008,
+       "floor_fwd_ms": 0.0106,
+       "floor_fwd_bwd_ms": 0.0213,
+       "over_floor_fwd_bwd": 3.52,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        31,
+        27
+       ]
+      },
+      {
+       "part": "in_proj_qkv, output transposed as the layer uses it",
+       "fwd_ms": 2.721,
+       "fwd_bwd_ms": 6.736,
+       "bwd_ms": 4.015,
+       "bytes_fwd": 40308736,
+       "bytes_bwd": 44007424,
+       "flops_fwd": 23553245184,
+       "flops_bwd": 24381751296,
+       "floor_fwd_ms": 2.0472,
+       "floor_fwd_bwd_ms": 4.1664,
+       "over_floor_fwd_bwd": 1.62,
+       "bound": "compute",
+       "note": "the gradient arrives as the transpose of a contiguous [B, C, T] tensor",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "conv path (causal_conv1d_fn + SiLU)",
+       "fwd_ms": 0.765,
+       "fwd_bwd_ms": 3.138,
+       "bwd_ms": 2.373,
+       "bytes_fwd": 44384256,
+       "bytes_bwd": 66576384,
+       "flops_fwd": 133152768,
+       "flops_bwd": 266305536,
+       "floor_fwd_ms": 0.1246,
+       "floor_fwd_bwd_ms": 0.3116,
+       "over_floor_fwd_bwd": 10.07,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        3
+       ]
+      },
+      {
+       "part": "glue (transposes, split, reshape, beta, g, repeat)",
+       "fwd_ms": 0.065,
+       "fwd_bwd_ms": 0.242,
+       "bwd_ms": 0.177,
+       "bytes_fwd": 44731008,
+       "bytes_bwd": 66923136,
+       "flops_fwd": 346752,
+       "flops_bwd": 693504,
+       "floor_fwd_ms": 0.1256,
+       "floor_fwd_bwd_ms": 0.3135,
+       "over_floor_fwd_bwd": 0.77,
+       "bound": "bandwidth",
+       "note": "as a standalone pass; fused into its neighbours its floor is ~0",
+       "inner": [
+        9,
+        8
+       ]
+      },
+      {
+       "part": "rule (gated delta, chunked kernels)",
+       "fwd_ms": 2.035,
+       "fwd_bwd_ms": 5.586,
+       "bwd_ms": 3.551,
+       "bytes_fwd": 29820672,
+       "bytes_bwd": 59641344,
+       "flops_fwd": 3195666432,
+       "flops_bwd": 9586999296,
+       "floor_fwd_ms": 0.2778,
+       "floor_fwd_bwd_ms": 1.1111,
+       "over_floor_fwd_bwd": 5.03,
+       "bound": "compute",
+       "note": "FLOPs: the chunk-16 algorithm, roughly; the backward recomputes the states",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "gated norm (RMSNormGated)",
+       "fwd_ms": 0.974,
+       "fwd_bwd_ms": 2.98,
+       "bwd_ms": 2.006,
+       "bytes_fwd": 22192128,
+       "bytes_bwd": 36986880,
+       "flops_fwd": 36986880,
+       "flops_bwd": 73973760,
+       "floor_fwd_ms": 0.0623,
+       "floor_fwd_bwd_ms": 0.1662,
+       "over_floor_fwd_bwd": 17.93,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        9,
+        4
+       ]
+      },
+      {
+       "part": "out_proj",
+       "fwd_ms": 1.048,
+       "fwd_bwd_ms": 2.14,
+       "bwd_ms": 1.092,
+       "bytes_fwd": 16076800,
+       "bytes_bwd": 23474176,
+       "flops_fwd": 7929987072,
+       "flops_bwd": 8285061120,
+       "floor_fwd_ms": 0.6893,
+       "floor_fwd_bwd_ms": 1.4094,
+       "over_floor_fwd_bwd": 1.52,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.019,
+       "fwd_bwd_ms": 0.039,
+       "bwd_ms": 0.02,
+       "bytes_fwd": 11096064,
+       "bytes_bwd": 0,
+       "flops_fwd": 1849344,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0312,
+       "floor_fwd_bwd_ms": 0.0312,
+       "over_floor_fwd_bwd": 1.25,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        44,
+        39
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.29,
+       "fwd_bwd_ms": 0.961,
+       "bwd_ms": 0.671,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 11096064,
+       "flops_fwd": 7397376,
+       "flops_bwd": 14794752,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0519,
+       "over_floor_fwd_bwd": 18.5,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        18,
+        9
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 1.7,
+       "fwd_bwd_ms": 3.474,
+       "bwd_ms": 1.774,
+       "bytes_fwd": 25163776,
+       "bytes_bwd": 28862464,
+       "flops_fwd": 13788708864,
+       "flops_bwd": 14321319936,
+       "floor_fwd_ms": 1.1985,
+       "floor_fwd_bwd_ms": 2.4433,
+       "over_floor_fwd_bwd": 1.42,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 1.641,
+       "fwd_bwd_ms": 3.379,
+       "bwd_ms": 1.738,
+       "bytes_fwd": 25163776,
+       "bytes_bwd": 28862464,
+       "flops_fwd": 13788708864,
+       "flops_bwd": 14321319936,
+       "floor_fwd_ms": 1.1985,
+       "floor_fwd_bwd_ms": 2.4433,
+       "over_floor_fwd_bwd": 1.38,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.111,
+       "fwd_bwd_ms": 0.411,
+       "bwd_ms": 0.3,
+       "bytes_fwd": 38836224,
+       "bytes_bwd": 64727040,
+       "flops_fwd": 38836224,
+       "flops_bwd": 77672448,
+       "floor_fwd_ms": 0.1091,
+       "floor_fwd_bwd_ms": 0.2908,
+       "over_floor_fwd_bwd": 1.41,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        28,
+        16
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 1.796,
+       "fwd_bwd_ms": 3.575,
+       "bwd_ms": 1.779,
+       "bytes_fwd": 25163776,
+       "bytes_bwd": 38109184,
+       "flops_fwd": 13788708864,
+       "flops_bwd": 14321319936,
+       "floor_fwd_ms": 1.1985,
+       "floor_fwd_bwd_ms": 2.4433,
+       "over_floor_fwd_bwd": 1.46,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.022,
+       "fwd_bwd_ms": 0.041,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 11096064,
+       "bytes_bwd": 0,
+       "flops_fwd": 1849344,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0312,
+       "floor_fwd_bwd_ms": 0.0312,
+       "over_floor_fwd_bwd": 1.32,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        37,
+        29
+       ]
+      }
+     ],
+     "whole_fwd_ms": 14.272,
+     "whole_fwd_bwd_ms": 35.162,
+     "parts_sum_fwd_ms": 14.533,
+     "parts_sum_fwd_bwd_ms": 34.42,
+     "parts_sum_over_whole_fwd_bwd": 0.9789,
+     "floor_sum_fwd_bwd_ms": 16.759
+    },
+    "full_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.294,
+       "fwd_bwd_ms": 0.959,
+       "bwd_ms": 0.665,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 11096064,
+       "flops_fwd": 7397376,
+       "flops_bwd": 14794752,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0519,
+       "over_floor_fwd_bwd": 18.47,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        17,
+        9
+       ]
+      },
+      {
+       "part": "q_proj",
+       "fwd_ms": 1.811,
+       "fwd_bwd_ms": 3.794,
+       "bwd_ms": 1.983,
+       "bytes_fwd": 28192768,
+       "bytes_bwd": 31891456,
+       "flops_fwd": 15741616128,
+       "flops_bwd": 16333406208,
+       "floor_fwd_ms": 1.3682,
+       "floor_fwd_bwd_ms": 2.7879,
+       "over_floor_fwd_bwd": 1.36,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "k_proj",
+       "fwd_ms": 0.374,
+       "fwd_bwd_ms": 0.731,
+       "bwd_ms": 0.357,
+       "bytes_fwd": 6989824,
+       "bytes_bwd": 10688512,
+       "flops_fwd": 2071265280,
+       "flops_bwd": 2248802304,
+       "floor_fwd_ms": 0.18,
+       "floor_fwd_bwd_ms": 0.3755,
+       "over_floor_fwd_bwd": 1.95,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        16,
+        9
+       ]
+      },
+      {
+       "part": "v_proj",
+       "fwd_ms": 0.379,
+       "fwd_bwd_ms": 0.73,
+       "bwd_ms": 0.351,
+       "bytes_fwd": 6989824,
+       "bytes_bwd": 10688512,
+       "flops_fwd": 2071265280,
+       "flops_bwd": 2248802304,
+       "floor_fwd_ms": 0.18,
+       "floor_fwd_bwd_ms": 0.3755,
+       "over_floor_fwd_bwd": 1.94,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        16,
+        9
+       ]
+      },
+      {
+       "part": "attention glue before (chunk, views)",
+       "fwd_ms": 0.036,
+       "fwd_bwd_ms": 0.129,
+       "bwd_ms": 0.093,
+       "bytes_fwd": 29589504,
+       "bytes_bwd": 29589504,
+       "flops_fwd": 0,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0831,
+       "floor_fwd_bwd_ms": 0.1662,
+       "over_floor_fwd_bwd": 0.78,
+       "bound": "bandwidth",
+       "note": "views and the copies the reshapes make",
+       "inner": [
+        37,
+        22
+       ]
+      },
+      {
+       "part": "q_norm",
+       "fwd_ms": 0.679,
+       "fwd_bwd_ms": 2.056,
+       "bwd_ms": 1.377,
+       "bytes_fwd": 14794752,
+       "bytes_bwd": 22192128,
+       "flops_fwd": 14794752,
+       "flops_bwd": 29589504,
+       "floor_fwd_ms": 0.0415,
+       "floor_fwd_bwd_ms": 0.1039,
+       "over_floor_fwd_bwd": 19.79,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "k_norm",
+       "fwd_ms": 0.181,
+       "fwd_bwd_ms": 0.506,
+       "bwd_ms": 0.325,
+       "bytes_fwd": 3698688,
+       "bytes_bwd": 5548032,
+       "flops_fwd": 3698688,
+       "flops_bwd": 7397376,
+       "floor_fwd_ms": 0.0104,
+       "floor_fwd_bwd_ms": 0.026,
+       "over_floor_fwd_bwd": 19.49,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        25,
+        12
+       ]
+      },
+      {
+       "part": "rotary (apply_rotary_pos_emb)",
+       "fwd_ms": 0.315,
+       "fwd_bwd_ms": 0.744,
+       "bwd_ms": 0.429,
+       "bytes_fwd": 18493440,
+       "bytes_bwd": 18493440,
+       "flops_fwd": 13870080,
+       "flops_bwd": 13870080,
+       "floor_fwd_ms": 0.0519,
+       "floor_fwd_bwd_ms": 0.1039,
+       "over_floor_fwd_bwd": 7.16,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        16,
+        10
+       ]
+      },
+      {
+       "part": "attention (scaled dot-product, sdpa)",
+       "fwd_ms": 3.937,
+       "fwd_bwd_ms": 10.631,
+       "bwd_ms": 6.694,
+       "bytes_fwd": 18493440,
+       "bytes_bwd": 36986880,
+       "flops_fwd": 6679830528,
+       "flops_bwd": 16699576320,
+       "floor_fwd_ms": 0.5806,
+       "floor_fwd_bwd_ms": 2.0321,
+       "over_floor_fwd_bwd": 5.23,
+       "bound": "compute",
+       "note": "bytes: the flash-style minimum (no T x T matrix); FLOPs: the causal half",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "attention glue after (reshape, output gate)",
+       "fwd_ms": 0.06,
+       "fwd_bwd_ms": 0.21,
+       "bwd_ms": 0.15,
+       "bytes_fwd": 22192128,
+       "bytes_bwd": 36986880,
+       "flops_fwd": 18493440,
+       "flops_bwd": 36986880,
+       "floor_fwd_ms": 0.0623,
+       "floor_fwd_bwd_ms": 0.1662,
+       "over_floor_fwd_bwd": 1.26,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        35,
+        21
+       ]
+      },
+      {
+       "part": "o_proj",
+       "fwd_ms": 1.038,
+       "fwd_bwd_ms": 2.137,
+       "bwd_ms": 1.099,
+       "bytes_fwd": 16076800,
+       "bytes_bwd": 23474176,
+       "flops_fwd": 7929987072,
+       "flops_bwd": 8285061120,
+       "floor_fwd_ms": 0.6893,
+       "floor_fwd_bwd_ms": 1.4094,
+       "over_floor_fwd_bwd": 1.52,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        8,
+        4
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.02,
+       "fwd_bwd_ms": 0.038,
+       "bwd_ms": 0.018,
+       "bytes_fwd": 11096064,
+       "bytes_bwd": 0,
+       "flops_fwd": 1849344,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0312,
+       "floor_fwd_bwd_ms": 0.0312,
+       "over_floor_fwd_bwd": 1.22,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        39,
+        41
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.293,
+       "fwd_bwd_ms": 0.904,
+       "bwd_ms": 0.611,
+       "bytes_fwd": 7397376,
+       "bytes_bwd": 11096064,
+       "flops_fwd": 7397376,
+       "flops_bwd": 14794752,
+       "floor_fwd_ms": 0.0208,
+       "floor_fwd_bwd_ms": 0.0519,
+       "over_floor_fwd_bwd": 17.41,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        19,
+        7
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 1.573,
+       "fwd_bwd_ms": 3.273,
+       "bwd_ms": 1.7,
+       "bytes_fwd": 25163776,
+       "bytes_bwd": 28862464,
+       "flops_fwd": 13788708864,
+       "flops_bwd": 14321319936,
+       "floor_fwd_ms": 1.1985,
+       "floor_fwd_bwd_ms": 2.4433,
+       "over_floor_fwd_bwd": 1.34,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 1.58,
+       "fwd_bwd_ms": 3.221,
+       "bwd_ms": 1.641,
+       "bytes_fwd": 25163776,
+       "bytes_bwd": 28862464,
+       "flops_fwd": 13788708864,
+       "flops_bwd": 14321319936,
+       "floor_fwd_ms": 1.1985,
+       "floor_fwd_bwd_ms": 2.4433,
+       "over_floor_fwd_bwd": 1.32,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.096,
+       "fwd_bwd_ms": 0.381,
+       "bwd_ms": 0.285,
+       "bytes_fwd": 38836224,
+       "bytes_bwd": 64727040,
+       "flops_fwd": 38836224,
+       "flops_bwd": 77672448,
+       "floor_fwd_ms": 0.1091,
+       "floor_fwd_bwd_ms": 0.2908,
+       "over_floor_fwd_bwd": 1.31,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        28,
+        15
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 1.846,
+       "fwd_bwd_ms": 3.598,
+       "bwd_ms": 1.752,
+       "bytes_fwd": 25163776,
+       "bytes_bwd": 38109184,
+       "flops_fwd": 13788708864,
+       "flops_bwd": 14321319936,
+       "floor_fwd_ms": 1.1985,
+       "floor_fwd_bwd_ms": 2.4433,
+       "over_floor_fwd_bwd": 1.47,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.019,
+       "fwd_bwd_ms": 0.04,
+       "bwd_ms": 0.021,
+       "bytes_fwd": 11096064,
+       "bytes_bwd": 0,
+       "flops_fwd": 1849344,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0312,
+       "floor_fwd_bwd_ms": 0.0312,
+       "over_floor_fwd_bwd": 1.28,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        50,
+        41
+       ]
+      }
+     ],
+     "whole_fwd_ms": 14.617,
+     "whole_fwd_bwd_ms": 33.978,
+     "parts_sum_fwd_ms": 14.531,
+     "parts_sum_fwd_bwd_ms": 34.082,
+     "parts_sum_over_whole_fwd_bwd": 1.0031,
+     "floor_sum_fwd_bwd_ms": 15.333
+    },
+    "masks": {
+     "linear": [
+      2,
+      903
+     ],
+     "full": [
+      2,
+      1,
+      903,
+      903
+     ]
+    }
+   }
+  },
+  "9b": {
+   "frozen 2x1024": {
+    "linear_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 1.493,
+       "fwd_bwd_ms": 4.494,
+       "bwd_ms": 3.001,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 19.08,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_qkv",
+       "fwd_ms": 11.179,
+       "fwd_bwd_ms": 22.044,
+       "bwd_ms": 10.865,
+       "bytes_fwd": 117440512,
+       "bytes_bwd": 117440512,
+       "flops_fwd": 137438953472,
+       "flops_bwd": 137438953472,
+       "floor_fwd_ms": 11.946,
+       "floor_fwd_bwd_ms": 23.892,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_z",
+       "fwd_ms": 5.697,
+       "fwd_bwd_ms": 11.086,
+       "bwd_ms": 5.389,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 67108864,
+       "flops_fwd": 68719476736,
+       "flops_bwd": 68719476736,
+       "floor_fwd_ms": 5.973,
+       "floor_fwd_bwd_ms": 11.946,
+       "over_floor_fwd_bwd": 0.93,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_b",
+       "fwd_ms": 0.106,
+       "fwd_bwd_ms": 0.178,
+       "bwd_ms": 0.072,
+       "bytes_fwd": 17170432,
+       "bytes_bwd": 17170432,
+       "flops_fwd": 536870912,
+       "flops_bwd": 536870912,
+       "floor_fwd_ms": 0.0482,
+       "floor_fwd_bwd_ms": 0.0964,
+       "over_floor_fwd_bwd": 1.85,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        31,
+        20
+       ]
+      },
+      {
+       "part": "in_proj_a",
+       "fwd_ms": 0.101,
+       "fwd_bwd_ms": 0.172,
+       "bwd_ms": 0.071,
+       "bytes_fwd": 17170432,
+       "bytes_bwd": 17170432,
+       "flops_fwd": 536870912,
+       "flops_bwd": 536870912,
+       "floor_fwd_ms": 0.0482,
+       "floor_fwd_bwd_ms": 0.0964,
+       "over_floor_fwd_bwd": 1.78,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        32,
+        23
+       ]
+      },
+      {
+       "part": "in_proj_qkv, output transposed as the layer uses it",
+       "fwd_ms": 10.888,
+       "fwd_bwd_ms": 22.051,
+       "bwd_ms": 11.163,
+       "bytes_fwd": 117440512,
+       "bytes_bwd": 117440512,
+       "flops_fwd": 137438953472,
+       "flops_bwd": 137438953472,
+       "floor_fwd_ms": 11.946,
+       "floor_fwd_bwd_ms": 23.892,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "the gradient arrives as the transpose of a contiguous [B, C, T] tensor",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "conv path (causal_conv1d_fn + SiLU)",
+       "fwd_ms": 1.137,
+       "fwd_bwd_ms": 4.153,
+       "bwd_ms": 3.016,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 100663296,
+       "flops_fwd": 201326592,
+       "flops_bwd": 402653184,
+       "floor_fwd_ms": 0.1885,
+       "floor_fwd_bwd_ms": 0.4711,
+       "over_floor_fwd_bwd": 8.81,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        8,
+        3
+       ]
+      },
+      {
+       "part": "glue (transposes, split, reshape, beta, g, repeat)",
+       "fwd_ms": 1.313,
+       "fwd_bwd_ms": 2.251,
+       "bwd_ms": 0.938,
+       "bytes_fwd": 84672512,
+       "bytes_bwd": 118226944,
+       "flops_fwd": 786432,
+       "flops_bwd": 1572864,
+       "floor_fwd_ms": 0.2378,
+       "floor_fwd_bwd_ms": 0.5698,
+       "over_floor_fwd_bwd": 3.95,
+       "bound": "bandwidth",
+       "note": "as a standalone pass; fused into its neighbours its floor is ~0",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "rule (gated delta, chunked kernels)",
+       "fwd_ms": 3.656,
+       "fwd_bwd_ms": 11.569,
+       "bwd_ms": 7.913,
+       "bytes_fwd": 67633152,
+       "bytes_bwd": 135266304,
+       "flops_fwd": 7247757312,
+       "flops_bwd": 21743271936,
+       "floor_fwd_ms": 0.63,
+       "floor_fwd_bwd_ms": 2.5199,
+       "over_floor_fwd_bwd": 4.59,
+       "bound": "compute",
+       "note": "FLOPs: the chunk-16 algorithm, roughly; the backward recomputes the states",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "gated norm (RMSNormGated)",
+       "fwd_ms": 2.431,
+       "fwd_bwd_ms": 6.615,
+       "bwd_ms": 4.184,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 83886080,
+       "flops_bwd": 167772160,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 17.55,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "out_proj",
+       "fwd_ms": 5.607,
+       "fwd_bwd_ms": 11.049,
+       "bwd_ms": 5.442,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 67108864,
+       "flops_fwd": 68719476736,
+       "flops_bwd": 68719476736,
+       "floor_fwd_ms": 5.973,
+       "floor_fwd_bwd_ms": 11.946,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.054,
+       "fwd_bwd_ms": 0.097,
+       "bwd_ms": 0.043,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 0,
+       "flops_fwd": 8388608,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.1413,
+       "over_floor_fwd_bwd": 0.69,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        35,
+        21
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 1.361,
+       "fwd_bwd_ms": 4.296,
+       "bwd_ms": 2.935,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 18.24,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 16.449,
+       "fwd_bwd_ms": 33.124,
+       "bwd_ms": 16.675,
+       "bytes_fwd": 167772160,
+       "bytes_bwd": 167772160,
+       "flops_fwd": 206158430208,
+       "flops_bwd": 206158430208,
+       "floor_fwd_ms": 17.919,
+       "floor_fwd_bwd_ms": 35.8381,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 16.735,
+       "fwd_bwd_ms": 33.415,
+       "bwd_ms": 16.68,
+       "bytes_fwd": 167772160,
+       "bytes_bwd": 167772160,
+       "flops_fwd": 206158430208,
+       "flops_bwd": 206158430208,
+       "floor_fwd_ms": 17.919,
+       "floor_fwd_bwd_ms": 35.8381,
+       "over_floor_fwd_bwd": 0.93,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.677,
+       "fwd_bwd_ms": 2.063,
+       "bwd_ms": 1.386,
+       "bytes_fwd": 150994944,
+       "bytes_bwd": 251658240,
+       "flops_fwd": 150994944,
+       "flops_bwd": 301989888,
+       "floor_fwd_ms": 0.424,
+       "floor_fwd_bwd_ms": 1.1307,
+       "over_floor_fwd_bwd": 1.82,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        10,
+        4
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 16.569,
+       "fwd_bwd_ms": 33.087,
+       "bwd_ms": 16.518,
+       "bytes_fwd": 167772160,
+       "bytes_bwd": 167772160,
+       "flops_fwd": 206158430208,
+       "flops_bwd": 206158430208,
+       "floor_fwd_ms": 17.919,
+       "floor_fwd_bwd_ms": 35.8381,
+       "over_floor_fwd_bwd": 0.92,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.055,
+       "fwd_bwd_ms": 0.075,
+       "bwd_ms": 0.02,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 0,
+       "flops_fwd": 8388608,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.1413,
+       "over_floor_fwd_bwd": 0.53,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        20,
+        31
+       ]
+      }
+     ],
+     "whole_fwd_ms": 84.938,
+     "whole_fwd_bwd_ms": 180.378,
+     "parts_sum_fwd_ms": 84.62,
+     "parts_sum_fwd_bwd_ms": 179.768,
+     "parts_sum_over_whole_fwd_bwd": 0.9966,
+     "floor_sum_fwd_bwd_ms": 161.313
+    },
+    "full_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 1.507,
+       "fwd_bwd_ms": 4.502,
+       "bwd_ms": 2.995,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 19.11,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "q_proj",
+       "fwd_ms": 10.887,
+       "fwd_bwd_ms": 21.452,
+       "bwd_ms": 10.565,
+       "bytes_fwd": 117440512,
+       "bytes_bwd": 117440512,
+       "flops_fwd": 137438953472,
+       "flops_bwd": 137438953472,
+       "floor_fwd_ms": 11.946,
+       "floor_fwd_bwd_ms": 23.892,
+       "over_floor_fwd_bwd": 0.9,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "k_proj",
+       "fwd_ms": 1.486,
+       "fwd_bwd_ms": 2.971,
+       "bwd_ms": 1.485,
+       "bytes_fwd": 29360128,
+       "bytes_bwd": 29360128,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 17179869184,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 2.9865,
+       "over_floor_fwd_bwd": 0.99,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "v_proj",
+       "fwd_ms": 1.476,
+       "fwd_bwd_ms": 2.972,
+       "bwd_ms": 1.496,
+       "bytes_fwd": 29360128,
+       "bytes_bwd": 29360128,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 17179869184,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 2.9865,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        6,
+        4
+       ]
+      },
+      {
+       "part": "attention glue before (chunk, views)",
+       "fwd_ms": 0.053,
+       "fwd_bwd_ms": 0.326,
+       "bwd_ms": 0.273,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 67108864,
+       "flops_fwd": 0,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1885,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 0.86,
+       "bound": "bandwidth",
+       "note": "views and the copies the reshapes make",
+       "inner": [
+        35,
+        17
+       ]
+      },
+      {
+       "part": "q_norm",
+       "fwd_ms": 1.642,
+       "fwd_bwd_ms": 4.861,
+       "bwd_ms": 3.219,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 20.64,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "k_norm",
+       "fwd_ms": 0.353,
+       "fwd_bwd_ms": 1.157,
+       "bwd_ms": 0.804,
+       "bytes_fwd": 8388608,
+       "bytes_bwd": 12582912,
+       "flops_fwd": 8388608,
+       "flops_bwd": 16777216,
+       "floor_fwd_ms": 0.0236,
+       "floor_fwd_bwd_ms": 0.0589,
+       "over_floor_fwd_bwd": 19.65,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        17,
+        8
+       ]
+      },
+      {
+       "part": "rotary (apply_rotary_pos_emb)",
+       "fwd_ms": 0.644,
+       "fwd_bwd_ms": 1.46,
+       "bwd_ms": 0.816,
+       "bytes_fwd": 41943040,
+       "bytes_bwd": 41943040,
+       "flops_fwd": 31457280,
+       "flops_bwd": 31457280,
+       "floor_fwd_ms": 0.1178,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 6.2,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        7,
+        7
+       ]
+      },
+      {
+       "part": "attention (scaled dot-product, sdpa)",
+       "fwd_ms": 8.388,
+       "fwd_bwd_ms": 23.868,
+       "bwd_ms": 15.48,
+       "bytes_fwd": 41943040,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 42949672960,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 4.57,
+       "bound": "compute",
+       "note": "bytes: the flash-style minimum (no T x T matrix); FLOPs: the causal half",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "attention glue after (reshape, output gate)",
+       "fwd_ms": 0.189,
+       "fwd_bwd_ms": 0.639,
+       "bwd_ms": 0.45,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 41943040,
+       "flops_bwd": 83886080,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 1.7,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        22,
+        7
+       ]
+      },
+      {
+       "part": "o_proj",
+       "fwd_ms": 5.555,
+       "fwd_bwd_ms": 10.842,
+       "bwd_ms": 5.287,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 67108864,
+       "flops_fwd": 68719476736,
+       "flops_bwd": 68719476736,
+       "floor_fwd_ms": 5.973,
+       "floor_fwd_bwd_ms": 11.946,
+       "over_floor_fwd_bwd": 0.91,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.054,
+       "fwd_bwd_ms": 0.085,
+       "bwd_ms": 0.031,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 0,
+       "flops_fwd": 8388608,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.1413,
+       "over_floor_fwd_bwd": 0.6,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        35,
+        33
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 1.357,
+       "fwd_bwd_ms": 4.552,
+       "bwd_ms": 3.195,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 19.32,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 16.783,
+       "fwd_bwd_ms": 33.34,
+       "bwd_ms": 16.557,
+       "bytes_fwd": 167772160,
+       "bytes_bwd": 167772160,
+       "flops_fwd": 206158430208,
+       "flops_bwd": 206158430208,
+       "floor_fwd_ms": 17.919,
+       "floor_fwd_bwd_ms": 35.8381,
+       "over_floor_fwd_bwd": 0.93,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 16.931,
+       "fwd_bwd_ms": 32.3,
+       "bwd_ms": 15.369,
+       "bytes_fwd": 167772160,
+       "bytes_bwd": 167772160,
+       "flops_fwd": 206158430208,
+       "flops_bwd": 206158430208,
+       "floor_fwd_ms": 17.919,
+       "floor_fwd_bwd_ms": 35.8381,
+       "over_floor_fwd_bwd": 0.9,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.68,
+       "fwd_bwd_ms": 2.129,
+       "bwd_ms": 1.449,
+       "bytes_fwd": 150994944,
+       "bytes_bwd": 251658240,
+       "flops_fwd": 150994944,
+       "flops_bwd": 301989888,
+       "floor_fwd_ms": 0.424,
+       "floor_fwd_bwd_ms": 1.1307,
+       "over_floor_fwd_bwd": 1.88,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        4
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 17.163,
+       "fwd_bwd_ms": 33.187,
+       "bwd_ms": 16.024,
+       "bytes_fwd": 167772160,
+       "bytes_bwd": 167772160,
+       "flops_fwd": 206158430208,
+       "flops_bwd": 206158430208,
+       "floor_fwd_ms": 17.919,
+       "floor_fwd_bwd_ms": 35.8381,
+       "over_floor_fwd_bwd": 0.93,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.063,
+       "fwd_bwd_ms": 0.08,
+       "bwd_ms": 0.017,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 0,
+       "flops_fwd": 8388608,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.1413,
+       "over_floor_fwd_bwd": 0.57,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        10,
+        11
+       ]
+      }
+     ],
+     "whole_fwd_ms": 84.774,
+     "whole_fwd_bwd_ms": 180.441,
+     "parts_sum_fwd_ms": 85.211,
+     "parts_sum_fwd_bwd_ms": 180.723,
+     "parts_sum_over_whole_fwd_bwd": 1.0016,
+     "floor_sum_fwd_bwd_ms": 157.72
+    },
+    "masks": {
+     "linear": null,
+     "full": null
+    }
+   },
+   "frozen 1x859": {
+    "linear_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.546,
+       "fwd_bwd_ms": 1.772,
+       "bwd_ms": 1.226,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 17.93,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        12,
+        5
+       ]
+      },
+      {
+       "part": "in_proj_qkv",
+       "fwd_ms": 4.787,
+       "fwd_bwd_ms": 9.732,
+       "bwd_ms": 4.945,
+       "bytes_fwd": 88219648,
+       "bytes_bwd": 88219648,
+       "flops_fwd": 57646514176,
+       "flops_bwd": 57646514176,
+       "floor_fwd_ms": 5.0106,
+       "floor_fwd_bwd_ms": 10.0211,
+       "over_floor_fwd_bwd": 0.97,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_z",
+       "fwd_ms": 2.526,
+       "fwd_bwd_ms": 4.961,
+       "bwd_ms": 2.435,
+       "bytes_fwd": 47628288,
+       "bytes_bwd": 47628288,
+       "flops_fwd": 28823257088,
+       "flops_bwd": 28823257088,
+       "floor_fwd_ms": 2.5053,
+       "floor_fwd_bwd_ms": 5.0106,
+       "over_floor_fwd_bwd": 0.99,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_b",
+       "fwd_ms": 0.069,
+       "fwd_bwd_ms": 0.105,
+       "bwd_ms": 0.036,
+       "bytes_fwd": 7354048,
+       "bytes_bwd": 7354048,
+       "flops_fwd": 225181696,
+       "flops_bwd": 225181696,
+       "floor_fwd_ms": 0.0207,
+       "floor_fwd_bwd_ms": 0.0413,
+       "over_floor_fwd_bwd": 2.54,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        32,
+        23
+       ]
+      },
+      {
+       "part": "in_proj_a",
+       "fwd_ms": 0.069,
+       "fwd_bwd_ms": 0.103,
+       "bwd_ms": 0.034,
+       "bytes_fwd": 7354048,
+       "bytes_bwd": 7354048,
+       "flops_fwd": 225181696,
+       "flops_bwd": 225181696,
+       "floor_fwd_ms": 0.0207,
+       "floor_fwd_bwd_ms": 0.0413,
+       "over_floor_fwd_bwd": 2.49,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        33,
+        26
+       ]
+      },
+      {
+       "part": "in_proj_qkv, output transposed as the layer uses it",
+       "fwd_ms": 5.042,
+       "fwd_bwd_ms": 9.852,
+       "bwd_ms": 4.81,
+       "bytes_fwd": 88219648,
+       "bytes_bwd": 88219648,
+       "flops_fwd": 57646514176,
+       "flops_bwd": 57646514176,
+       "floor_fwd_ms": 5.0106,
+       "floor_fwd_bwd_ms": 10.0211,
+       "over_floor_fwd_bwd": 0.98,
+       "bound": "compute",
+       "note": "the gradient arrives as the transpose of a contiguous [B, C, T] tensor",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "conv path (causal_conv1d_fn + SiLU)",
+       "fwd_ms": 0.406,
+       "fwd_bwd_ms": 2.478,
+       "bwd_ms": 2.072,
+       "bytes_fwd": 28147712,
+       "bytes_bwd": 42221568,
+       "flops_fwd": 84443136,
+       "flops_bwd": 168886272,
+       "floor_fwd_ms": 0.079,
+       "floor_fwd_bwd_ms": 0.1976,
+       "over_floor_fwd_bwd": 12.54,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        8,
+        4
+       ]
+      },
+      {
+       "part": "glue (transposes, split, reshape, beta, g, repeat)",
+       "fwd_ms": 0.453,
+       "fwd_bwd_ms": 1.003,
+       "bwd_ms": 0.55,
+       "bytes_fwd": 35514496,
+       "bytes_bwd": 49588352,
+       "flops_fwd": 329856,
+       "flops_bwd": 659712,
+       "floor_fwd_ms": 0.0997,
+       "floor_fwd_bwd_ms": 0.239,
+       "over_floor_fwd_bwd": 4.2,
+       "bound": "bandwidth",
+       "note": "as a standalone pass; fused into its neighbours its floor is ~0",
+       "inner": [
+        13,
+        9
+       ]
+      },
+      {
+       "part": "rule (gated delta, chunked kernels)",
+       "fwd_ms": 1.611,
+       "fwd_bwd_ms": 5.04,
+       "bwd_ms": 3.429,
+       "bytes_fwd": 28367616,
+       "bytes_bwd": 56735232,
+       "flops_fwd": 3039952896,
+       "flops_bwd": 9119858688,
+       "floor_fwd_ms": 0.2642,
+       "floor_fwd_bwd_ms": 1.0569,
+       "over_floor_fwd_bwd": 4.77,
+       "bound": "compute",
+       "note": "FLOPs: the chunk-16 algorithm, roughly; the backward recomputes the states",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "gated norm (RMSNormGated)",
+       "fwd_ms": 0.941,
+       "fwd_bwd_ms": 2.84,
+       "bwd_ms": 1.899,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 35184640,
+       "flops_fwd": 35184640,
+       "flops_bwd": 70369280,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.1581,
+       "over_floor_fwd_bwd": 17.96,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        9,
+        4
+       ]
+      },
+      {
+       "part": "out_proj",
+       "fwd_ms": 2.524,
+       "fwd_bwd_ms": 4.993,
+       "bwd_ms": 2.469,
+       "bytes_fwd": 47628288,
+       "bytes_bwd": 47628288,
+       "flops_fwd": 28823257088,
+       "flops_bwd": 28823257088,
+       "floor_fwd_ms": 2.5053,
+       "floor_fwd_bwd_ms": 5.0106,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.028,
+       "fwd_bwd_ms": 0.048,
+       "bwd_ms": 0.02,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 0,
+       "flops_fwd": 3518464,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.0593,
+       "over_floor_fwd_bwd": 0.81,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        41,
+        24
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.554,
+       "fwd_bwd_ms": 1.774,
+       "bwd_ms": 1.22,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 17.95,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        5
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 7.182,
+       "fwd_bwd_ms": 14.164,
+       "bwd_ms": 6.982,
+       "bytes_fwd": 128811008,
+       "bytes_bwd": 128811008,
+       "flops_fwd": 86469771264,
+       "flops_bwd": 86469771264,
+       "floor_fwd_ms": 7.5158,
+       "floor_fwd_bwd_ms": 15.0317,
+       "over_floor_fwd_bwd": 0.94,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 7.068,
+       "fwd_bwd_ms": 14.519,
+       "bwd_ms": 7.451,
+       "bytes_fwd": 128811008,
+       "bytes_bwd": 128811008,
+       "flops_fwd": 86469771264,
+       "flops_bwd": 86469771264,
+       "floor_fwd_ms": 7.5158,
+       "floor_fwd_bwd_ms": 15.0317,
+       "over_floor_fwd_bwd": 0.97,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.265,
+       "fwd_bwd_ms": 0.763,
+       "bwd_ms": 0.498,
+       "bytes_fwd": 63332352,
+       "bytes_bwd": 105553920,
+       "flops_fwd": 63332352,
+       "flops_bwd": 126664704,
+       "floor_fwd_ms": 0.1778,
+       "floor_fwd_bwd_ms": 0.4743,
+       "over_floor_fwd_bwd": 1.61,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        18,
+        7
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 7.534,
+       "fwd_bwd_ms": 14.445,
+       "bwd_ms": 6.911,
+       "bytes_fwd": 128811008,
+       "bytes_bwd": 128811008,
+       "flops_fwd": 86469771264,
+       "flops_bwd": 86469771264,
+       "floor_fwd_ms": 7.5158,
+       "floor_fwd_bwd_ms": 15.0317,
+       "over_floor_fwd_bwd": 0.96,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.028,
+       "fwd_bwd_ms": 0.048,
+       "bwd_ms": 0.02,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 0,
+       "flops_fwd": 3518464,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.0593,
+       "over_floor_fwd_bwd": 0.81,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        38,
+        32
+       ]
+      }
+     ],
+     "whole_fwd_ms": 38.41,
+     "whole_fwd_bwd_ms": 79.903,
+     "parts_sum_fwd_ms": 36.591,
+     "parts_sum_fwd_bwd_ms": 78.788,
+     "parts_sum_over_whole_fwd_bwd": 0.986,
+     "floor_sum_fwd_bwd_ms": 67.662
+    },
+    "full_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.572,
+       "fwd_bwd_ms": 1.945,
+       "bwd_ms": 1.373,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 19.69,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        4
+       ]
+      },
+      {
+       "part": "q_proj",
+       "fwd_ms": 4.927,
+       "fwd_bwd_ms": 9.681,
+       "bwd_ms": 4.754,
+       "bytes_fwd": 88219648,
+       "bytes_bwd": 88219648,
+       "flops_fwd": 57646514176,
+       "flops_bwd": 57646514176,
+       "floor_fwd_ms": 5.0106,
+       "floor_fwd_bwd_ms": 10.0211,
+       "over_floor_fwd_bwd": 0.97,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "k_proj",
+       "fwd_ms": 0.722,
+       "fwd_bwd_ms": 1.388,
+       "bwd_ms": 0.666,
+       "bytes_fwd": 17184768,
+       "bytes_bwd": 17184768,
+       "flops_fwd": 7205814272,
+       "flops_bwd": 7205814272,
+       "floor_fwd_ms": 0.6263,
+       "floor_fwd_bwd_ms": 1.2526,
+       "over_floor_fwd_bwd": 1.11,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        11,
+        7
+       ]
+      },
+      {
+       "part": "v_proj",
+       "fwd_ms": 0.751,
+       "fwd_bwd_ms": 1.383,
+       "bwd_ms": 0.632,
+       "bytes_fwd": 17184768,
+       "bytes_bwd": 17184768,
+       "flops_fwd": 7205814272,
+       "flops_bwd": 7205814272,
+       "floor_fwd_ms": 0.6263,
+       "floor_fwd_bwd_ms": 1.2526,
+       "over_floor_fwd_bwd": 1.1,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        11,
+        6
+       ]
+      },
+      {
+       "part": "attention glue before (chunk, views)",
+       "fwd_ms": 0.035,
+       "fwd_bwd_ms": 0.123,
+       "bwd_ms": 0.088,
+       "bytes_fwd": 28147712,
+       "bytes_bwd": 28147712,
+       "flops_fwd": 0,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.079,
+       "floor_fwd_bwd_ms": 0.1581,
+       "over_floor_fwd_bwd": 0.78,
+       "bound": "bandwidth",
+       "note": "views and the copies the reshapes make",
+       "inner": [
+        38,
+        26
+       ]
+      },
+      {
+       "part": "q_norm",
+       "fwd_ms": 0.628,
+       "fwd_bwd_ms": 2.035,
+       "bwd_ms": 1.407,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 20.6,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "k_norm",
+       "fwd_ms": 0.195,
+       "fwd_bwd_ms": 0.546,
+       "bwd_ms": 0.351,
+       "bytes_fwd": 3518464,
+       "bytes_bwd": 5277696,
+       "flops_fwd": 3518464,
+       "flops_bwd": 7036928,
+       "floor_fwd_ms": 0.0099,
+       "floor_fwd_bwd_ms": 0.0247,
+       "over_floor_fwd_bwd": 22.1,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        26,
+        9
+       ]
+      },
+      {
+       "part": "rotary (apply_rotary_pos_emb)",
+       "fwd_ms": 0.36,
+       "fwd_bwd_ms": 0.753,
+       "bwd_ms": 0.393,
+       "bytes_fwd": 17592320,
+       "bytes_bwd": 17592320,
+       "flops_fwd": 13194240,
+       "flops_bwd": 13194240,
+       "floor_fwd_ms": 0.0494,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 7.62,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        10,
+        11
+       ]
+      },
+      {
+       "part": "attention (scaled dot-product, sdpa)",
+       "fwd_ms": 3.001,
+       "fwd_bwd_ms": 8.921,
+       "bwd_ms": 5.92,
+       "bytes_fwd": 17592320,
+       "bytes_bwd": 35184640,
+       "flops_fwd": 6044721152,
+       "flops_bwd": 15111802880,
+       "floor_fwd_ms": 0.5254,
+       "floor_fwd_bwd_ms": 1.8389,
+       "over_floor_fwd_bwd": 4.85,
+       "bound": "compute",
+       "note": "bytes: the flash-style minimum (no T x T matrix); FLOPs: the causal half",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "attention glue after (reshape, output gate)",
+       "fwd_ms": 0.057,
+       "fwd_bwd_ms": 0.196,
+       "bwd_ms": 0.139,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 35184640,
+       "flops_fwd": 17592320,
+       "flops_bwd": 35184640,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.1581,
+       "over_floor_fwd_bwd": 1.24,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        34,
+        21
+       ]
+      },
+      {
+       "part": "o_proj",
+       "fwd_ms": 2.529,
+       "fwd_bwd_ms": 5.031,
+       "bwd_ms": 2.502,
+       "bytes_fwd": 47628288,
+       "bytes_bwd": 47628288,
+       "flops_fwd": 28823257088,
+       "flops_bwd": 28823257088,
+       "floor_fwd_ms": 2.5053,
+       "floor_fwd_bwd_ms": 5.0106,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.029,
+       "fwd_bwd_ms": 0.047,
+       "bwd_ms": 0.018,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 0,
+       "flops_fwd": 3518464,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.0593,
+       "over_floor_fwd_bwd": 0.79,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        34,
+        36
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.556,
+       "fwd_bwd_ms": 1.879,
+       "bwd_ms": 1.323,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 19.02,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        12,
+        5
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 7.21,
+       "fwd_bwd_ms": 14.466,
+       "bwd_ms": 7.256,
+       "bytes_fwd": 128811008,
+       "bytes_bwd": 128811008,
+       "flops_fwd": 86469771264,
+       "flops_bwd": 86469771264,
+       "floor_fwd_ms": 7.5158,
+       "floor_fwd_bwd_ms": 15.0317,
+       "over_floor_fwd_bwd": 0.96,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 7.317,
+       "fwd_bwd_ms": 14.431,
+       "bwd_ms": 7.114,
+       "bytes_fwd": 128811008,
+       "bytes_bwd": 128811008,
+       "flops_fwd": 86469771264,
+       "flops_bwd": 86469771264,
+       "floor_fwd_ms": 7.5158,
+       "floor_fwd_bwd_ms": 15.0317,
+       "over_floor_fwd_bwd": 0.96,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.261,
+       "fwd_bwd_ms": 0.837,
+       "bwd_ms": 0.576,
+       "bytes_fwd": 63332352,
+       "bytes_bwd": 105553920,
+       "flops_fwd": 63332352,
+       "flops_bwd": 126664704,
+       "floor_fwd_ms": 0.1778,
+       "floor_fwd_bwd_ms": 0.4743,
+       "over_floor_fwd_bwd": 1.76,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        18,
+        10
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 7.509,
+       "fwd_bwd_ms": 14.18,
+       "bwd_ms": 6.671,
+       "bytes_fwd": 128811008,
+       "bytes_bwd": 128811008,
+       "flops_fwd": 86469771264,
+       "flops_bwd": 86469771264,
+       "floor_fwd_ms": 7.5158,
+       "floor_fwd_bwd_ms": 15.0317,
+       "over_floor_fwd_bwd": 0.94,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.028,
+       "fwd_bwd_ms": 0.049,
+       "bwd_ms": 0.021,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 0,
+       "flops_fwd": 3518464,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.0593,
+       "over_floor_fwd_bwd": 0.83,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        41,
+        24
+       ]
+      }
+     ],
+     "whole_fwd_ms": 36.418,
+     "whole_fwd_bwd_ms": 77.501,
+     "parts_sum_fwd_ms": 36.687,
+     "parts_sum_fwd_bwd_ms": 77.891,
+     "parts_sum_over_whole_fwd_bwd": 1.005,
+     "floor_sum_fwd_bwd_ms": 65.8
+    },
+    "masks": {
+     "linear": null,
+     "full": null
+    }
+   },
+   "lora 2x1024": {
+    "linear_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 1.382,
+       "fwd_bwd_ms": 4.442,
+       "bwd_ms": 3.06,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 18.86,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_qkv",
+       "fwd_ms": 12.747,
+       "fwd_bwd_ms": 24.315,
+       "bwd_ms": 11.568,
+       "bytes_fwd": 120586240,
+       "bytes_bwd": 137363456,
+       "flops_fwd": 139049566208,
+       "flops_bwd": 140660178944,
+       "floor_fwd_ms": 12.086,
+       "floor_fwd_bwd_ms": 24.312,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_z",
+       "fwd_ms": 6.556,
+       "fwd_bwd_ms": 12.942,
+       "bwd_ms": 6.386,
+       "bytes_fwd": 69206016,
+       "bytes_bwd": 85983232,
+       "flops_fwd": 69793218560,
+       "flops_bwd": 70866960384,
+       "floor_fwd_ms": 6.0663,
+       "floor_fwd_bwd_ms": 12.226,
+       "over_floor_fwd_bwd": 1.06,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_b",
+       "fwd_ms": 0.103,
+       "fwd_bwd_ms": 0.176,
+       "bwd_ms": 0.073,
+       "bytes_fwd": 17170432,
+       "bytes_bwd": 17170432,
+       "flops_fwd": 536870912,
+       "flops_bwd": 536870912,
+       "floor_fwd_ms": 0.0482,
+       "floor_fwd_bwd_ms": 0.0964,
+       "over_floor_fwd_bwd": 1.83,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        30,
+        20
+       ]
+      },
+      {
+       "part": "in_proj_a",
+       "fwd_ms": 0.107,
+       "fwd_bwd_ms": 0.174,
+       "bwd_ms": 0.067,
+       "bytes_fwd": 17170432,
+       "bytes_bwd": 17170432,
+       "flops_fwd": 536870912,
+       "flops_bwd": 536870912,
+       "floor_fwd_ms": 0.0482,
+       "floor_fwd_bwd_ms": 0.0964,
+       "over_floor_fwd_bwd": 1.8,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        31,
+        21
+       ]
+      },
+      {
+       "part": "in_proj_qkv, output transposed as the layer uses it",
+       "fwd_ms": 12.647,
+       "fwd_bwd_ms": 27.004,
+       "bwd_ms": 14.357,
+       "bytes_fwd": 120586240,
+       "bytes_bwd": 137363456,
+       "flops_fwd": 139049566208,
+       "flops_bwd": 140660178944,
+       "floor_fwd_ms": 12.086,
+       "floor_fwd_bwd_ms": 24.312,
+       "over_floor_fwd_bwd": 1.11,
+       "bound": "compute",
+       "note": "the gradient arrives as the transpose of a contiguous [B, C, T] tensor",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "conv path (causal_conv1d_fn + SiLU)",
+       "fwd_ms": 1.147,
+       "fwd_bwd_ms": 4.165,
+       "bwd_ms": 3.018,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 100663296,
+       "flops_fwd": 201326592,
+       "flops_bwd": 402653184,
+       "floor_fwd_ms": 0.1885,
+       "floor_fwd_bwd_ms": 0.4711,
+       "over_floor_fwd_bwd": 8.84,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        8,
+        3
+       ]
+      },
+      {
+       "part": "glue (transposes, split, reshape, beta, g, repeat)",
+       "fwd_ms": 1.219,
+       "fwd_bwd_ms": 2.227,
+       "bwd_ms": 1.008,
+       "bytes_fwd": 84672512,
+       "bytes_bwd": 118226944,
+       "flops_fwd": 786432,
+       "flops_bwd": 1572864,
+       "floor_fwd_ms": 0.2378,
+       "floor_fwd_bwd_ms": 0.5698,
+       "over_floor_fwd_bwd": 3.91,
+       "bound": "bandwidth",
+       "note": "as a standalone pass; fused into its neighbours its floor is ~0",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "rule (gated delta, chunked kernels)",
+       "fwd_ms": 3.561,
+       "fwd_bwd_ms": 11.091,
+       "bwd_ms": 7.53,
+       "bytes_fwd": 67633152,
+       "bytes_bwd": 135266304,
+       "flops_fwd": 7247757312,
+       "flops_bwd": 21743271936,
+       "floor_fwd_ms": 0.63,
+       "floor_fwd_bwd_ms": 2.5199,
+       "over_floor_fwd_bwd": 4.4,
+       "bound": "compute",
+       "note": "FLOPs: the chunk-16 algorithm, roughly; the backward recomputes the states",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "gated norm (RMSNormGated)",
+       "fwd_ms": 2.242,
+       "fwd_bwd_ms": 6.434,
+       "bwd_ms": 4.192,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 83886080,
+       "flops_bwd": 167772160,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 17.07,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "out_proj",
+       "fwd_ms": 6.565,
+       "fwd_bwd_ms": 13.326,
+       "bwd_ms": 6.761,
+       "bytes_fwd": 69206016,
+       "bytes_bwd": 85983232,
+       "flops_fwd": 69793218560,
+       "flops_bwd": 70866960384,
+       "floor_fwd_ms": 6.0663,
+       "floor_fwd_bwd_ms": 12.226,
+       "over_floor_fwd_bwd": 1.09,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.052,
+       "fwd_bwd_ms": 0.088,
+       "bwd_ms": 0.036,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 0,
+       "flops_fwd": 8388608,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.1413,
+       "over_floor_fwd_bwd": 0.62,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        39,
+        30
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 1.422,
+       "fwd_bwd_ms": 4.515,
+       "bwd_ms": 3.093,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 19.17,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 18.756,
+       "fwd_bwd_ms": 36.549,
+       "bwd_ms": 17.793,
+       "bytes_fwd": 171966464,
+       "bytes_bwd": 188743680,
+       "flops_fwd": 208305913856,
+       "flops_bwd": 210453397504,
+       "floor_fwd_ms": 18.1057,
+       "floor_fwd_bwd_ms": 36.398,
+       "over_floor_fwd_bwd": 1.0,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 17.939,
+       "fwd_bwd_ms": 36.834,
+       "bwd_ms": 18.895,
+       "bytes_fwd": 171966464,
+       "bytes_bwd": 188743680,
+       "flops_fwd": 208305913856,
+       "flops_bwd": 210453397504,
+       "floor_fwd_ms": 18.1057,
+       "floor_fwd_bwd_ms": 36.398,
+       "over_floor_fwd_bwd": 1.01,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.705,
+       "fwd_bwd_ms": 2.127,
+       "bwd_ms": 1.422,
+       "bytes_fwd": 150994944,
+       "bytes_bwd": 251658240,
+       "flops_fwd": 150994944,
+       "flops_bwd": 301989888,
+       "floor_fwd_ms": 0.424,
+       "floor_fwd_bwd_ms": 1.1307,
+       "over_floor_fwd_bwd": 1.88,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        4
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 19.147,
+       "fwd_bwd_ms": 36.942,
+       "bwd_ms": 17.795,
+       "bytes_fwd": 171966464,
+       "bytes_bwd": 222298112,
+       "flops_fwd": 208305913856,
+       "flops_bwd": 210453397504,
+       "floor_fwd_ms": 18.1057,
+       "floor_fwd_bwd_ms": 36.398,
+       "over_floor_fwd_bwd": 1.01,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.053,
+       "fwd_bwd_ms": 0.114,
+       "bwd_ms": 0.061,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 0,
+       "flops_fwd": 8388608,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.1413,
+       "over_floor_fwd_bwd": 0.81,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        34,
+        12
+       ]
+      }
+     ],
+     "whole_fwd_ms": 94.726,
+     "whole_fwd_bwd_ms": 201.466,
+     "parts_sum_fwd_ms": 93.703,
+     "parts_sum_fwd_bwd_ms": 196.461,
+     "parts_sum_over_whole_fwd_bwd": 0.9752,
+     "floor_sum_fwd_bwd_ms": 163.973
+    },
+    "full_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 1.45,
+       "fwd_bwd_ms": 4.45,
+       "bwd_ms": 3.0,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 18.89,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        7,
+        3
+       ]
+      },
+      {
+       "part": "q_proj",
+       "fwd_ms": 12.678,
+       "fwd_bwd_ms": 24.183,
+       "bwd_ms": 11.505,
+       "bytes_fwd": 120586240,
+       "bytes_bwd": 137363456,
+       "flops_fwd": 139049566208,
+       "flops_bwd": 140660178944,
+       "floor_fwd_ms": 12.086,
+       "floor_fwd_bwd_ms": 24.312,
+       "over_floor_fwd_bwd": 0.99,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "k_proj",
+       "fwd_ms": 2.18,
+       "fwd_bwd_ms": 4.419,
+       "bwd_ms": 2.239,
+       "bytes_fwd": 30670848,
+       "bytes_bwd": 47448064,
+       "flops_fwd": 17850957824,
+       "flops_bwd": 18522046464,
+       "floor_fwd_ms": 1.5516,
+       "floor_fwd_bwd_ms": 3.1615,
+       "over_floor_fwd_bwd": 1.4,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "v_proj",
+       "fwd_ms": 2.31,
+       "fwd_bwd_ms": 4.602,
+       "bwd_ms": 2.292,
+       "bytes_fwd": 30670848,
+       "bytes_bwd": 47448064,
+       "flops_fwd": 17850957824,
+       "flops_bwd": 18522046464,
+       "floor_fwd_ms": 1.5516,
+       "floor_fwd_bwd_ms": 3.1615,
+       "over_floor_fwd_bwd": 1.46,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "attention glue before (chunk, views)",
+       "fwd_ms": 0.052,
+       "fwd_bwd_ms": 0.339,
+       "bwd_ms": 0.287,
+       "bytes_fwd": 67108864,
+       "bytes_bwd": 67108864,
+       "flops_fwd": 0,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1885,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 0.9,
+       "bound": "bandwidth",
+       "note": "views and the copies the reshapes make",
+       "inner": [
+        35,
+        10
+       ]
+      },
+      {
+       "part": "q_norm",
+       "fwd_ms": 1.672,
+       "fwd_bwd_ms": 4.827,
+       "bwd_ms": 3.155,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 20.49,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "k_norm",
+       "fwd_ms": 0.353,
+       "fwd_bwd_ms": 1.083,
+       "bwd_ms": 0.73,
+       "bytes_fwd": 8388608,
+       "bytes_bwd": 12582912,
+       "flops_fwd": 8388608,
+       "flops_bwd": 16777216,
+       "floor_fwd_ms": 0.0236,
+       "floor_fwd_bwd_ms": 0.0589,
+       "over_floor_fwd_bwd": 18.39,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        17,
+        7
+       ]
+      },
+      {
+       "part": "rotary (apply_rotary_pos_emb)",
+       "fwd_ms": 0.568,
+       "fwd_bwd_ms": 1.387,
+       "bwd_ms": 0.819,
+       "bytes_fwd": 41943040,
+       "bytes_bwd": 41943040,
+       "flops_fwd": 31457280,
+       "flops_bwd": 31457280,
+       "floor_fwd_ms": 0.1178,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 5.89,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        13,
+        5
+       ]
+      },
+      {
+       "part": "attention (scaled dot-product, sdpa)",
+       "fwd_ms": 8.391,
+       "fwd_bwd_ms": 23.912,
+       "bwd_ms": 15.521,
+       "bytes_fwd": 41943040,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 17179869184,
+       "flops_bwd": 42949672960,
+       "floor_fwd_ms": 1.4933,
+       "floor_fwd_bwd_ms": 5.2264,
+       "over_floor_fwd_bwd": 4.58,
+       "bound": "compute",
+       "note": "bytes: the flash-style minimum (no T x T matrix); FLOPs: the causal half",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "attention glue after (reshape, output gate)",
+       "fwd_ms": 0.19,
+       "fwd_bwd_ms": 0.621,
+       "bwd_ms": 0.431,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 83886080,
+       "flops_fwd": 41943040,
+       "flops_bwd": 83886080,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.3769,
+       "over_floor_fwd_bwd": 1.65,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        23,
+        12
+       ]
+      },
+      {
+       "part": "o_proj",
+       "fwd_ms": 6.586,
+       "fwd_bwd_ms": 12.966,
+       "bwd_ms": 6.38,
+       "bytes_fwd": 69206016,
+       "bytes_bwd": 85983232,
+       "flops_fwd": 69793218560,
+       "flops_bwd": 70866960384,
+       "floor_fwd_ms": 6.0663,
+       "floor_fwd_bwd_ms": 12.226,
+       "over_floor_fwd_bwd": 1.06,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.053,
+       "fwd_bwd_ms": 0.075,
+       "bwd_ms": 0.022,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 0,
+       "flops_fwd": 8388608,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.1413,
+       "over_floor_fwd_bwd": 0.53,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        35,
+        28
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 1.392,
+       "fwd_bwd_ms": 4.221,
+       "bwd_ms": 2.829,
+       "bytes_fwd": 33554432,
+       "bytes_bwd": 50331648,
+       "flops_fwd": 33554432,
+       "flops_bwd": 67108864,
+       "floor_fwd_ms": 0.0942,
+       "floor_fwd_bwd_ms": 0.2356,
+       "over_floor_fwd_bwd": 17.92,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        6,
+        3
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 18.747,
+       "fwd_bwd_ms": 36.909,
+       "bwd_ms": 18.162,
+       "bytes_fwd": 171966464,
+       "bytes_bwd": 188743680,
+       "flops_fwd": 208305913856,
+       "flops_bwd": 210453397504,
+       "floor_fwd_ms": 18.1057,
+       "floor_fwd_bwd_ms": 36.398,
+       "over_floor_fwd_bwd": 1.01,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 18.692,
+       "fwd_bwd_ms": 35.66,
+       "bwd_ms": 16.968,
+       "bytes_fwd": 171966464,
+       "bytes_bwd": 188743680,
+       "flops_fwd": 208305913856,
+       "flops_bwd": 210453397504,
+       "floor_fwd_ms": 18.1057,
+       "floor_fwd_bwd_ms": 36.398,
+       "over_floor_fwd_bwd": 0.98,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.701,
+       "fwd_bwd_ms": 2.093,
+       "bwd_ms": 1.392,
+       "bytes_fwd": 150994944,
+       "bytes_bwd": 251658240,
+       "flops_fwd": 150994944,
+       "flops_bwd": 301989888,
+       "floor_fwd_ms": 0.424,
+       "floor_fwd_bwd_ms": 1.1307,
+       "over_floor_fwd_bwd": 1.85,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        4
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 19.425,
+       "fwd_bwd_ms": 37.97,
+       "bwd_ms": 18.545,
+       "bytes_fwd": 171966464,
+       "bytes_bwd": 222298112,
+       "flops_fwd": 208305913856,
+       "flops_bwd": 210453397504,
+       "floor_fwd_ms": 18.1057,
+       "floor_fwd_bwd_ms": 36.398,
+       "over_floor_fwd_bwd": 1.04,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.053,
+       "fwd_bwd_ms": 0.074,
+       "bwd_ms": 0.021,
+       "bytes_fwd": 50331648,
+       "bytes_bwd": 0,
+       "flops_fwd": 8388608,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.1413,
+       "floor_fwd_bwd_ms": 0.1413,
+       "over_floor_fwd_bwd": 0.52,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        34,
+        32
+       ]
+      }
+     ],
+     "whole_fwd_ms": 94.444,
+     "whole_fwd_bwd_ms": 199.633,
+     "parts_sum_fwd_ms": 95.493,
+     "parts_sum_fwd_bwd_ms": 199.791,
+     "parts_sum_over_whole_fwd_bwd": 1.0008,
+     "floor_sum_fwd_bwd_ms": 160.45
+    },
+    "masks": {
+     "linear": null,
+     "full": null
+    }
+   },
+   "lora 1x859": {
+    "linear_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.554,
+       "fwd_bwd_ms": 1.904,
+       "bwd_ms": 1.35,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 19.27,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        11,
+        5
+       ]
+      },
+      {
+       "part": "in_proj_qkv",
+       "fwd_ms": 5.539,
+       "fwd_bwd_ms": 10.96,
+       "bwd_ms": 5.421,
+       "bytes_fwd": 91365376,
+       "bytes_bwd": 98402304,
+       "flops_fwd": 58322059264,
+       "flops_bwd": 58997604352,
+       "floor_fwd_ms": 5.0693,
+       "floor_fwd_bwd_ms": 10.1973,
+       "over_floor_fwd_bwd": 1.07,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_z",
+       "fwd_ms": 3.127,
+       "fwd_bwd_ms": 5.959,
+       "bwd_ms": 2.832,
+       "bytes_fwd": 49725440,
+       "bytes_bwd": 56762368,
+       "flops_fwd": 29273620480,
+       "flops_bwd": 29723983872,
+       "floor_fwd_ms": 2.5444,
+       "floor_fwd_bwd_ms": 5.128,
+       "over_floor_fwd_bwd": 1.16,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "in_proj_b",
+       "fwd_ms": 0.068,
+       "fwd_bwd_ms": 0.101,
+       "bwd_ms": 0.033,
+       "bytes_fwd": 7354048,
+       "bytes_bwd": 7354048,
+       "flops_fwd": 225181696,
+       "flops_bwd": 225181696,
+       "floor_fwd_ms": 0.0207,
+       "floor_fwd_bwd_ms": 0.0413,
+       "over_floor_fwd_bwd": 2.45,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        32,
+        26
+       ]
+      },
+      {
+       "part": "in_proj_a",
+       "fwd_ms": 0.068,
+       "fwd_bwd_ms": 0.103,
+       "bwd_ms": 0.035,
+       "bytes_fwd": 7354048,
+       "bytes_bwd": 7354048,
+       "flops_fwd": 225181696,
+       "flops_bwd": 225181696,
+       "floor_fwd_ms": 0.0207,
+       "floor_fwd_bwd_ms": 0.0413,
+       "over_floor_fwd_bwd": 2.49,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        33,
+        26
+       ]
+      },
+      {
+       "part": "in_proj_qkv, output transposed as the layer uses it",
+       "fwd_ms": 5.557,
+       "fwd_bwd_ms": 11.17,
+       "bwd_ms": 5.613,
+       "bytes_fwd": 91365376,
+       "bytes_bwd": 98402304,
+       "flops_fwd": 58322059264,
+       "flops_bwd": 58997604352,
+       "floor_fwd_ms": 5.0693,
+       "floor_fwd_bwd_ms": 10.1973,
+       "over_floor_fwd_bwd": 1.1,
+       "bound": "compute",
+       "note": "the gradient arrives as the transpose of a contiguous [B, C, T] tensor",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "conv path (causal_conv1d_fn + SiLU)",
+       "fwd_ms": 0.397,
+       "fwd_bwd_ms": 2.477,
+       "bwd_ms": 2.08,
+       "bytes_fwd": 28147712,
+       "bytes_bwd": 42221568,
+       "flops_fwd": 84443136,
+       "flops_bwd": 168886272,
+       "floor_fwd_ms": 0.079,
+       "floor_fwd_bwd_ms": 0.1976,
+       "over_floor_fwd_bwd": 12.53,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        14,
+        4
+       ]
+      },
+      {
+       "part": "glue (transposes, split, reshape, beta, g, repeat)",
+       "fwd_ms": 0.452,
+       "fwd_bwd_ms": 0.972,
+       "bwd_ms": 0.52,
+       "bytes_fwd": 35514496,
+       "bytes_bwd": 49588352,
+       "flops_fwd": 329856,
+       "flops_bwd": 659712,
+       "floor_fwd_ms": 0.0997,
+       "floor_fwd_bwd_ms": 0.239,
+       "over_floor_fwd_bwd": 4.07,
+       "bound": "bandwidth",
+       "note": "as a standalone pass; fused into its neighbours its floor is ~0",
+       "inner": [
+        14,
+        6
+       ]
+      },
+      {
+       "part": "rule (gated delta, chunked kernels)",
+       "fwd_ms": 1.586,
+       "fwd_bwd_ms": 4.818,
+       "bwd_ms": 3.232,
+       "bytes_fwd": 28367616,
+       "bytes_bwd": 56735232,
+       "flops_fwd": 3039952896,
+       "flops_bwd": 9119858688,
+       "floor_fwd_ms": 0.2642,
+       "floor_fwd_bwd_ms": 1.0569,
+       "over_floor_fwd_bwd": 4.56,
+       "bound": "compute",
+       "note": "FLOPs: the chunk-16 algorithm, roughly; the backward recomputes the states",
+       "inner": [
+        5,
+        3
+       ]
+      },
+      {
+       "part": "gated norm (RMSNormGated)",
+       "fwd_ms": 0.899,
+       "fwd_bwd_ms": 2.661,
+       "bwd_ms": 1.762,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 35184640,
+       "flops_fwd": 35184640,
+       "flops_bwd": 70369280,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.1581,
+       "over_floor_fwd_bwd": 16.83,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        9,
+        4
+       ]
+      },
+      {
+       "part": "out_proj",
+       "fwd_ms": 2.96,
+       "fwd_bwd_ms": 5.96,
+       "bwd_ms": 3.0,
+       "bytes_fwd": 49725440,
+       "bytes_bwd": 56762368,
+       "flops_fwd": 29273620480,
+       "flops_bwd": 29723983872,
+       "floor_fwd_ms": 2.5444,
+       "floor_fwd_bwd_ms": 5.128,
+       "over_floor_fwd_bwd": 1.16,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        4,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.028,
+       "fwd_bwd_ms": 0.06,
+       "bwd_ms": 0.032,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 0,
+       "flops_fwd": 3518464,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.0593,
+       "over_floor_fwd_bwd": 1.01,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        38,
+        9
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.55,
+       "fwd_bwd_ms": 1.892,
+       "bwd_ms": 1.342,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 19.15,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        12,
+        5
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 8.068,
+       "fwd_bwd_ms": 16.156,
+       "bwd_ms": 8.088,
+       "bytes_fwd": 133005312,
+       "bytes_bwd": 140042240,
+       "flops_fwd": 87370498048,
+       "flops_bwd": 88271224832,
+       "floor_fwd_ms": 7.5941,
+       "floor_fwd_bwd_ms": 15.2666,
+       "over_floor_fwd_bwd": 1.06,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 7.991,
+       "fwd_bwd_ms": 15.964,
+       "bwd_ms": 7.973,
+       "bytes_fwd": 133005312,
+       "bytes_bwd": 140042240,
+       "flops_fwd": 87370498048,
+       "flops_bwd": 88271224832,
+       "floor_fwd_ms": 7.5941,
+       "floor_fwd_bwd_ms": 15.2666,
+       "over_floor_fwd_bwd": 1.05,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.27,
+       "fwd_bwd_ms": 0.832,
+       "bwd_ms": 0.562,
+       "bytes_fwd": 63332352,
+       "bytes_bwd": 105553920,
+       "flops_fwd": 63332352,
+       "flops_bwd": 126664704,
+       "floor_fwd_ms": 0.1778,
+       "floor_fwd_bwd_ms": 0.4743,
+       "over_floor_fwd_bwd": 1.75,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        9,
+        7
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 8.458,
+       "fwd_bwd_ms": 16.194,
+       "bwd_ms": 7.736,
+       "bytes_fwd": 133005312,
+       "bytes_bwd": 154116096,
+       "flops_fwd": 87370498048,
+       "flops_bwd": 88271224832,
+       "floor_fwd_ms": 7.5941,
+       "floor_fwd_bwd_ms": 15.2666,
+       "over_floor_fwd_bwd": 1.06,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.028,
+       "fwd_bwd_ms": 0.048,
+       "bwd_ms": 0.02,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 0,
+       "flops_fwd": 3518464,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.0593,
+       "over_floor_fwd_bwd": 0.81,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        41,
+        35
+       ]
+      }
+     ],
+     "whole_fwd_ms": 41.259,
+     "whole_fwd_bwd_ms": 85.892,
+     "parts_sum_fwd_ms": 41.043,
+     "parts_sum_fwd_bwd_ms": 87.061,
+     "parts_sum_over_whole_fwd_bwd": 1.0136,
+     "floor_sum_fwd_bwd_ms": 68.778
+    },
+    "full_attention": {
+     "parts": [
+      {
+       "part": "input_layernorm",
+       "fwd_ms": 0.544,
+       "fwd_bwd_ms": 1.883,
+       "bwd_ms": 1.339,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 19.06,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        12,
+        5
+       ]
+      },
+      {
+       "part": "q_proj",
+       "fwd_ms": 5.524,
+       "fwd_bwd_ms": 10.948,
+       "bwd_ms": 5.424,
+       "bytes_fwd": 91365376,
+       "bytes_bwd": 98402304,
+       "flops_fwd": 58322059264,
+       "flops_bwd": 58997604352,
+       "floor_fwd_ms": 5.0693,
+       "floor_fwd_bwd_ms": 10.1973,
+       "over_floor_fwd_bwd": 1.07,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "k_proj",
+       "fwd_ms": 1.236,
+       "fwd_bwd_ms": 2.1,
+       "bwd_ms": 0.864,
+       "bytes_fwd": 18495488,
+       "bytes_bwd": 25532416,
+       "flops_fwd": 7487291392,
+       "flops_bwd": 7768768512,
+       "floor_fwd_ms": 0.6508,
+       "floor_fwd_bwd_ms": 1.326,
+       "over_floor_fwd_bwd": 1.58,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "v_proj",
+       "fwd_ms": 1.254,
+       "fwd_bwd_ms": 2.408,
+       "bwd_ms": 1.154,
+       "bytes_fwd": 18495488,
+       "bytes_bwd": 25532416,
+       "flops_fwd": 7487291392,
+       "flops_bwd": 7768768512,
+       "floor_fwd_ms": 0.6508,
+       "floor_fwd_bwd_ms": 1.326,
+       "over_floor_fwd_bwd": 1.82,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "attention glue before (chunk, views)",
+       "fwd_ms": 0.055,
+       "fwd_bwd_ms": 0.137,
+       "bwd_ms": 0.082,
+       "bytes_fwd": 28147712,
+       "bytes_bwd": 28147712,
+       "flops_fwd": 0,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.079,
+       "floor_fwd_bwd_ms": 0.1581,
+       "over_floor_fwd_bwd": 0.87,
+       "bound": "bandwidth",
+       "note": "views and the copies the reshapes make",
+       "inner": [
+        32,
+        24
+       ]
+      },
+      {
+       "part": "q_norm",
+       "fwd_ms": 0.688,
+       "fwd_bwd_ms": 1.943,
+       "bwd_ms": 1.255,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 19.66,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        7,
+        4
+       ]
+      },
+      {
+       "part": "k_norm",
+       "fwd_ms": 0.176,
+       "fwd_bwd_ms": 0.491,
+       "bwd_ms": 0.315,
+       "bytes_fwd": 3518464,
+       "bytes_bwd": 5277696,
+       "flops_fwd": 3518464,
+       "flops_bwd": 7036928,
+       "floor_fwd_ms": 0.0099,
+       "floor_fwd_bwd_ms": 0.0247,
+       "over_floor_fwd_bwd": 19.88,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        25,
+        13
+       ]
+      },
+      {
+       "part": "rotary (apply_rotary_pos_emb)",
+       "fwd_ms": 0.315,
+       "fwd_bwd_ms": 0.744,
+       "bwd_ms": 0.429,
+       "bytes_fwd": 17592320,
+       "bytes_bwd": 17592320,
+       "flops_fwd": 13194240,
+       "flops_bwd": 13194240,
+       "floor_fwd_ms": 0.0494,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 7.53,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        17,
+        11
+       ]
+      },
+      {
+       "part": "attention (scaled dot-product, sdpa)",
+       "fwd_ms": 3.236,
+       "fwd_bwd_ms": 9.354,
+       "bwd_ms": 6.118,
+       "bytes_fwd": 17592320,
+       "bytes_bwd": 35184640,
+       "flops_fwd": 6044721152,
+       "flops_bwd": 15111802880,
+       "floor_fwd_ms": 0.5254,
+       "floor_fwd_bwd_ms": 1.8389,
+       "over_floor_fwd_bwd": 5.09,
+       "bound": "compute",
+       "note": "bytes: the flash-style minimum (no T x T matrix); FLOPs: the causal half",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "attention glue after (reshape, output gate)",
+       "fwd_ms": 0.058,
+       "fwd_bwd_ms": 0.193,
+       "bwd_ms": 0.135,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 35184640,
+       "flops_fwd": 17592320,
+       "flops_bwd": 35184640,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.1581,
+       "over_floor_fwd_bwd": 1.22,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        34,
+        23
+       ]
+      },
+      {
+       "part": "o_proj",
+       "fwd_ms": 3.105,
+       "fwd_bwd_ms": 5.983,
+       "bwd_ms": 2.878,
+       "bytes_fwd": 49725440,
+       "bytes_bwd": 56762368,
+       "flops_fwd": 29273620480,
+       "flops_bwd": 29723983872,
+       "floor_fwd_ms": 2.5444,
+       "floor_fwd_bwd_ms": 5.128,
+       "over_floor_fwd_bwd": 1.17,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.028,
+       "fwd_bwd_ms": 0.047,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 0,
+       "flops_fwd": 3518464,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.0593,
+       "over_floor_fwd_bwd": 0.79,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        41,
+        34
+       ]
+      },
+      {
+       "part": "post_attention_layernorm",
+       "fwd_ms": 0.546,
+       "fwd_bwd_ms": 1.768,
+       "bwd_ms": 1.222,
+       "bytes_fwd": 14073856,
+       "bytes_bwd": 21110784,
+       "flops_fwd": 14073856,
+       "flops_bwd": 28147712,
+       "floor_fwd_ms": 0.0395,
+       "floor_fwd_bwd_ms": 0.0988,
+       "over_floor_fwd_bwd": 17.89,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        12,
+        5
+       ]
+      },
+      {
+       "part": "gate_proj",
+       "fwd_ms": 7.832,
+       "fwd_bwd_ms": 15.659,
+       "bwd_ms": 7.827,
+       "bytes_fwd": 133005312,
+       "bytes_bwd": 140042240,
+       "flops_fwd": 87370498048,
+       "flops_bwd": 88271224832,
+       "floor_fwd_ms": 7.5941,
+       "floor_fwd_bwd_ms": 15.2666,
+       "over_floor_fwd_bwd": 1.03,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "up_proj",
+       "fwd_ms": 7.992,
+       "fwd_bwd_ms": 15.953,
+       "bwd_ms": 7.961,
+       "bytes_fwd": 133005312,
+       "bytes_bwd": 140042240,
+       "flops_fwd": 87370498048,
+       "flops_bwd": 88271224832,
+       "floor_fwd_ms": 7.5941,
+       "floor_fwd_bwd_ms": 15.2666,
+       "over_floor_fwd_bwd": 1.04,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "SwiGLU (act(gate) * up)",
+       "fwd_ms": 0.263,
+       "fwd_bwd_ms": 0.816,
+       "bwd_ms": 0.553,
+       "bytes_fwd": 63332352,
+       "bytes_bwd": 105553920,
+       "flops_fwd": 63332352,
+       "flops_bwd": 126664704,
+       "floor_fwd_ms": 0.1778,
+       "floor_fwd_bwd_ms": 0.4743,
+       "over_floor_fwd_bwd": 1.72,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        15,
+        7
+       ]
+      },
+      {
+       "part": "down_proj",
+       "fwd_ms": 8.514,
+       "fwd_bwd_ms": 16.653,
+       "bwd_ms": 8.139,
+       "bytes_fwd": 133005312,
+       "bytes_bwd": 154116096,
+       "flops_fwd": 87370498048,
+       "flops_bwd": 88271224832,
+       "floor_fwd_ms": 7.5941,
+       "floor_fwd_bwd_ms": 15.2666,
+       "over_floor_fwd_bwd": 1.09,
+       "bound": "compute",
+       "note": "",
+       "inner": [
+        3,
+        3
+       ]
+      },
+      {
+       "part": "residual add",
+       "fwd_ms": 0.028,
+       "fwd_bwd_ms": 0.047,
+       "bwd_ms": 0.019,
+       "bytes_fwd": 21110784,
+       "bytes_bwd": 0,
+       "flops_fwd": 3518464,
+       "flops_bwd": 0,
+       "floor_fwd_ms": 0.0593,
+       "floor_fwd_bwd_ms": 0.0593,
+       "over_floor_fwd_bwd": 0.79,
+       "bound": "bandwidth",
+       "note": "",
+       "inner": [
+        39,
+        34
+       ]
+      }
+     ],
+     "whole_fwd_ms": 40.15,
+     "whole_fwd_bwd_ms": 85.607,
+     "parts_sum_fwd_ms": 41.394,
+     "parts_sum_fwd_bwd_ms": 87.127,
+     "parts_sum_over_whole_fwd_bwd": 1.0178,
+     "floor_sum_fwd_bwd_ms": 66.945
+    },
+    "masks": {
+     "linear": null,
+     "full": null
+    }
+   }
+  }
+ },
+ "ended": "2026-11-03 12:26:18 PST"
+}

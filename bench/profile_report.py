@@ -158,7 +158,9 @@ def report(model, rec_path, d2m_path):
     rows.append({"component": "new_shapes", "group": "new_shapes", "fwd_ms": cold, "bwd_ms": 0.0, "ms": cold,
                   "cpu_net_fwd_ms": None, "cpu_net_bwd_ms": None, "segments": None, "gpu_waiting_fwd_ms": None,
                   "gpu_waiting_bwd_ms": None, "level": "micro-batch (A - B)"})
-    total = sum(r["ms"] for r in rows)
+    # the registered reading: shares of the profiled micro-batch (its components and its part of the step's own parts); the
+    # new-shape cost (A - B) and the instrument's overhead (C - B) are reported beside it, against the same denominator
+    total = sum(r["ms"] for r in rows if r["group"] != "new_shapes")
     for r in rows:
         r["share"] = r["ms"] / total
         for d in ("fwd", "bwd"):
@@ -175,6 +177,11 @@ def report(model, rec_path, d2m_path):
     out["mean_b_ms"] = round(sum_b / n_mb, 2)
     out["mean_a_ms"] = round(sum_a / n_mb, 2)
     out["instrument_overhead_ms_per_micro_batch"] = round((sum_c - sum_b) / n_mb, 2)
+    out["beside_the_shares_pct"] = {"new_shapes (A - B)": round(100 * cold / total, 2),
+                                    "the instrument (C - B)": round(100 * (sum_c - sum_b) / n_mb / total, 2)}
+    # the step as trained, rebuilt: the profiled components less the instrument's overhead plus the new-shape cost
+    out["step_ms_rebuilt_as_trained"] = round((total - (sum_c - sum_b) / n_mb + cold) * mb_per_step, 1)
+    out["step_ms_as_trained_measured_mean"] = round(statistics.mean(s["step_ms_as_trained"] for s in steps), 1)
     out["components"] = [{k: (round(v, 4) if isinstance(v, float) else v) for k, v in r.items()} for r in rows]
 
     groups = defaultdict(float)
@@ -190,6 +197,38 @@ def report(model, rec_path, d2m_path):
             e["predicted_pct"] = [lo, hi]
             e["verdict"] = "met" if lo <= share <= hi else ("missed (lower)" if share < lo else "missed (higher)")
         out["groups"][g] = e
+
+    # the frozen products' rate in situ: their FLOPs at the micro-batches' mean padded token count over their event time
+    try:
+        import sys
+        sys.path.insert(0, HERE)
+        from profile_products import MODELS, text_config
+        tc = text_config(MODELS[model])
+        h, i = tc["hidden_size"], tc["intermediate_size"]
+        kd = tc["linear_key_head_dim"] * tc["linear_num_key_heads"]
+        vd = tc["linear_value_head_dim"] * tc["linear_num_value_heads"]
+        nq, nkv, hd = tc["num_attention_heads"], tc["num_key_value_heads"], tc["head_dim"]
+        n_lin_l = sum(t == "linear_attention" for t in tc["layer_types"])
+        n_full_l = len(tc["layer_types"]) - n_lin_l
+        dims = {"lin.in_proj_qkv.base": (h, 2 * kd + vd, n_lin_l), "lin.in_proj_z.base": (h, vd, n_lin_l),
+                "lin.out_proj.base": (vd, h, n_lin_l), "lin.gate_proj.base": (h, i, n_lin_l), "lin.up_proj.base": (h, i, n_lin_l),
+                "lin.down_proj.base": (i, h, n_lin_l), "full.q_proj.base": (h, 2 * nq * hd, n_full_l),
+                "full.k_proj.base": (h, nkv * hd, n_full_l), "full.v_proj.base": (h, nkv * hd, n_full_l),
+                "full.o_proj.base": (nq * hd, h, n_full_l), "full.gate_proj.base": (h, i, n_full_l),
+                "full.up_proj.base": (h, i, n_full_l), "full.down_proj.base": (i, h, n_full_l),
+                "top.lm_head": (h, tc["vocab_size"], 1)}
+        m_mean = statistics.mean(m["shapes"]["input_ids"][0] * m["shapes"]["input_ids"][1] for m in mbs)
+        rates = []
+        for r in rows:
+            if r["component"] in dims:
+                k_in, n_out, layers = dims[r["component"]]
+                fl = 2 * m_mean * k_in * n_out * layers
+                rates.append({"component": r["component"], "fwd_tflops": round(fl / r["fwd_ms"] / 1e9, 2) if r["fwd_ms"] else None,
+                              "bwd_tflops": round(fl / r["bwd_ms"] / 1e9, 2) if r["bwd_ms"] else None,
+                              "ms": round(r["ms"], 2)})
+        out["frozen_products_in_situ"] = {"mean_padded_tokens_per_micro_batch": round(m_mean, 1), "rates": rates}
+    except Exception as ex:  # noqa: BLE001 - the config is read from the offline Hub cache; without it the rates are skipped
+        out["frozen_products_in_situ"] = {"error": f"{type(ex).__name__}: {ex}"}
 
     # per layer class: the in-situ layer's forward + backward per layer (the micro-batch's mean shape)
     n_lin = rec.get("checks", {}).get("linear_attention_layers")

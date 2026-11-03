@@ -211,12 +211,17 @@ def linear_parts(cfg, M, layer, B, T, mask2d, with_lora):
             k = k.repeat_interleave(rep, dim=2)
         return q, k, v, g, beta, z_.reshape(B, T, -1, dv)
 
-    qk_out = 2 * kd * rep
-    glue_f = 2 * N * C + 2 * N * (qk_out + vd) + 2 * 2 * N * Hv + 2 * 4 * N * Hv
+    # q, k, v leave as views of the convolution's output and z as a view of in_proj_z's: the forward's least traffic is beta and
+    # g from a and b (and, at 9B, the repeated q and k); the backward gathers dq, dk, dv into the convolution output's gradient
+    small = N * Hv * (2 + 2 + 4 + 2)                       # a, b read; g (float32) and beta written
+    rep_f = 2 * N * 2 * kd * (1 + rep) if rep > 1 else 0   # q, k read, their repeats written
+    glue_f = small + rep_f
+    glue_b = 2 * N * (2 * kd * rep + vd) + 2 * N * C + small
     parts.append(Part("glue (transposes, split, reshape, beta, g, repeat)", glue,
-                      [leaf(conv_out), leaf(aa), leaf(bb_), leaf(z)], fbytes=glue_f, bbytes=glue_f + 2 * N * C,
+                      [leaf(conv_out), leaf(aa), leaf(bb_), leaf(z)], fbytes=glue_f, bbytes=glue_b,
                       fflops=12 * N * Hv, bflops=24 * N * Hv,
-                      note="as a standalone pass; fused into its neighbours its floor is ~0"))
+                      note="q, k, v and z are views: the forward writes only beta, g (and the repeats); the backward gathers "
+                           "the gradients into the convolution output's"))
     with torch.no_grad(), torch.autocast(DEV, dtype=BF):
         q, k, v, g, beta, z4 = glue(conv_out, aa, bb_, z)
     # 5. the rule (macai's kernels, through the drop-in), on the strided q / k / v the glue hands it
@@ -246,7 +251,8 @@ def linear_parts(cfg, M, layer, B, T, mask2d, with_lora):
 def mlp_parts(cfg, layer, B, T, x, lp, is_lora):
     N, D, I = B * T, cfg.hidden_size, cfg.intermediate_size
     m = layer.mlp
-    out = [Part("residual add", lambda s, t: s + t, [leaf(x), leaf(x)], fbytes=6 * N * D, bbytes=0, fflops=N * D),
+    x2 = x.flip(0).roll(1, dims=1).contiguous()     # the add's second operand: other values in other memory, as in the layer
+    out = [Part("residual add", lambda s, t: s + t, [leaf(x), leaf(x2)], fbytes=6 * N * D, bbytes=0, fflops=N * D),
            Part("post_attention_layernorm", layer.post_attention_layernorm, [leaf(x)], fbytes=4 * N * D, bbytes=6 * N * D,
                 fflops=4 * N * D, bflops=8 * N * D)]
     with torch.no_grad(), torch.autocast(DEV, dtype=BF):
@@ -262,7 +268,7 @@ def mlp_parts(cfg, layer, B, T, x, lp, is_lora):
         h = m.act_fn(g) * u
     fb, bb, ff, bf = proj_bytes(N, I, D, is_lora(m.down_proj))
     out.append(Part("down_proj", m.down_proj, [leaf(h)], lp(m.down_proj), fb, bb, ff, bf))
-    out.append(Part("residual add", lambda s, t: s + t, [leaf(x), leaf(x)], fbytes=6 * N * D, bbytes=0, fflops=N * D))
+    out.append(Part("residual add", lambda s, t: s + t, [leaf(x), leaf(x2)], fbytes=6 * N * D, bbytes=0, fflops=N * D))
     return out
 
 
@@ -295,8 +301,9 @@ def full_parts(cfg, M, layer, B, T, pos_emb, mask4d, with_lora):
         qs, gate = torch.chunk(qg_.view(B, T, -1, hd * 2), 2, dim=-1)
         return qs.reshape(shp), gate.reshape(B, T, -1)
 
-    parts.append(Part("attention glue before (chunk, views)", pre, [leaf(qg)], fbytes=4 * N * nq * hd * 2,
-                      bbytes=4 * N * nq * hd * 2, note="views and the copies the reshapes make"))
+    # the query half stays a view; the gate's reshape copies it; the backward gathers dq and dgate into q_proj's gradient
+    parts.append(Part("attention glue before (chunk, views)", pre, [leaf(qg)], fbytes=4 * N * nq * hd,
+                      bbytes=8 * N * nq * hd, note="the query a view, the gate copied by its reshape"))
     with torch.no_grad(), torch.autocast(DEV, dtype=BF):
         qs, gate = pre(qg)
     parts.append(Part("q_norm", a.q_norm, [leaf(qs)], fbytes=4 * N * nq * hd, bbytes=6 * N * nq * hd,
@@ -376,17 +383,29 @@ def main():
     print(f"[profile_layer] pid {os.getpid()}", flush=True)
     ap = argparse.ArgumentParser()
     ap.add_argument("--shapes", action="append", required=True, help="model=BxT,BxT (the bench's shape first)")
-    ap.add_argument("--rate", default="auto", help="the product rate for the compute floors, TFLOP/s; 'auto': the large-square "
-                                                  "bf16 rate in bench/layer_logs/products_torch.json (the same session)")
+    ap.add_argument("--rate", default="auto", help="the product rate for the compute floors, TFLOP/s; 'auto': the highest "
+                                                  "large-square bf16 rate PyTorch reached in the session's records "
+                                                  "(bench/layer_logs/products_torch.json, products_square_forms.json)")
     ap.add_argument("--variants", default="frozen,lora")
     a = ap.parse_args()
+    rate_source = "--rate"
     if a.rate == "auto":
-        with open(os.path.join(HERE, "layer_logs", "products_torch.json"), encoding="utf-8") as fh:
-            a.rate = float(json.load(fh)["large_square_tflops"])
+        best = []
+        p = os.path.join(HERE, "layer_logs", "products_torch.json")
+        if os.path.exists(p):
+            r = json.load(open(p, encoding="utf-8"))
+            best += [v["tflops_events"] for k in ("squares", "squares_end") for v in r.get(k, {}).values()]
+        p = os.path.join(HERE, "layer_logs", "products_square_forms.json")
+        if os.path.exists(p):
+            r = json.load(open(p, encoding="utf-8"))
+            best += [x for forms in r["forms"].values() for xs in forms.values() for x in xs]
+        a.rate = max(best)
+        rate_source = "the highest large-square rate in products_torch.json / products_square_forms.json"
     a.rate = float(a.rate)
     shapes = {k: [tuple(int(x) for x in s.split("x")) for s in v.split(",")] for k, v in (t.split("=") for t in a.shapes)}
     out = {"torch": torch.__version__, "started": time.strftime("%Y-%m-%d %H:%M:%S %Z"), "rate_tflops": a.rate,
-           "bandwidth_gbps": BW, "reps": REPS, "lora": LORA, "lora_targets": TARGETS, "models": {}}
+           "rate_source": rate_source, "bandwidth_gbps": BW, "reps": REPS, "lora": LORA, "lora_targets": TARGETS,
+           "pad_row_fraction": PAD_ROW_FRACTION, "models": {}}
     warm_gpu(2.0)
     patch.install()
     for model, shp in shapes.items():

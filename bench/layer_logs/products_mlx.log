@@ -1,0 +1,223 @@
+[guard] start 12:26:19 limit 96.0 GB, swap +1.0 GB, wall 3600 s, swap at start 0.14 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/profile_products.py --mlx --shapes 0.8b=4x1024,2x903 --shapes 9b=2x1024,1x859
+[products] pid 95664
+squares {"2048": {"wall_ms": 1.3598, "inner": 5, "tflops_wall": 12.635}, "4096": {"wall_ms": 10.7171, "inner": 3, "tflops_wall": 12.824}, "8192": {"wall_ms": 87.3391, "inner": 3, "tflops_wall": 12.589}}
+0.8b 4x1024 in_proj_qkv base fwd plain {"wall_ms": 4.0202, "tflops_wall": 12.82, "of_large_square": 0.9997}
+0.8b 4x1024 in_proj_qkv base bwd plain {"wall_ms": 4.0092, "tflops_wall": 12.855, "of_large_square": 1.0024}
+0.8b 4x1024 in_proj_qkv base bwd layer {"wall_ms": 4.4557, "tflops_wall": 11.567, "of_large_square": 0.902}
+0.8b 4x1024 in_proj_qkv lora_A fwd plain {"wall_ms": 0.0537, "tflops_wall": 4.995, "of_large_square": 0.3895}
+0.8b 4x1024 in_proj_qkv lora_B fwd plain {"wall_ms": 0.1646, "tflops_wall": 9.784, "of_large_square": 0.7629}
+0.8b 4x1024 in_proj_qkv lora_B bwd plain {"wall_ms": 0.5629, "tflops_wall": 5.723, "of_large_square": 0.4463}
+0.8b 4x1024 in_proj_qkv lora_A bwd plain {"wall_ms": 0.0765, "tflops_wall": 7.014, "of_large_square": 0.5469}
+0.8b 4x1024 in_proj_qkv lora_B bwd layer {"wall_ms": 1.2784, "tflops_wall": 2.52, "of_large_square": 0.1965}
+0.8b 4x1024 in_proj_z base fwd plain {"wall_ms": 1.4297, "tflops_wall": 12.017, "of_large_square": 0.9371}
+0.8b 4x1024 in_proj_z base bwd plain {"wall_ms": 1.3571, "tflops_wall": 12.659, "of_large_square": 0.9871}
+0.8b 4x1024 in_proj_z lora_A fwd plain {"wall_ms": 0.0808, "tflops_wall": 3.324, "of_large_square": 0.2592}
+0.8b 4x1024 in_proj_z lora_B fwd plain {"wall_ms": 0.0634, "tflops_wall": 8.475, "of_large_square": 0.6609}
+0.8b 4x1024 in_proj_z lora_B bwd plain {"wall_ms": 0.2, "tflops_wall": 5.368, "of_large_square": 0.4186}
+0.8b 4x1024 in_proj_z lora_A bwd plain {"wall_ms": 0.0793, "tflops_wall": 6.766, "of_large_square": 0.5276}
+0.8b 4x1024 in_proj_a / in_proj_b base fwd plain {"wall_ms": 0.0582, "tflops_wall": 2.308, "of_large_square": 0.18}
+0.8b 4x1024 in_proj_a / in_proj_b base bwd plain {"wall_ms": 0.0297, "tflops_wall": 4.52, "of_large_square": 0.3525}
+0.8b 4x1024 out_proj base fwd plain {"wall_ms": 1.3674, "tflops_wall": 12.563, "of_large_square": 0.9796}
+0.8b 4x1024 out_proj base bwd plain {"wall_ms": 1.3607, "tflops_wall": 12.626, "of_large_square": 0.9846}
+0.8b 4x1024 out_proj lora_A fwd plain {"wall_ms": 0.1007, "tflops_wall": 5.333, "of_large_square": 0.4159}
+0.8b 4x1024 out_proj lora_B fwd plain {"wall_ms": 0.0388, "tflops_wall": 6.927, "of_large_square": 0.5402}
+0.8b 4x1024 out_proj lora_B bwd plain {"wall_ms": 0.0999, "tflops_wall": 5.373, "of_large_square": 0.419}
+0.8b 4x1024 out_proj lora_A bwd plain {"wall_ms": 0.1527, "tflops_wall": 7.034, "of_large_square": 0.5485}
+0.8b 4x1024 q_proj base fwd plain {"wall_ms": 2.7652, "tflops_wall": 12.426, "of_large_square": 0.969}
+0.8b 4x1024 q_proj base bwd plain {"wall_ms": 2.7058, "tflops_wall": 12.699, "of_large_square": 0.9903}
+0.8b 4x1024 q_proj lora_A fwd plain {"wall_ms": 0.0537, "tflops_wall": 4.997, "of_large_square": 0.3897}
+0.8b 4x1024 q_proj lora_B fwd plain {"wall_ms": 0.12, "tflops_wall": 8.949, "of_large_square": 0.6978}
+0.8b 4x1024 q_proj lora_B bwd plain {"wall_ms": 0.3075, "tflops_wall": 6.983, "of_large_square": 0.5445}
+0.8b 4x1024 q_proj lora_A bwd plain {"wall_ms": 0.0789, "tflops_wall": 6.804, "of_large_square": 0.5306}
+0.8b 4x1024 k_proj / v_proj base fwd plain {"wall_ms": 0.3466, "tflops_wall": 12.393, "of_large_square": 0.9664}
+0.8b 4x1024 k_proj / v_proj base bwd plain {"wall_ms": 0.3485, "tflops_wall": 12.324, "of_large_square": 0.961}
+0.8b 4x1024 k_proj / v_proj lora_A fwd plain {"wall_ms": 0.0542, "tflops_wall": 4.951, "of_large_square": 0.3861}
+0.8b 4x1024 k_proj / v_proj lora_B fwd plain {"wall_ms": 0.0229, "tflops_wall": 5.849, "of_large_square": 0.4561}
+0.8b 4x1024 k_proj / v_proj lora_B bwd plain {"wall_ms": 0.0561, "tflops_wall": 4.786, "of_large_square": 0.3732}
+0.8b 4x1024 k_proj / v_proj lora_A bwd plain {"wall_ms": 0.0831, "tflops_wall": 6.458, "of_large_square": 0.5036}
+0.8b 4x1024 o_proj base fwd plain {"wall_ms": 1.3739, "tflops_wall": 12.504, "of_large_square": 0.975}
+0.8b 4x1024 o_proj base bwd plain {"wall_ms": 1.371, "tflops_wall": 12.531, "of_large_square": 0.9772}
+0.8b 4x1024 o_proj lora_A fwd plain {"wall_ms": 0.1001, "tflops_wall": 5.361, "of_large_square": 0.418}
+0.8b 4x1024 o_proj lora_B fwd plain {"wall_ms": 0.0376, "tflops_wall": 7.145, "of_large_square": 0.5572}
+0.8b 4x1024 o_proj lora_B bwd plain {"wall_ms": 0.0994, "tflops_wall": 5.401, "of_large_square": 0.4212}
+0.8b 4x1024 o_proj lora_A bwd plain {"wall_ms": 0.1456, "tflops_wall": 7.376, "of_large_square": 0.5752}
+0.8b 4x1024 gate_proj / up_proj base fwd plain {"wall_ms": 2.5328, "tflops_wall": 11.87, "of_large_square": 0.9256}
+0.8b 4x1024 gate_proj / up_proj base bwd plain {"wall_ms": 2.3805, "tflops_wall": 12.63, "of_large_square": 0.9849}
+0.8b 4x1024 gate_proj / up_proj lora_A fwd plain {"wall_ms": 0.0544, "tflops_wall": 4.939, "of_large_square": 0.3851}
+0.8b 4x1024 gate_proj / up_proj lora_B fwd plain {"wall_ms": 0.0995, "tflops_wall": 9.447, "of_large_square": 0.7367}
+0.8b 4x1024 gate_proj / up_proj lora_B bwd plain {"wall_ms": 0.3152, "tflops_wall": 5.962, "of_large_square": 0.4649}
+0.8b 4x1024 gate_proj / up_proj lora_A bwd plain {"wall_ms": 0.0779, "tflops_wall": 6.896, "of_large_square": 0.5377}
+0.8b 4x1024 down_proj base fwd plain {"wall_ms": 2.4283, "tflops_wall": 12.381, "of_large_square": 0.9655}
+0.8b 4x1024 down_proj base bwd plain {"wall_ms": 2.3832, "tflops_wall": 12.615, "of_large_square": 0.9837}
+0.8b 4x1024 down_proj lora_A fwd plain {"wall_ms": 0.1709, "tflops_wall": 5.498, "of_large_square": 0.4287}
+0.8b 4x1024 down_proj lora_B fwd plain {"wall_ms": 0.0367, "tflops_wall": 7.322, "of_large_square": 0.571}
+0.8b 4x1024 down_proj lora_B bwd plain {"wall_ms": 0.0977, "tflops_wall": 5.495, "of_large_square": 0.4285}
+0.8b 4x1024 down_proj lora_A bwd plain {"wall_ms": 0.2475, "tflops_wall": 7.592, "of_large_square": 0.592}
+0.8b 4x1024 lm_head base fwd plain {"wall_ms": 164.8159, "tflops_wall": 12.639, "of_large_square": 0.9856}
+0.8b 4x1024 lm_head base bwd plain {"wall_ms": 220.947, "tflops_wall": 9.428, "of_large_square": 0.7352}
+0.8b 2x903 in_proj_qkv base fwd plain {"wall_ms": 1.8408, "tflops_wall": 12.345, "of_large_square": 0.9626}
+0.8b 2x903 in_proj_qkv base bwd plain {"wall_ms": 1.8654, "tflops_wall": 12.182, "of_large_square": 0.9499}
+0.8b 2x903 in_proj_qkv base bwd layer {"wall_ms": 2.0429, "tflops_wall": 11.124, "of_large_square": 0.8674}
+0.8b 2x903 in_proj_qkv lora_A fwd plain {"wall_ms": 0.0323, "tflops_wall": 3.66, "of_large_square": 0.2854}
+0.8b 2x903 in_proj_qkv lora_B fwd plain {"wall_ms": 0.0785, "tflops_wall": 9.045, "of_large_square": 0.7053}
+0.8b 2x903 in_proj_qkv lora_B bwd plain {"wall_ms": 0.2717, "tflops_wall": 5.228, "of_large_square": 0.4077}
+0.8b 2x903 in_proj_qkv lora_A bwd plain {"wall_ms": 0.0525, "tflops_wall": 4.505, "of_large_square": 0.3513}
+0.8b 2x903 in_proj_qkv lora_B bwd layer {"wall_ms": 0.5095, "tflops_wall": 2.787, "of_large_square": 0.2173}
+0.8b 2x903 in_proj_z base fwd plain {"wall_ms": 0.6366, "tflops_wall": 11.898, "of_large_square": 0.9278}
+0.8b 2x903 in_proj_z base bwd plain {"wall_ms": 0.6192, "tflops_wall": 12.233, "of_large_square": 0.9539}
+0.8b 2x903 in_proj_z lora_A fwd plain {"wall_ms": 0.0309, "tflops_wall": 3.829, "of_large_square": 0.2986}
+0.8b 2x903 in_proj_z lora_B fwd plain {"wall_ms": 0.0356, "tflops_wall": 6.655, "of_large_square": 0.5189}
+0.8b 2x903 in_proj_z lora_B bwd plain {"wall_ms": 0.1271, "tflops_wall": 3.725, "of_large_square": 0.2905}
+0.8b 2x903 in_proj_z lora_A bwd plain {"wall_ms": 0.0509, "tflops_wall": 4.653, "of_large_square": 0.3628}
+0.8b 2x903 in_proj_a / in_proj_b base fwd plain {"wall_ms": 0.0308, "tflops_wall": 1.923, "of_large_square": 0.15}
+0.8b 2x903 in_proj_a / in_proj_b base bwd plain {"wall_ms": 0.0189, "tflops_wall": 3.136, "of_large_square": 0.2445}
+0.8b 2x903 out_proj base fwd plain {"wall_ms": 0.6354, "tflops_wall": 11.921, "of_large_square": 0.9296}
+0.8b 2x903 out_proj base bwd plain {"wall_ms": 0.6165, "tflops_wall": 12.288, "of_large_square": 0.9582}
+0.8b 2x903 out_proj lora_A fwd plain {"wall_ms": 0.0668, "tflops_wall": 3.542, "of_large_square": 0.2762}
+0.8b 2x903 out_proj lora_B fwd plain {"wall_ms": 0.0226, "tflops_wall": 5.241, "of_large_square": 0.4087}
+0.8b 2x903 out_proj lora_B bwd plain {"wall_ms": 0.0953, "tflops_wall": 2.483, "of_large_square": 0.1936}
+0.8b 2x903 out_proj lora_A bwd plain {"wall_ms": 0.1388, "tflops_wall": 3.41, "of_large_square": 0.2659}
+0.8b 2x903 q_proj base fwd plain {"wall_ms": 1.2666, "tflops_wall": 11.961, "of_large_square": 0.9327}
+0.8b 2x903 q_proj base bwd plain {"wall_ms": 1.2458, "tflops_wall": 12.161, "of_large_square": 0.9483}
+0.8b 2x903 q_proj lora_A fwd plain {"wall_ms": 0.031, "tflops_wall": 3.815, "of_large_square": 0.2975}
+0.8b 2x903 q_proj lora_B fwd plain {"wall_ms": 0.0569, "tflops_wall": 8.325, "of_large_square": 0.6492}
+0.8b 2x903 q_proj lora_B bwd plain {"wall_ms": 0.2184, "tflops_wall": 4.336, "of_large_square": 0.3381}
+0.8b 2x903 q_proj lora_A bwd plain {"wall_ms": 0.0524, "tflops_wall": 4.519, "of_large_square": 0.3524}
+0.8b 2x903 k_proj / v_proj base fwd plain {"wall_ms": 0.1654, "tflops_wall": 11.447, "of_large_square": 0.8926}
+0.8b 2x903 k_proj / v_proj base bwd plain {"wall_ms": 0.1635, "tflops_wall": 11.583, "of_large_square": 0.9032}
+0.8b 2x903 k_proj / v_proj lora_A fwd plain {"wall_ms": 0.0321, "tflops_wall": 3.687, "of_large_square": 0.2875}
+0.8b 2x903 k_proj / v_proj lora_B fwd plain {"wall_ms": 0.0151, "tflops_wall": 3.918, "of_large_square": 0.3055}
+0.8b 2x903 k_proj / v_proj lora_B bwd plain {"wall_ms": 0.0378, "tflops_wall": 3.128, "of_large_square": 0.2439}
+0.8b 2x903 k_proj / v_proj lora_A bwd plain {"wall_ms": 0.0502, "tflops_wall": 4.712, "of_large_square": 0.3674}
+0.8b 2x903 o_proj base fwd plain {"wall_ms": 0.6274, "tflops_wall": 12.074, "of_large_square": 0.9415}
+0.8b 2x903 o_proj base bwd plain {"wall_ms": 0.6272, "tflops_wall": 12.077, "of_large_square": 0.9417}
+0.8b 2x903 o_proj lora_A fwd plain {"wall_ms": 0.0666, "tflops_wall": 3.554, "of_large_square": 0.2771}
+0.8b 2x903 o_proj lora_B fwd plain {"wall_ms": 0.022, "tflops_wall": 5.391, "of_large_square": 0.4204}
+0.8b 2x903 o_proj lora_B bwd plain {"wall_ms": 0.0655, "tflops_wall": 3.613, "of_large_square": 0.2817}
+0.8b 2x903 o_proj lora_A bwd plain {"wall_ms": 0.0814, "tflops_wall": 5.815, "of_large_square": 0.4534}
+0.8b 2x903 gate_proj / up_proj base fwd plain {"wall_ms": 1.1436, "tflops_wall": 11.592, "of_large_square": 0.9039}
+0.8b 2x903 gate_proj / up_proj base bwd plain {"wall_ms": 1.0897, "tflops_wall": 12.164, "of_large_square": 0.9485}
+0.8b 2x903 gate_proj / up_proj lora_A fwd plain {"wall_ms": 0.0323, "tflops_wall": 3.665, "of_large_square": 0.2858}
+0.8b 2x903 gate_proj / up_proj lora_B fwd plain {"wall_ms": 0.0544, "tflops_wall": 7.612, "of_large_square": 0.5936}
+0.8b 2x903 gate_proj / up_proj lora_B bwd plain {"wall_ms": 0.2075, "tflops_wall": 3.994, "of_large_square": 0.3114}
+0.8b 2x903 gate_proj / up_proj lora_A bwd plain {"wall_ms": 0.0522, "tflops_wall": 4.538, "of_large_square": 0.3539}
+0.8b 2x903 down_proj base fwd plain {"wall_ms": 1.101, "tflops_wall": 12.04, "of_large_square": 0.9389}
+0.8b 2x903 down_proj base bwd plain {"wall_ms": 1.0884, "tflops_wall": 12.18, "of_large_square": 0.9498}
+0.8b 2x903 down_proj lora_A fwd plain {"wall_ms": 0.0717, "tflops_wall": 5.774, "of_large_square": 0.4502}
+0.8b 2x903 down_proj lora_B fwd plain {"wall_ms": 0.0226, "tflops_wall": 5.229, "of_large_square": 0.4078}
+0.8b 2x903 down_proj lora_B bwd plain {"wall_ms": 0.062, "tflops_wall": 3.821, "of_large_square": 0.298}
+0.8b 2x903 down_proj lora_A bwd plain {"wall_ms": 0.1276, "tflops_wall": 6.492, "of_large_square": 0.5062}
+0.8b 2x903 lm_head base fwd plain {"wall_ms": 72.4329, "tflops_wall": 12.68, "of_large_square": 0.9888}
+0.8b 2x903 lm_head base bwd plain {"wall_ms": 85.2051, "tflops_wall": 10.779, "of_large_square": 0.8405}
+9b 2x1024 in_proj_qkv base fwd plain {"wall_ms": 10.5674, "tflops_wall": 13.006, "of_large_square": 1.0142}
+9b 2x1024 in_proj_qkv base bwd plain {"wall_ms": 11.1602, "tflops_wall": 12.315, "of_large_square": 0.9603}
+9b 2x1024 in_proj_qkv base bwd layer {"wall_ms": 11.3206, "tflops_wall": 12.141, "of_large_square": 0.9467}
+9b 2x1024 in_proj_qkv lora_A fwd plain {"wall_ms": 0.0844, "tflops_wall": 6.364, "of_large_square": 0.4963}
+9b 2x1024 in_proj_qkv lora_B fwd plain {"wall_ms": 0.1123, "tflops_wall": 9.564, "of_large_square": 0.7458}
+9b 2x1024 in_proj_qkv lora_B bwd plain {"wall_ms": 0.3809, "tflops_wall": 5.638, "of_large_square": 0.4396}
+9b 2x1024 in_proj_qkv lora_A bwd plain {"wall_ms": 0.1759, "tflops_wall": 6.103, "of_large_square": 0.4759}
+9b 2x1024 in_proj_qkv lora_B bwd layer {"wall_ms": 0.9335, "tflops_wall": 2.3, "of_large_square": 0.1794}
+9b 2x1024 in_proj_z base fwd plain {"wall_ms": 5.3996, "tflops_wall": 12.727, "of_large_square": 0.9924}
+9b 2x1024 in_proj_z base bwd plain {"wall_ms": 5.5143, "tflops_wall": 12.462, "of_large_square": 0.9718}
+9b 2x1024 in_proj_z lora_A fwd plain {"wall_ms": 0.0853, "tflops_wall": 6.293, "of_large_square": 0.4907}
+9b 2x1024 in_proj_z lora_B fwd plain {"wall_ms": 0.0686, "tflops_wall": 7.831, "of_large_square": 0.6107}
+9b 2x1024 in_proj_z lora_B bwd plain {"wall_ms": 0.2105, "tflops_wall": 5.1, "of_large_square": 0.3977}
+9b 2x1024 in_proj_z lora_A bwd plain {"wall_ms": 0.1598, "tflops_wall": 6.719, "of_large_square": 0.5239}
+9b 2x1024 in_proj_a / in_proj_b base fwd plain {"wall_ms": 0.0822, "tflops_wall": 6.529, "of_large_square": 0.5091}
+9b 2x1024 in_proj_a / in_proj_b base bwd plain {"wall_ms": 0.0623, "tflops_wall": 8.616, "of_large_square": 0.6719}
+9b 2x1024 out_proj base fwd plain {"wall_ms": 5.5567, "tflops_wall": 12.367, "of_large_square": 0.9644}
+9b 2x1024 out_proj base bwd plain {"wall_ms": 5.4868, "tflops_wall": 12.525, "of_large_square": 0.9767}
+9b 2x1024 out_proj lora_A fwd plain {"wall_ms": 0.0776, "tflops_wall": 6.921, "of_large_square": 0.5397}
+9b 2x1024 out_proj lora_B fwd plain {"wall_ms": 0.0625, "tflops_wall": 8.584, "of_large_square": 0.6694}
+9b 2x1024 out_proj lora_B bwd plain {"wall_ms": 0.207, "tflops_wall": 5.187, "of_large_square": 0.4045}
+9b 2x1024 out_proj lora_A bwd plain {"wall_ms": 0.1647, "tflops_wall": 6.519, "of_large_square": 0.5083}
+9b 2x1024 q_proj base fwd plain {"wall_ms": 10.8701, "tflops_wall": 12.644, "of_large_square": 0.986}
+9b 2x1024 q_proj base bwd plain {"wall_ms": 10.9204, "tflops_wall": 12.586, "of_large_square": 0.9814}
+9b 2x1024 q_proj lora_A fwd plain {"wall_ms": 0.0764, "tflops_wall": 7.03, "of_large_square": 0.5482}
+9b 2x1024 q_proj lora_B fwd plain {"wall_ms": 0.1095, "tflops_wall": 9.808, "of_large_square": 0.7648}
+9b 2x1024 q_proj lora_B bwd plain {"wall_ms": 0.3976, "tflops_wall": 5.401, "of_large_square": 0.4212}
+9b 2x1024 q_proj lora_A bwd plain {"wall_ms": 0.1612, "tflops_wall": 6.66, "of_large_square": 0.5193}
+9b 2x1024 k_proj / v_proj base fwd plain {"wall_ms": 1.3879, "tflops_wall": 12.379, "of_large_square": 0.9653}
+9b 2x1024 k_proj / v_proj base bwd plain {"wall_ms": 1.3382, "tflops_wall": 12.838, "of_large_square": 1.0011}
+9b 2x1024 k_proj / v_proj lora_A fwd plain {"wall_ms": 0.0842, "tflops_wall": 6.376, "of_large_square": 0.4972}
+9b 2x1024 k_proj / v_proj lora_B fwd plain {"wall_ms": 0.0241, "tflops_wall": 5.566, "of_large_square": 0.434}
+9b 2x1024 k_proj / v_proj lora_B bwd plain {"wall_ms": 0.0698, "tflops_wall": 3.848, "of_large_square": 0.3001}
+9b 2x1024 k_proj / v_proj lora_A bwd plain {"wall_ms": 0.1617, "tflops_wall": 6.639, "of_large_square": 0.5177}
+9b 2x1024 o_proj base fwd plain {"wall_ms": 5.5324, "tflops_wall": 12.421, "of_large_square": 0.9686}
+9b 2x1024 o_proj base bwd plain {"wall_ms": 5.3065, "tflops_wall": 12.95, "of_large_square": 1.0098}
+9b 2x1024 o_proj lora_A fwd plain {"wall_ms": 0.0831, "tflops_wall": 6.458, "of_large_square": 0.5036}
+9b 2x1024 o_proj lora_B fwd plain {"wall_ms": 0.0622, "tflops_wall": 8.635, "of_large_square": 0.6733}
+9b 2x1024 o_proj lora_B bwd plain {"wall_ms": 0.2027, "tflops_wall": 5.296, "of_large_square": 0.413}
+9b 2x1024 o_proj lora_A bwd plain {"wall_ms": 0.1597, "tflops_wall": 6.724, "of_large_square": 0.5243}
+9b 2x1024 gate_proj / up_proj base fwd plain {"wall_ms": 16.4954, "tflops_wall": 12.498, "of_large_square": 0.9746}
+9b 2x1024 gate_proj / up_proj base bwd plain {"wall_ms": 16.7091, "tflops_wall": 12.338, "of_large_square": 0.9621}
+9b 2x1024 gate_proj / up_proj lora_A fwd plain {"wall_ms": 0.0818, "tflops_wall": 6.563, "of_large_square": 0.5118}
+9b 2x1024 gate_proj / up_proj lora_B fwd plain {"wall_ms": 0.1658, "tflops_wall": 9.716, "of_large_square": 0.7576}
+9b 2x1024 gate_proj / up_proj lora_B bwd plain {"wall_ms": 0.5505, "tflops_wall": 5.851, "of_large_square": 0.4563}
+9b 2x1024 gate_proj / up_proj lora_A bwd plain {"wall_ms": 0.1601, "tflops_wall": 6.707, "of_large_square": 0.523}
+9b 2x1024 down_proj base fwd plain {"wall_ms": 16.7054, "tflops_wall": 12.341, "of_large_square": 0.9623}
+9b 2x1024 down_proj base bwd plain {"wall_ms": 16.1917, "tflops_wall": 12.732, "of_large_square": 0.9928}
+9b 2x1024 down_proj lora_A fwd plain {"wall_ms": 0.2167, "tflops_wall": 7.433, "of_large_square": 0.5796}
+9b 2x1024 down_proj lora_B fwd plain {"wall_ms": 0.0618, "tflops_wall": 8.693, "of_large_square": 0.6779}
+9b 2x1024 down_proj lora_B bwd plain {"wall_ms": 0.2118, "tflops_wall": 5.07, "of_large_square": 0.3954}
+9b 2x1024 down_proj lora_A bwd plain {"wall_ms": 0.4677, "tflops_wall": 6.888, "of_large_square": 0.5371}
+[guard]      30 s footprint  25.57 GB (peak  25.57) swap +0.00 GB pressure 1
+9b 2x1024 lm_head base fwd plain {"wall_ms": 326.3406, "tflops_wall": 12.766, "of_large_square": 0.9955}
+9b 2x1024 lm_head base bwd plain {"wall_ms": 398.365, "tflops_wall": 10.458, "of_large_square": 0.8155}
+9b 1x859 in_proj_qkv base fwd plain {"wall_ms": 4.7907, "tflops_wall": 12.033, "of_large_square": 0.9383}
+9b 1x859 in_proj_qkv base bwd plain {"wall_ms": 4.7635, "tflops_wall": 12.102, "of_large_square": 0.9437}
+9b 1x859 in_proj_qkv base bwd layer {"wall_ms": 4.779, "tflops_wall": 12.062, "of_large_square": 0.9406}
+9b 1x859 in_proj_qkv lora_A fwd plain {"wall_ms": 0.0424, "tflops_wall": 5.306, "of_large_square": 0.4138}
+9b 1x859 in_proj_qkv lora_B fwd plain {"wall_ms": 0.0553, "tflops_wall": 8.15, "of_large_square": 0.6355}
+9b 1x859 in_proj_qkv lora_B bwd plain {"wall_ms": 0.1671, "tflops_wall": 5.39, "of_large_square": 0.4203}
+9b 1x859 in_proj_qkv lora_A bwd plain {"wall_ms": 0.0739, "tflops_wall": 6.094, "of_large_square": 0.4752}
+9b 1x859 in_proj_qkv lora_B bwd layer {"wall_ms": 0.1715, "tflops_wall": 5.252, "of_large_square": 0.4095}
+9b 1x859 in_proj_z base fwd plain {"wall_ms": 2.3978, "tflops_wall": 12.021, "of_large_square": 0.9374}
+9b 1x859 in_proj_z base bwd plain {"wall_ms": 2.4041, "tflops_wall": 11.989, "of_large_square": 0.9349}
+9b 1x859 in_proj_z lora_A fwd plain {"wall_ms": 0.0394, "tflops_wall": 5.709, "of_large_square": 0.4452}
+9b 1x859 in_proj_z lora_B fwd plain {"wall_ms": 0.0332, "tflops_wall": 6.784, "of_large_square": 0.529}
+9b 1x859 in_proj_z lora_B bwd plain {"wall_ms": 0.099, "tflops_wall": 4.551, "of_large_square": 0.3549}
+9b 1x859 in_proj_z lora_A bwd plain {"wall_ms": 0.0753, "tflops_wall": 5.983, "of_large_square": 0.4665}
+9b 1x859 in_proj_a / in_proj_b base fwd plain {"wall_ms": 0.0403, "tflops_wall": 5.593, "of_large_square": 0.4361}
+9b 1x859 in_proj_a / in_proj_b base bwd plain {"wall_ms": 0.0318, "tflops_wall": 7.089, "of_large_square": 0.5528}
+9b 1x859 out_proj base fwd plain {"wall_ms": 2.4043, "tflops_wall": 11.988, "of_large_square": 0.9348}
+9b 1x859 out_proj base bwd plain {"wall_ms": 2.4003, "tflops_wall": 12.008, "of_large_square": 0.9364}
+9b 1x859 out_proj lora_A fwd plain {"wall_ms": 0.0455, "tflops_wall": 4.946, "of_large_square": 0.3857}
+9b 1x859 out_proj lora_B fwd plain {"wall_ms": 0.032, "tflops_wall": 7.03, "of_large_square": 0.5482}
+9b 1x859 out_proj lora_B bwd plain {"wall_ms": 0.1014, "tflops_wall": 4.443, "of_large_square": 0.3465}
+9b 1x859 out_proj lora_A bwd plain {"wall_ms": 0.0741, "tflops_wall": 6.079, "of_large_square": 0.474}
+9b 1x859 q_proj base fwd plain {"wall_ms": 4.7722, "tflops_wall": 12.08, "of_large_square": 0.942}
+9b 1x859 q_proj base bwd plain {"wall_ms": 4.8259, "tflops_wall": 11.945, "of_large_square": 0.9315}
+9b 1x859 q_proj lora_A fwd plain {"wall_ms": 0.043, "tflops_wall": 5.239, "of_large_square": 0.4085}
+9b 1x859 q_proj lora_B fwd plain {"wall_ms": 0.0552, "tflops_wall": 8.163, "of_large_square": 0.6365}
+9b 1x859 q_proj lora_B bwd plain {"wall_ms": 0.1681, "tflops_wall": 5.358, "of_large_square": 0.4178}
+9b 1x859 q_proj lora_A bwd plain {"wall_ms": 0.0766, "tflops_wall": 5.879, "of_large_square": 0.4584}
+9b 1x859 k_proj / v_proj base fwd plain {"wall_ms": 0.6156, "tflops_wall": 11.706, "of_large_square": 0.9128}
+9b 1x859 k_proj / v_proj base bwd plain {"wall_ms": 0.5993, "tflops_wall": 12.024, "of_large_square": 0.9376}
+9b 1x859 k_proj / v_proj lora_A fwd plain {"wall_ms": 0.0408, "tflops_wall": 5.521, "of_large_square": 0.4305}
+9b 1x859 k_proj / v_proj lora_B fwd plain {"wall_ms": 0.0152, "tflops_wall": 3.695, "of_large_square": 0.2881}
+9b 1x859 k_proj / v_proj lora_B bwd plain {"wall_ms": 0.044, "tflops_wall": 2.558, "of_large_square": 0.1995}
+9b 1x859 k_proj / v_proj lora_A bwd plain {"wall_ms": 0.0808, "tflops_wall": 5.574, "of_large_square": 0.4347}
+9b 1x859 o_proj base fwd plain {"wall_ms": 2.3886, "tflops_wall": 12.067, "of_large_square": 0.941}
+9b 1x859 o_proj base bwd plain {"wall_ms": 2.3801, "tflops_wall": 12.11, "of_large_square": 0.9443}
+9b 1x859 o_proj lora_A fwd plain {"wall_ms": 0.0386, "tflops_wall": 5.837, "of_large_square": 0.4552}
+9b 1x859 o_proj lora_B fwd plain {"wall_ms": 0.0321, "tflops_wall": 7.011, "of_large_square": 0.5467}
+9b 1x859 o_proj lora_B bwd plain {"wall_ms": 0.0993, "tflops_wall": 4.537, "of_large_square": 0.3538}
+9b 1x859 o_proj lora_A bwd plain {"wall_ms": 0.0736, "tflops_wall": 6.121, "of_large_square": 0.4773}
+9b 1x859 gate_proj / up_proj base fwd plain {"wall_ms": 7.1867, "tflops_wall": 12.032, "of_large_square": 0.9382}
+9b 1x859 gate_proj / up_proj base bwd plain {"wall_ms": 7.315, "tflops_wall": 11.821, "of_large_square": 0.9218}
+9b 1x859 gate_proj / up_proj lora_A fwd plain {"wall_ms": 0.0394, "tflops_wall": 5.718, "of_large_square": 0.4459}
+9b 1x859 gate_proj / up_proj lora_B fwd plain {"wall_ms": 0.0801, "tflops_wall": 8.434, "of_large_square": 0.6577}
+9b 1x859 gate_proj / up_proj lora_B bwd plain {"wall_ms": 0.2264, "tflops_wall": 5.967, "of_large_square": 0.4653}
+9b 1x859 gate_proj / up_proj lora_A bwd plain {"wall_ms": 0.0734, "tflops_wall": 6.138, "of_large_square": 0.4786}
+9b 1x859 down_proj base fwd plain {"wall_ms": 7.3733, "tflops_wall": 11.727, "of_large_square": 0.9145}
+9b 1x859 down_proj base bwd plain {"wall_ms": 7.2183, "tflops_wall": 11.979, "of_large_square": 0.9341}
+9b 1x859 down_proj lora_A fwd plain {"wall_ms": 0.101, "tflops_wall": 6.687, "of_large_square": 0.5214}
+9b 1x859 down_proj lora_B fwd plain {"wall_ms": 0.0326, "tflops_wall": 6.906, "of_large_square": 0.5385}
+9b 1x859 down_proj lora_B bwd plain {"wall_ms": 0.0995, "tflops_wall": 4.528, "of_large_square": 0.3531}
+9b 1x859 down_proj lora_A bwd plain {"wall_ms": 0.1926, "tflops_wall": 7.015, "of_large_square": 0.547}
+9b 1x859 lm_head base fwd plain {"wall_ms": 143.3126, "tflops_wall": 12.193, "of_large_square": 0.9508}
+9b 1x859 lm_head base bwd plain {"wall_ms": 164.2403, "tflops_wall": 10.639, "of_large_square": 0.8296}
+squares at the end {"2048": {"wall_ms": 1.4447, "inner": 6, "tflops_wall": 11.892}, "4096": {"wall_ms": 11.0518, "inner": 3, "tflops_wall": 12.436}, "8192": {"wall_ms": 85.3699, "inner": 3, "tflops_wall": 12.879}}
+wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/layer_logs/products_mlx.json
+[guard] end 12:27:17 rc 0 peak footprint 29.27 GB wall 58 s

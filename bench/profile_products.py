@@ -4,6 +4,7 @@ autocast runs them) against MLX (mx.matmul, bf16), read against the large-square
 
     python bench/profile_products.py --shapes 0.8b=4x1024,2x903 --shapes 9b=2x1024,1x859          # PyTorch: products_torch.json
     python bench/profile_products.py --mlx --shapes 0.8b=4x1024,2x903 --shapes 9b=2x1024,1x859    # MLX (its own process, after)
+    python bench/profile_products.py --square-forms      # the large-square rate per form (X W, X W^T): products_square_forms.json
 
 Each shape is batch x tokens: the bench's (first) and the training micro-batch's median padded one. At each, for every
 projection (in -> out) of both models, the products autograd runs in LoRA training with frozen weights:
@@ -280,8 +281,47 @@ def mlx_main(a):
     return out
 
 
+def square_forms_main():
+    """The large-square rate in the forms PyTorch can run it: X W (torch.mm, a new output or a preallocated one), X W^T
+    (F.linear, the form nn.Linear runs) and X W^T through torch.mm on the transposed view. Metal events, back-to-back calls."""
+    import torch
+    import torch.nn.functional as F
+    sys.path.insert(0, os.path.join(HERE, "..", "src"))
+    from macai.instruments import gpu_ms, warm_gpu
+    warm_gpu(2.0)
+    out = {"framework": f"torch {torch.__version__}", "started": time.strftime("%Y-%m-%d %H:%M:%S %Z"), "reps": REPS, "forms": {}}
+    for n in SQUARES:
+        x = torch.randn(n, n, device="mps", dtype=torch.bfloat16)
+        w = torch.randn(n, n, device="mps", dtype=torch.bfloat16) * n ** -0.5
+        y = torch.empty(n, n, device="mps", dtype=torch.bfloat16)
+        forms = {"X W (torch.mm)": lambda: torch.mm(x, w), "X W (torch.mm, out=)": lambda: torch.mm(x, w, out=y),
+                 "X W^T (F.linear)": lambda: F.linear(x, w), "X W^T (torch.mm on w.t())": lambda: torch.mm(x, w.t())}
+        res = {}
+        for _ in range(2):                  # two rounds, interleaved
+            for name, fn in forms.items():
+                fn()
+                torch.mps.synchronize()
+                t0 = time.perf_counter()
+                fn()
+                torch.mps.synchronize()
+                inner = fill((time.perf_counter() - t0) * 1e3)
+                ms = gpu_ms(fn, reps=REPS, warm=1, inner=inner)["median_ms"]
+                res.setdefault(name, []).append(round(2 * n ** 3 / ms / 1e9, 3))
+        out["forms"][str(n)] = res
+        print(n, json.dumps(res), flush=True)
+        del x, w, y
+        torch.mps.empty_cache()
+    out["ended"] = time.strftime("%Y-%m-%d %H:%M:%S %Z")
+    path = os.path.join(HERE, "layer_logs", "products_square_forms.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(out, fh, indent=1)
+    print("wrote", path, flush=True)
+
+
 def main():
     print(f"[products] pid {os.getpid()}", flush=True)
+    if "--square-forms" in sys.argv[1:]:
+        return square_forms_main()
     ap = argparse.ArgumentParser()
     ap.add_argument("--mlx", action="store_true")
     ap.add_argument("--shapes", action="append", required=True, help="model=BxT,BxT (the bench's shape first)")

@@ -1,0 +1,7 @@
+[guard] start 12:27:23 limit 96.0 GB, swap +1.0 GB, wall 900 s, swap at start 0.14 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/profile_products.py --square-forms
+[products] pid 95783
+2048 {"X W (torch.mm)": [11.897, 12.081], "X W (torch.mm, out=)": [11.922, 12.413], "X W^T (F.linear)": [11.229, 11.325], "X W^T (torch.mm on w.t())": [11.28, 11.214]}
+4096 {"X W (torch.mm)": [12.875, 10.638], "X W (torch.mm, out=)": [10.452, 10.516], "X W^T (F.linear)": [9.146, 9.415], "X W^T (torch.mm on w.t())": [10.203, 9.647]}
+8192 {"X W (torch.mm)": [9.881, 10.022], "X W (torch.mm, out=)": [9.969, 9.795], "X W^T (F.linear)": [9.036, 9.204], "X W^T (torch.mm on w.t())": [8.938, 8.872]}
+wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/layer_logs/products_square_forms.json
+[guard] end 12:27:51 rc 0 peak footprint 1.32 GB wall 28 s
