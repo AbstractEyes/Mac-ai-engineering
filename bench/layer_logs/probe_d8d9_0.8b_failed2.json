@@ -1,0 +1,146 @@
+{
+ "name": "probe_d8d9_0.8b",
+ "pid": 11467,
+ "model_id": "Qwen/Qwen3.5-0.8B",
+ "arm": "kernels",
+ "memory": "recompute",
+ "epochs": 2.0,
+ "batch": 2,
+ "grad_accum": 2,
+ "sequences_a_step": 4,
+ "n_items": 12,
+ "recipe": {
+  "rank": 32,
+  "alpha": 64,
+  "dropout": 0.05,
+  "lr": 0.0002,
+  "max_len": 2048,
+  "seed": 20261030,
+  "do_ship": false
+ },
+ "warmup_steps_excluded": 10,
+ "started": "2026-11-03 15:25:23 PST",
+ "repo_commit": "ace47c9",
+ "repo_dirty": true,
+ "env": {
+  "PYTORCH_MPS_HIGH_WATERMARK_RATIO": "0.75",
+  "PYTORCH_MPS_LOW_WATERMARK_RATIO": "0.55",
+  "PYTORCH_ENABLE_MPS_FALLBACK": "1",
+  "HF_HUB_OFFLINE": "1",
+  "OMP_NUM_THREADS": "8"
+ },
+ "runner_patches": [
+  "load_vlm device_map cuda -> mps",
+  "model.gradient_checkpointing_enable -> no-op",
+  "TrainingArguments gradient_checkpointing -> False",
+  "TrainingArguments logging_steps 10 -> 1",
+  "fetch_images -> the fetched pictures folder",
+  "TrainingArguments torch_empty_cache_steps None -> 1"
+ ],
+ "empty_cache_each_micro_batch": true,
+ "steps": [],
+ "final_logs": [],
+ "patched_modules": [
+  "transformers.models.qwen3_5.modeling_qwen3_5",
+  "transformers.models.qwen3_5_moe.modeling_qwen3_5_moe",
+  "transformers.models.qwen3_next.modeling_qwen3_next"
+ ],
+ "macai": {
+  "version": "0.2.0",
+  "KERNEL": "chunked",
+  "KERNEL_BWD": "chunked",
+  "FUSED_NORM": true,
+  "chunk": 16,
+  "SIZE_CLASSES": false,
+  "RECOMPUTE_STATES": true,
+  "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU",
+  "layer": {
+   "RMSNORM": true,
+   "CONV": true,
+   "GATED_NORM": true,
+   "GATES": true,
+   "SWIGLU": true
+  },
+  "layer_patches": [
+   "rmsnorm",
+   "gated_norm",
+   "mlp",
+   "gated_delta_net"
+  ],
+  "training": {
+   "HEAD_AT_LABELS": true,
+   "VISION_CACHE": true
+  },
+  "training_patches": [
+   "head_conditional",
+   "head_causal_lm",
+   "vision_cache"
+  ]
+ },
+ "gated_delta_rule": "macai.gated_delta.op.chunk_gated_delta_rule",
+ "versions": {
+  "torch": "2.15.0",
+  "transformers": "5.22.1",
+  "peft": "0.21.2",
+  "qwen_symbolic_thinking": "0.1.35",
+  "python": "3.12.16"
+ },
+ "mps_recommended_max_gb": 107.52,
+ "sample": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/sample_every55.json",
+ "pictures": {
+  "items": 12,
+  "pictures_by_locator": {
+   "url": 12
+  }
+ },
+ "probe": {
+  "options": {
+   "probe_micro_batches": 3,
+   "head_micro_batches": 1,
+   "head": true,
+   "float64_model": true
+  },
+  "head": [],
+  "tower": []
+ },
+ "examples": 24,
+ "accelerator": {
+  "mixed_precision": "bf16",
+  "native_amp": true,
+  "device": "mps"
+ },
+ "footprint_peak_before_training_gb": 2.432,
+ "checks": {
+  "modules_checkpointing": [],
+  "logging_steps": 1,
+  "args_gradient_checkpointing": false,
+  "torch_empty_cache_steps": 1,
+  "linear_attention_layers": 18,
+  "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule",
+  "layer_methods_at_train_begin": {
+   "Qwen3_5RMSNorm": "macai.layer._qwen3_5",
+   "Qwen3_5RMSNormGated": "macai.layer._qwen3_5",
+   "Qwen3_5MLP": "macai.layer._qwen3_5",
+   "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"
+  },
+  "training_methods_at_train_begin": {
+   "Qwen3_5ForConditionalGeneration": "macai.training._qwen3_5",
+   "Qwen3_5Model": "macai.training._qwen3_5"
+  },
+  "trainable_parameters": 20447232,
+  "model_dtype": "torch.bfloat16",
+  "device": "mps:0",
+  "lora_A_abs_sum": 92582.46875,
+  "lora_A_first_values": [
+   0.009338,
+   0.003082,
+   -0.009094,
+   0.000587
+  ],
+  "PYTHONHASHSEED": null
+ },
+ "error": "RuntimeError: Undefined type Double",
+ "traceback": "Traceback (most recent call last):\n  File \"/Users/philipcoelho/mirel/mac_ai_engineering/bench/phase4_train.py\", line 377, in main\n    summ = T.run(model_id=MODELS[a.model], inputs=[sample], out_dir=os.path.join(a.data, \"phase4\"), epochs=a.epochs,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/qwen_symbolic_thinking/train.py\", line 327, in run\n    result = trainer.train()\n             ^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1559, in train\n    return inner_training_loop(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1643, in _inner_training_loop\n    self._run_epoch(\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1889, in _run_epoch\n    tr_loss_step = self.training_step(model, inputs, num_items_in_batch)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/mac_ai_engineering/bench/training_probe.py\", line 327, in training_step\n    r = head_check(self, model, prepared, opts.float64_model)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/mac_ai_engineering/bench/training_probe.py\", line 144, in head_check\n    ref_cg = copy.deepcopy(cg).to(\"cpu\", torch.float64).train()\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/modeling_utils.py\", line 3710, in to\n    return super().to(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 1392, in to\n    return self._apply(convert)\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 933, in _apply\n    module._apply(fn)\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 933, in _apply\n    module._apply(fn)\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 933, in _apply\n    module._apply(fn)\n  [Previous line repeated 1 more time]\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 966, in _apply\n    param_applied = fn(param)\n                    ^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 1374, in convert\n    return t.to(\n           ^^^^^\nRuntimeError: Undefined type Double\n",
+ "wall_s": 4.9,
+ "ended": "2026-11-03 15:25:27 PST"
+}

@@ -58,12 +58,9 @@ def parts(H, n, labelled, gen):
     with torch.autocast(DEV, dtype=BF):
         z = F.linear(h, W)
     z32 = z.float()
-    g32 = torch.autograd.grad(F.cross_entropy(z32.detach().requires_grad_(True), y, ignore_index=-100),
-                              z32.detach().requires_grad_(True), allow_unused=True)
     leaf32 = z32.detach().requires_grad_(True)
     dz32 = torch.autograd.grad(F.cross_entropy(leaf32, y, ignore_index=-100), leaf32)[0]
     dz = dz32.to(BF)
-    del g32
 
     def head():
         with torch.autocast(DEV, dtype=BF):

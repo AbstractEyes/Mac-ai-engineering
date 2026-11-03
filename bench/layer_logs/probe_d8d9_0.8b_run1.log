@@ -1,0 +1,64 @@
+[guard] start 15:22:50 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/training_probe.py --name probe_d8d9_0.8b --logdir bench/layer_logs --model 0.8b --arm kernels --memory recompute --layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --epochs 2 --batch 2 --accum 2 --n-items 12 --empty-cache --probe-micro-batches 3
+[probe] runner pid 11336
+[phase4] runner pid 11336
+W1103 15:22:51.818000 11336 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+[phase4] macai {"version": "0.2.0", "KERNEL": "chunked", "KERNEL_BWD": "chunked", "FUSED_NORM": true, "chunk": 16, "SIZE_CLASSES": false, "RECOMPUTE_STATES": true, "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU", "layer": {"RMSNORM": true, "CONV": true, "GATED_NORM": true, "GATES": true, "SWIGLU": true}, "layer_patches": ["rmsnorm", "gated_norm", "mlp", "gated_delta_net"], "training": {"HEAD_AT_LABELS": true, "VISION_CACHE": true}, "training_patches": ["head_conditional", "head_causal_lm", "vision_cache"]}
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+train 20261103_232252_probe_d8d9_0.8b: 12 items (12 with a picture), 24 examples by form {'short': 12, 'full': 12}; images fetched in 0 s
+Loading weights:   0%|          | 0/473 [00:00<?, ?it/s]Loading weights:  23%|██▎       | 109/473 [00:00<00:00, 971.52it/s]Loading weights:  60%|█████▉    | 282/473 [00:00<00:00, 1289.20it/s]Loading weights: 100%|██████████| 473/473 [00:00<00:00, 2060.08it/s]
+LoRA modules by name: {'out_proj': 18, 'in_proj_qkv': 18, 'in_proj_z': 18, 'gate_proj': 24, 'up_proj': 24, 'down_proj': 24, 'q_proj': 6, 'k_proj': 6, 'v_proj': 6, 'o_proj': 6}
+trainable params: 20,447,232 || all params: 873,433,152 || trainable%: 2.3410
+  12 steps of 2 x 2 sequences; 2.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "torch_empty_cache_steps": 1, "linear_attention_layers": 18, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "layer_methods_at_train_begin": {"Qwen3_5RMSNorm": "macai.layer._qwen3_5", "Qwen3_5RMSNormGated": "macai.layer._qwen3_5", "Qwen3_5MLP": "macai.layer._qwen3_5", "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"}, "training_methods_at_train_begin": {"Qwen3_5ForConditionalGeneration": "macai.training._qwen3_5", "Qwen3_5Model": "macai.training._qwen3_5"}, "trainable_parameters": 20447232, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 92582.046875, "lora_A_first_values": [0.009949, -0.002121, -0.000237, -0.001221], "PYTHONHASHSEED": null}
+  0%|          | 0/12 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[probe] head {"labelled": 126, "positions": 892, "loss_rel": 2.6015901439277716e-07, "logits_labelled_same_bits": true, "dh_err_off": 0.009838591633249618, "dh_err_on": 0.009838591633249618, "bar_met": true}
+[probe] tower {"pictures": 2, "rng_cpu_unchanged": true, "rng_gpu_unchanged": true, "same_batch_twice_same_bits": true, "each_picture_alone_same_bits": [true, true], "paired_with_previous_same_bits": null, "served_same_bits_as_recompute": true, "one_pixel_moved_served": false, "other_grid_served": false, "key_ms_per_call": 2.46, "serve_ms": 1.35, "bytes_a_picture": 2457600, "bar_met": true}
+[probe] tower {"pictures": 2, "rng_cpu_unchanged": true, "rng_gpu_unchanged": true, "same_batch_twice_same_bits": true, "each_picture_alone_same_bits": [true, true], "paired_with_previous_same_bits": null, "served_same_bits_as_recompute": true, "one_pixel_moved_served": false, "other_grid_served": false, "key_ms_per_call": 2.16, "serve_ms": 0.92, "bytes_a_picture": 1802240, "bar_met": true}
+  8%|▊         | 1/12 [00:04<00:44,  4.03s/it]  step 1/12: loss 3.1748, 4 s spent, 45 s left, 4.06 s/step
+                                              {'loss': '3.175', 'grad_norm': '22.63', 'learning_rate': '0', 'epoch': '0.1667'}
+  8%|▊         | 1/12 [00:04<00:44,  4.03s/it][probe] tower {"pictures": 2, "rng_cpu_unchanged": true, "rng_gpu_unchanged": true, "same_batch_twice_same_bits": true, "each_picture_alone_same_bits": [true, true], "paired_with_previous_same_bits": null, "served_same_bits_as_recompute": true, "one_pixel_moved_served": false, "other_grid_served": false, "key_ms_per_call": 2.83, "serve_ms": 0.74, "bytes_a_picture": 2621440, "bar_met": true}
+ 17%|█▋        | 2/12 [00:05<00:27,  2.73s/it]  step 2/12: loss 3.1011, 6 s spent, 29 s left, 2.94 s/step
+                                              {'loss': '3.101', 'grad_norm': '29.18', 'learning_rate': '0.0002', 'epoch': '0.3333'}
+ 17%|█▋        | 2/12 [00:05<00:27,  2.73s/it] 25%|██▌       | 3/12 [00:06<00:17,  1.99s/it]  step 3/12: loss 2.6515, 7 s spent, 21 s left, 2.33 s/step
+                                              {'loss': '2.651', 'grad_norm': '9.442', 'learning_rate': '0.0001959', 'epoch': '0.5'}
+ 25%|██▌       | 3/12 [00:06<00:17,  1.99s/it] 33%|███▎      | 4/12 [00:07<00:12,  1.59s/it]  step 4/12: loss 1.7039, 8 s spent, 16 s left, 1.99 s/step
+                                              {'loss': '1.704', 'grad_norm': '10.12', 'learning_rate': '0.0001841', 'epoch': '0.6667'}
+ 33%|███▎      | 4/12 [00:07<00:12,  1.59s/it] 42%|████▏     | 5/12 [00:08<00:09,  1.38s/it]  step 5/12: loss 2.1529, 9 s spent, 13 s left, 1.79 s/step
+                                              {'loss': '2.153', 'grad_norm': '5.405', 'learning_rate': '0.0001655', 'epoch': '0.8333'}
+ 42%|████▏     | 5/12 [00:08<00:09,  1.38s/it] 50%|█████     | 6/12 [00:09<00:07,  1.24s/it]  step 6/12: loss 1.5374, 10 s spent, 10 s left, 1.65 s/step
+                                              {'loss': '1.537', 'grad_norm': '4.769', 'learning_rate': '0.0001415', 'epoch': '1'}
+ 50%|█████     | 6/12 [00:09<00:07,  1.24s/it] 58%|█████▊    | 7/12 [00:10<00:05,  1.13s/it]  step 7/12: loss 1.1832, 11 s spent, 8 s left, 1.55 s/step
+                                              {'loss': '1.183', 'grad_norm': '4.088', 'learning_rate': '0.0001142', 'epoch': '1.167'}
+ 58%|█████▊    | 7/12 [00:10<00:05,  1.13s/it] 67%|██████▋   | 8/12 [00:11<00:04,  1.11s/it]  step 8/12: loss 1.0474, 12 s spent, 6 s left, 1.49 s/step
+                                              {'loss': '1.047', 'grad_norm': '3.277', 'learning_rate': '8.577e-05', 'epoch': '1.333'}
+ 67%|██████▋   | 8/12 [00:11<00:04,  1.11s/it] 75%|███████▌  | 9/12 [00:12<00:03,  1.02s/it]  step 9/12: loss 0.5749, 13 s spent, 4 s left, 1.41 s/step
+                                              {'loss': '0.5749', 'grad_norm': '3.919', 'learning_rate': '5.846e-05', 'epoch': '1.5'}
+ 75%|███████▌  | 9/12 [00:12<00:03,  1.02s/it] 83%|████████▎ | 10/12 [00:13<00:01,  1.02it/s]  step 10/12: loss 1.0326, 14 s spent, 3 s left, 1.36 s/step
+                                               {'loss': '1.033', 'grad_norm': '4.085', 'learning_rate': '3.451e-05', 'epoch': '1.667'}
+ 83%|████████▎ | 10/12 [00:13<00:01,  1.02it/s] 92%|█████████▏| 11/12 [00:14<00:00,  1.08it/s]  step 11/12: loss 0.7628, 14 s spent, 1 s left, 1.31 s/step
+                                               {'loss': '0.7628', 'grad_norm': '4.017', 'learning_rate': '1.587e-05', 'epoch': '1.833'}
+ 92%|█████████▏| 11/12 [00:14<00:00,  1.08it/s]100%|██████████| 12/12 [00:15<00:00,  1.12it/s]  step 12/12: loss 0.4458, 15 s spent, 0 s left, 1.27 s/step
+                                               {'loss': '0.4458', 'grad_norm': '4.288', 'learning_rate': '4.051e-06', 'epoch': '2'}
+100%|██████████| 12/12 [00:15<00:00,  1.12it/s]  step 12/12: loss nan, 15 s spent, 0 s left, 1.27 s/step
+                                               {'train_runtime': '15.23', 'train_samples_per_second': '3.151', 'train_steps_per_second': '0.788', 'train_loss': '1.614', 'epoch': '2'}
+100%|██████████| 12/12 [00:15<00:00,  1.12it/s]100%|██████████| 12/12 [00:15<00:00,  1.27s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-0.8B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 48 collated (the longest 615 tokens)
+
+trained in 0.3 min: 12 steps, loss 1.6140, 1.35 s/step
+[phase4] probe_d8d9_0.8b: 12 steps, final loss 0.44583410024642944, steady 0.5 s a step (trainer clock, steps 11-12)
+[phase4] wrote bench/layer_logs/probe_d8d9_0.8b.json
+[guard] end 15:23:10 rc 0 peak footprint 10.07 GB wall 20 s

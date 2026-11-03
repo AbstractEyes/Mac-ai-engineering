@@ -1,0 +1,58 @@
+[guard] start 15:27:18 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/training_probe.py --name probe_d8d9_9b --logdir bench/layer_logs --model 9b --arm kernels --memory recompute --layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --epochs 2 --batch 1 --accum 4 --n-items 8 --empty-cache --probe-micro-batches 3
+[probe] runner pid 11627
+[phase4] runner pid 11627
+W1103 15:27:20.734000 11627 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+[phase4] macai {"version": "0.2.0", "KERNEL": "chunked", "KERNEL_BWD": "chunked", "FUSED_NORM": true, "chunk": 16, "SIZE_CLASSES": false, "RECOMPUTE_STATES": true, "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU", "layer": {"RMSNORM": true, "CONV": true, "GATED_NORM": true, "GATES": true, "SWIGLU": true}, "layer_patches": ["rmsnorm", "gated_norm", "mlp", "gated_delta_net"], "training": {"HEAD_AT_LABELS": true, "VISION_CACHE": true}, "training_patches": ["head_conditional", "head_causal_lm", "vision_cache"]}
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+train 20261103_232721_probe_d8d9_9b: 8 items (8 with a picture), 16 examples by form {'short': 8, 'full': 8}; images fetched in 0 s
+Loading weights:   0%|          | 0/760 [00:00<?, ?it/s]Loading weights:   9%|▉         | 70/760 [00:00<00:01, 619.13it/s]Loading weights:  24%|██▍       | 184/760 [00:00<00:00, 900.16it/s]Loading weights:  36%|███▋      | 276/760 [00:00<00:00, 514.27it/s]Loading weights:  45%|████▍     | 341/760 [00:00<00:00, 471.08it/s]Loading weights:  52%|█████▏    | 396/760 [00:00<00:00, 399.67it/s]Loading weights:  58%|█████▊    | 442/760 [00:01<00:00, 346.37it/s]Loading weights: 100%|██████████| 760/760 [00:01<00:00, 732.95it/s]
+LoRA modules by name: {'out_proj': 24, 'in_proj_qkv': 24, 'in_proj_z': 24, 'gate_proj': 32, 'up_proj': 32, 'down_proj': 32, 'q_proj': 8, 'k_proj': 8, 'v_proj': 8, 'o_proj': 8}
+trainable params: 80,216,064 || all params: 9,490,029,808 || trainable%: 0.8453
+  8 steps of 1 x 4 sequences; 2.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "torch_empty_cache_steps": 1, "linear_attention_layers": 24, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "layer_methods_at_train_begin": {"Qwen3_5RMSNorm": "macai.layer._qwen3_5", "Qwen3_5RMSNormGated": "macai.layer._qwen3_5", "Qwen3_5MLP": "macai.layer._qwen3_5", "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"}, "training_methods_at_train_begin": {"Qwen3_5ForConditionalGeneration": "macai.training._qwen3_5", "Qwen3_5Model": "macai.training._qwen3_5"}, "trainable_parameters": 80216064, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 228798.828125, "lora_A_first_values": [0.002167, 0.004364, 0.001373, -0.010559], "PYTHONHASHSEED": null}
+  0%|          | 0/8 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[probe] head {"labelled": 170, "positions": 536, "loss_rel": 6.872680416666559e-07, "logits_labelled_same_bits": true, "head_alone_dh_err_off": 0.01664345382696856, "head_alone_dh_err_on": 0.01664345382696856, "lora_grads_on_vs_off_max_rel_worst": 0.0375, "float64_model": null, "bar_met": true}
+[probe] tower {"pictures": 1, "rng_cpu_unchanged": true, "rng_gpu_unchanged": true, "same_batch_twice_same_bits": true, "each_picture_alone_same_bits": [true], "paired_with_previous_same_bits": null, "served_same_bits_as_recompute": true, "one_pixel_moved_served": false, "other_grid_served": false, "key_ms_per_call": 2.35, "serve_ms": 0.69, "bytes_a_picture": 5222400, "bar_met": true}
+[probe] tower {"pictures": 1, "rng_cpu_unchanged": true, "rng_gpu_unchanged": true, "same_batch_twice_same_bits": true, "each_picture_alone_same_bits": [true], "paired_with_previous_same_bits": true, "served_same_bits_as_recompute": true, "one_pixel_moved_served": false, "other_grid_served": false, "key_ms_per_call": 3.46, "serve_ms": 1.84, "bytes_a_picture": 4177920, "bar_met": true}
+[probe] tower {"pictures": 1, "rng_cpu_unchanged": true, "rng_gpu_unchanged": true, "same_batch_twice_same_bits": true, "each_picture_alone_same_bits": [true], "paired_with_previous_same_bits": true, "served_same_bits_as_recompute": true, "one_pixel_moved_served": false, "other_grid_served": false, "key_ms_per_call": 4.24, "serve_ms": 1.67, "bytes_a_picture": 5222400, "bar_met": true}
+ 12%|█▎        | 1/8 [00:18<02:06, 18.03s/it]  step 1/8: loss 2.5501, 18 s spent, 127 s left, 18.08 s/step
+                                             {'loss': '2.55', 'grad_norm': '7.474', 'learning_rate': '0', 'epoch': '0.25'}
+ 12%|█▎        | 1/8 [00:18<02:06, 18.03s/it] 25%|██▌       | 2/8 [00:23<01:04, 10.78s/it]  step 2/8: loss 2.5711, 24 s spent, 71 s left, 11.89 s/step
+                                             {'loss': '2.571', 'grad_norm': '5.322', 'learning_rate': '0.0002', 'epoch': '0.5'}
+ 25%|██▌       | 2/8 [00:23<01:04, 10.78s/it][guard]      30 s footprint  26.93 GB (peak  28.63) swap +0.00 GB pressure 1
+ 38%|███▊      | 3/8 [00:28<00:39,  7.99s/it]  step 3/8: loss 2.2333, 28 s spent, 47 s left, 9.48 s/step
+                                             {'loss': '2.233', 'grad_norm': '2.791', 'learning_rate': '0.0001901', 'epoch': '0.75'}
+ 38%|███▊      | 3/8 [00:28<00:39,  7.99s/it] 50%|█████     | 4/8 [00:32<00:26,  6.58s/it]  step 4/8: loss 1.7724, 33 s spent, 33 s left, 8.22 s/step
+                                             {'loss': '1.772', 'grad_norm': '2.801', 'learning_rate': '0.0001623', 'epoch': '1'}
+ 50%|█████     | 4/8 [00:32<00:26,  6.58s/it] 62%|██████▎   | 5/8 [00:37<00:17,  5.82s/it]  step 5/8: loss 1.3696, 37 s spent, 22 s left, 7.47 s/step
+                                             {'loss': '1.37', 'grad_norm': '1.877', 'learning_rate': '0.0001223', 'epoch': '1.25'}
+ 62%|██████▎   | 5/8 [00:37<00:17,  5.82s/it] 75%|███████▌  | 6/8 [00:42<00:11,  5.55s/it]  step 6/8: loss 1.1170, 42 s spent, 14 s left, 7.06 s/step
+                                             {'loss': '1.117', 'grad_norm': '1.81', 'learning_rate': '7.775e-05', 'epoch': '1.5'}
+ 75%|███████▌  | 6/8 [00:42<00:11,  5.55s/it] 88%|████████▊ | 7/8 [00:47<00:05,  5.40s/it]  step 7/8: loss 1.0044, 47 s spent, 7 s left, 6.78 s/step
+                                             {'loss': '1.004', 'grad_norm': '1.652', 'learning_rate': '3.765e-05', 'epoch': '1.75'}
+ 88%|████████▊ | 7/8 [00:47<00:05,  5.40s/it]100%|██████████| 8/8 [00:52<00:00,  5.30s/it]  step 8/8: loss 1.0367, 53 s spent, 0 s left, 6.57 s/step
+                                             {'loss': '1.037', 'grad_norm': '1.862', 'learning_rate': '9.903e-06', 'epoch': '2'}
+100%|██████████| 8/8 [00:52<00:00,  5.30s/it]  step 8/8: loss nan, 53 s spent, 0 s left, 6.57 s/step
+                                             {'train_runtime': '52.54', 'train_samples_per_second': '0.609', 'train_steps_per_second': '0.152', 'train_loss': '1.707', 'epoch': '2'}
+100%|██████████| 8/8 [00:52<00:00,  5.30s/it]100%|██████████| 8/8 [00:52<00:00,  6.56s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-9B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 32 collated (the longest 536 tokens)
+
+trained in 0.9 min: 8 steps, loss 1.7068, 6.94 s/step
+[phase4] probe_d8d9_9b: 8 steps, final loss 1.036707878112793, steady None s a step (trainer clock, steps 11-8)
+[phase4] wrote bench/layer_logs/probe_d8d9_9b.json
+[guard]      61 s footprint   0.00 GB (peak  28.63) swap +0.00 GB pressure 1
+[guard] end 15:28:19 rc 0 peak footprint 28.63 GB wall 61 s
