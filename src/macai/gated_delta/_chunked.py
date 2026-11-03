@@ -36,7 +36,8 @@ import functools
 
 import torch
 
-C = 32       # chunk length (tokens); the kernels map one lane to one row of a chunk, so C <= 32 and C % 8 == 0
+C = 16       # chunk length (tokens); the kernels map one lane to one row of a chunk, so C <= 32 and C % 8 == 0.
+             # Measured on the M3 Max (docs/series_phase3.md): 16 gives the fastest forward with states + backward
 NCB = 1      # 8-column blocks of the state a simdgroup owns in the state passes
 NSG = 16     # most simdgroups a threadgroup in the state passes (a threadgroup owns 8 * NCB * NSG value columns: one head
              # at DV = 128, so a chunk's staged K and Q serve all its value columns)
