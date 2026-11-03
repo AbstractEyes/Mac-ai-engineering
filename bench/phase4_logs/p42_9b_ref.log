@@ -1,0 +1,31 @@
+[guard] start 20:54:37 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.15 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/phase4_train.py --name p42_9b_ref --model 9b --arm reference --epochs 1 --batch 2 --accum 8
+W1102 20:54:38.869000 96549 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+  10 pictures did not answer (first ['art-075014', 'art-076023', 'art-070017', 'art-043029', 'art-081041']: ['no locator', 'no locator', 'no locator', 'no locator', 'no locator'])
+train 20261103_045439_p42_9b_ref: 382 items (372 with a picture), 400 examples by form {'full': 335, 'spec_full': 10, 'short': 55}; images fetched in 0 s
+Loading weights:   0%|          | 0/760 [00:00<?, ?it/s]Loading weights:   1%|          | 4/760 [00:00<00:24, 30.68it/s]Loading weights:   9%|▉         | 71/760 [00:00<00:03, 202.13it/s]Loading weights:  16%|█▋        | 124/760 [00:00<00:02, 297.56it/s]Loading weights:  21%|██        | 158/760 [00:00<00:02, 265.90it/s]Loading weights:  25%|██▌       | 191/760 [00:00<00:02, 281.99it/s]Loading weights:  30%|██▉       | 227/760 [00:00<00:02, 245.92it/s]Loading weights:  34%|███▍      | 259/760 [00:01<00:01, 251.77it/s]Loading weights:  38%|███▊      | 286/760 [00:01<00:02, 235.67it/s]Loading weights:  45%|████▌     | 343/760 [00:01<00:01, 317.30it/s]Loading weights:  50%|████▉     | 378/760 [00:01<00:01, 280.83it/s]Loading weights:  54%|█████▍    | 409/760 [00:01<00:01, 239.39it/s]Loading weights: 100%|██████████| 760/760 [00:01<00:00, 465.25it/s]
+LoRA modules by name: {'out_proj': 24, 'in_proj_qkv': 24, 'in_proj_z': 24, 'gate_proj': 32, 'up_proj': 32, 'down_proj': 32, 'q_proj': 8, 'k_proj': 8, 'v_proj': 8, 'o_proj': 8}
+trainable params: 80,216,064 || all params: 9,490,029,808 || trainable%: 0.8453
+  a mixed batch (a picture row, a specification row) encodes: input_ids (2, 751)
+  25 steps of 2 x 8 sequences; 1.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "linear_attention_layers": 24, "gated_delta_rule_at_train_begin": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule", "trainable_parameters": 80216064, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 228796.65625, "lora_A_first_values": [-0.002258, 0.014526, 0.013367, -0.01178], "PYTHONHASHSEED": null}
+  0%|          | 0/25 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[guard]      30 s footprint  70.08 GB (peak  70.17) swap +0.00 GB pressure 1
+[phase4] p42_9b_ref FAILED: RuntimeError: MPS backend out of memory (MPS allocated: 61.23 GiB, other allocations: 17.63 GiB, max allowed: 80.64 GiB). Tried to allocate 2.31 GiB on shared pool. Use PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 to disable upper limit for memory allocations (may cause system failure).
+  0%|          | 0/25 [00:50<?, ?it/s]
+[phase4] wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/phase4_logs/p42_9b_ref.json
+[guard] end 20:55:35 rc 1 peak footprint 80.43 GB wall 58 s

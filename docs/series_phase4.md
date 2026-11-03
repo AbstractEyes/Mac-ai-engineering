@@ -94,3 +94,10 @@ the watermarks stay as registered. Every step still takes the same 16 examples i
 see identical steps; the split changes the padding and how many sequences run at once, so the step time and the memory are now
 measured at 2 x 8, which the registered 0.8B time prediction (made for 4 x 4) did not price. The 9B pair runs first at its
 registered 2 x 8 (its activations are larger: if its reference runs out of memory, the pair runs at 1 x 16).
+
+### 3. 20:54-20:56: Qwen3.5-9B at its registered 2 x 8 runs out of GPU memory in step 1 (`p42_9b_ref`)
+"MPS backend out of memory (MPS allocated: 61.23 GiB, other allocations: 17.63 GiB, max allowed: 80.64 GiB). Tried to allocate
+2.31 GiB", 58 s after the start, in the first step. The model's bf16 weights (the 17.6 GiB of "other allocations") leave about
+63 GiB under the high watermark for everything else, and two sequences without checkpointing needed more. The pair runs at 1 x 16
+(the ladder's last rung; the same 16 sequences a step), the reference first: 54-60 s a step in its first steps, footprint 54-60 GB.
+The registered 9B time prediction (made for 2 x 8) is read against 1 x 16 below.
