@@ -325,7 +325,76 @@
    }
   }
  },
- "confirm_9b": {},
+ "confirm_9b": {
+  "recompute": {
+   "name": "confirm_recompute_9b_1x16_100steps",
+   "memory": "recompute",
+   "model_id": "Qwen/Qwen3.5-9B",
+   "epochs": 4.0,
+   "batch": 1,
+   "grad_accum": 16,
+   "repo_commit": "c11f32c",
+   "repo_dirty": true,
+   "error": null,
+   "s_per_step_steady_trainer_clock": 50.911,
+   "loss_final_step": 0.03999844938516617,
+   "live_at_forward_end_peak_gb": 20.587,
+   "mps_driver_peak_gb": 65.839,
+   "footprint_peak_in_steps_gb": 68.13,
+   "footprint_peak_before_training_gb": 19.573,
+   "wall_s": 5091.7,
+   "macai": {
+    "version": "0.2.0",
+    "KERNEL": "chunked",
+    "KERNEL_BWD": "chunked",
+    "FUSED_NORM": true,
+    "chunk": 16,
+    "SIZE_CLASSES": false,
+    "RECOMPUTE_STATES": true
+   },
+   "guard": {
+    "rc": 0,
+    "peak_footprint_gb": 68.13,
+    "wall_s": 5093,
+    "stops": []
+   },
+   "train_loss": 0.34293376203626397,
+   "guard_peak_through_step_25_gb": 64.35,
+   "runner_peak_through_step_25_gb": 64.352,
+   "footprint_met": true,
+   "footprint_met_runner_poll": true,
+   "phase4_reference_footprint_gb": 67.78,
+   "phase4_kernels_footprint_gb": 79.49,
+   "steady_11_25_s": 51.133,
+   "steady_met": true,
+   "phase4_kernels_steady_11_25_s": 51.2,
+   "phase4_reference_steady_11_25_s": 62.467,
+   "steady_11_100_s": 50.911,
+   "driver_max_steps_1_50_gb": 65.839,
+   "driver_max_steps_51_100_gb": 61.862,
+   "long_run_growth_gb": -3.977,
+   "long_run_met": true,
+   "driver_max_steps_1_25_gb": 60.222,
+   "phase4_kernels_driver_peak_gb": 73.933,
+   "phase4_reference_driver_peak_gb": 60.646,
+   "live_peak_by_step_25_gib": 20.587,
+   "phase4_kernels_live_peak_gib": 25.08,
+   "phase4_reference_live_peak_gib": 27.839,
+   "steps_1_2_vs_phase4_kernels": {
+    "steps": {
+     "1": [
+      2.2249152660369873,
+      2.2249152660369873
+     ],
+     "2": [
+      2.0693628787994385,
+      2.0693628787994385
+     ]
+    },
+    "equal": true
+   }
+  }
+ },
  "screen_passed_in_order": [
   "recompute",
   "classes+recompute"
