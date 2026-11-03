@@ -5,9 +5,11 @@ machine: a MacBook Pro with an M3 Max (40-core GPU, 128 GB unified memory), macO
 
 **Status: prototype.** 0.1.0 and 0.2.0 are a first recurrent kernel, the baseline of an engineering series: prior art, GPU
 instruments, a full correctness harness and the chunked kernels on simdgroup matrices (phases 0-3) are done, and phase 4 ran
-them in real LoRA training of Qwen3.5 0.8B and 9B: the same loss as the reference, steps 1.375x / 1.22x faster, a larger
-allocator footprint ([docs/series_phase4.md](docs/series_phase4.md)); the rest of the design series is not done. Treat the
-numbers below as measurements of a prototype.
+them in real LoRA training of Qwen3.5 0.8B and 9B: the same loss as the reference, steps 1.375x / 1.22x faster
+([docs/series_phase4.md](docs/series_phase4.md)). Their larger allocator footprint is fixed: the chunk states are now
+recomputed in the backward (the same bits), and the process's footprint sits under the reference's at the same speed
+([docs/series_memory.md](docs/series_memory.md)). The rest of the design series is not done. Treat the numbers below as
+measurements of a prototype.
 
 ## What is here
 - `macai.gated_delta`: the gated delta rule (the linear attention in three of every four layers of Qwen3.5 / Qwen3-Next) as

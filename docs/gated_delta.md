@@ -66,9 +66,24 @@ tried and the measurements: [series_phase3.md](series_phase3.md). Parity: the ph
 | the rule forward + backward through the drop-in | 65.3 / 65.1 | 37.6 / 37.8 | 9.86 / 9.72 |
 | a whole linear-attention layer, forward + backward (wall clock) | 113.7 / 254.6 | 93.1 / 206.8 | 58.6 / 177.7 (1.94x / 1.43x) |
 
+## The kernels' memory (the memory series: the chunk states recomputed, now the default)
+Two settings in `macai.gated_delta.op` choose how the chunked kernels hold their buffers in training. Every output and gradient is
+the same bits under each choice (`tests/test_memory.py`); only the memory and the time differ. Design, tests and the training
+runs: [series_memory.md](series_memory.md).
+
+| setting | default | what it does | measured (M3 Max) |
+|---|---|---|---|
+| `RECOMPUTE_STATES` | `True` | the training forward keeps only its inputs (q, k, v, g, beta, S_0); the backward rebuilds G, A, M, KG, the chunk states, Vn and Xu with the forward's own kernels (without the output's work), then runs the backward passes | one forward keeps 116.8 MiB instead of 413 (4 x 1,024 tokens x 16 heads); the rule's forward + backward 9.94 -> 11.71 ms (+17.6%); in LoRA training of Qwen3.5 no measurable cost a step, and the process's peak footprint 0.8B 46.3 GB (stored states 57.7, the reference implementation 48.65), 9B 64.4 GB over the first 25 steps (stored 79.5, the reference 67.8) |
+| `SIZE_CLASSES` | `False` | every buffer whose size follows the sequence length is cut from a buffer of the smallest of 4 sizes a doubling that holds it | +0.6% on the rule; in training the allocator's pool as with exact sizes (no memory gained) |
+
+Both off is Phase 3's stored path: the forward keeps every chunk's state (82-164 MiB a layer at 650-1,300 tokens) for the
+backward; spread over the Metal allocator's shared 1 GiB heaps, those buffers keep the heaps from being released between the
+forward and the backward, and the process held 17-19% more than with the reference implementation although its live tensors
+were fewer.
+
 ## Next
-- Fewer stored chunk states (the per-chunk backward is bandwidth-bound on them) and double-buffered staging in the state
-  passes: series_phase3.md, "Next".
+- The per-chunk backward is bandwidth-bound on the chunk states (now recomputed in the backward), and double-buffered staging
+  in the state passes: series_phase3.md, "Next".
 - The layer's other parts on this GPU: the input projections, the gated norm, the short convolution; at 9B the rule is now
   about 11 of the layer's 178 ms.
 - Packed rows (cu_seqlens), refused until supported.

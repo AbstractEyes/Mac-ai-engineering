@@ -25,9 +25,11 @@ FUSED_NORM = True
 SIZE_CLASSES = False
 # RECOMPUTE_STATES: with the chunked forward and backward, the training forward keeps only its inputs (q, k, v, g, beta, S_0)
 # and the backward recomputes the per-chunk matrices, the chunk states, Vn and Xu with the same kernels before the backward
-# passes (as flash-linear-attention does); False = the forward stores them (Phase 3's choice: faster, more memory held from
-# the forward to the backward)
-RECOMPUTE_STATES = False
+# passes (as flash-linear-attention does). The default since the memory series: in LoRA training of Qwen3.5 it brings the
+# process's footprint to or under the reference implementation's at no measurable cost a step (the rule alone +18%).
+# False = the forward stores them (Phase 3's choice; the stored states hold the Metal allocator's heaps from the forward to
+# the backward)
+RECOMPUTE_STATES = True
 
 
 def head_shape(dk: int, dv: int) -> bool:
