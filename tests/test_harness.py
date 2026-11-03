@@ -117,6 +117,56 @@ def test_dropin_dtypes(dtype, kernel, monkeypatch):
 
 
 @mps
+@pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16, torch.float16])
+def test_fused_norm(dtype):
+    """The fused query / key prologue against float64 autograd through l2norm and the scaling: values and gradients."""
+    from macai.gated_delta import _norm
+    gen = torch.Generator().manual_seed(7)
+    x = torch.randn(3, 17, 5, 128, generator=gen).to(dtype)
+    dy = torch.randn(3, 17, 5, 128, generator=gen, dtype=torch.float64)
+    xm = x.to("mps").requires_grad_(True)
+    y = _norm.L2NormScale.apply(xm, 128 ** -0.5)
+    (y * dy.float().to("mps")).sum().backward()
+    x64 = x.double().requires_grad_(True)
+    y64 = l2norm(x64) * 128 ** -0.5
+    (y64 * dy).sum().backward()
+    assert y.dtype == torch.float32 and xm.grad.dtype == dtype
+    assert ((y.cpu().double() - y64).abs().max() / y64.abs().max()).item() < 1e-6
+    tol = {torch.float32: 1e-5, torch.bfloat16: 1e-2, torch.float16: 2e-3}[dtype]
+    assert ((xm.grad.cpu().double() - x64.grad).abs().max() / x64.grad.abs().max()).item() < tol
+
+
+@mps
+@pytest.mark.parametrize("fused", [True, False])
+@pytest.mark.parametrize("pair", [("chunked", "chunked"), ("auto", "column")])
+@pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16])
+def test_dropin_gradients(dtype, pair, fused, monkeypatch):
+    """The drop-in end to end (l2 normalization in the call, a starting state, both outputs used), every input's gradient
+    against float64 autograd through l2norm and the step-by-step recurrence."""
+    monkeypatch.setattr(op, "KERNEL", pair[0])
+    monkeypatch.setattr(op, "KERNEL_BWD", pair[1])
+    monkeypatch.setattr(op, "FUSED_NORM", fused)
+    gen = torch.Generator().manual_seed(8)
+    B, T, H, D = 2, 45, 3, 128
+    raw = [torch.randn(B, T, H, D, generator=gen).to(dtype) for _ in range(3)]
+    g = -torch.rand(B, T, H, generator=gen)
+    beta = torch.rand(B, T, H, generator=gen)
+    s0 = torch.randn(B, H, D, D, generator=gen) * 0.1
+    w_o = torch.randn(B, T, H, D, generator=gen, dtype=torch.float64)
+    w_s = torch.randn(B, H, D, D, generator=gen, dtype=torch.float64)
+    xs = [x.to("mps").requires_grad_(True) for x in (*raw, g, beta, s0)]
+    o, sT = chunk_gated_delta_rule(*xs[:5], initial_state=xs[5], output_final_state=True, use_qk_l2norm_in_kernel=True)
+    ((o.float() * w_o.float().to("mps")).sum() + (sT * w_s.float().to("mps")).sum()).backward()
+    ref = [x.double().requires_grad_(True) for x in (*raw, g, beta, s0)]
+    ro, rsT = recurrent_reference(l2norm(ref[0]) * D ** -0.5, l2norm(ref[1]), *ref[2:])
+    ((ro * w_o).sum() + (rsT * w_s).sum()).backward()
+    tol = {torch.float32: 2e-4, torch.bfloat16: 2e-2}[dtype]
+    for name, a, b in zip(("dquery", "dkey", "dvalue", "dg", "dbeta", "dstate"), xs, ref):
+        err = ((a.grad.cpu().double() - b.grad).abs().max() / b.grad.abs().max()).item()
+        assert err < tol, (name, err)
+
+
+@mps
 def test_packed_rows_refused():
     x = torch.zeros(1, 4, 1, 128, device="mps")
     with pytest.raises(NotImplementedError):

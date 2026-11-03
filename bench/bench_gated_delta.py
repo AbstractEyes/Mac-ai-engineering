@@ -18,7 +18,11 @@ from macai.instruments import warm_gpu  # noqa: E402
 
 SHAPES = {"qwen3.5-0.8b": dict(model="Qwen/Qwen3.5-0.8B", batch=4), "qwen3.5-9b": dict(model="Qwen/Qwen3.5-9B", batch=2)}
 T, WARM, REPS = 1024, 2, 5
-CHOICES = {"d0": ("auto", "column"), "chunked": ("chunked", "chunked")}     # (op.KERNEL, op.KERNEL_BWD)
+# op settings: the 0.2.0 drop-in (token-at-a-time kernels, the l2 normalization as PyTorch operations); the chunked kernels
+# (D1 + D2) with the same PyTorch normalization; the chunked kernels with the fused query / key prologue
+CHOICES = {"d0": dict(KERNEL="auto", KERNEL_BWD="column", FUSED_NORM=False),
+           "chunked": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=False),
+           "chunked_fused_norm": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True)}
 
 
 def timed(fn, x0):
@@ -64,18 +68,20 @@ def timed_function(fn, base):
     return res
 
 
-class kernels:
-    """Set op.KERNEL / op.KERNEL_BWD inside a block."""
+class settings:
+    """Set op's module settings (KERNEL, KERNEL_BWD, FUSED_NORM) inside a block."""
 
-    def __init__(self, pair):
-        self.pair = pair
+    def __init__(self, values):
+        self.values = values
 
     def __enter__(self):
-        self.old = op.KERNEL, op.KERNEL_BWD
-        op.KERNEL, op.KERNEL_BWD = self.pair
+        self.old = {k: getattr(op, k) for k in self.values}
+        for k, v in self.values.items():
+            setattr(op, k, v)
 
     def __exit__(self, *exc):
-        op.KERNEL, op.KERNEL_BWD = self.old
+        for k, v in self.old.items():
+            setattr(op, k, v)
 
 
 def text_config(model_id):
@@ -102,8 +108,8 @@ def main():
         r = {"batch": B, "heads": H, "dk": DK, "dv": DV}
         q0 = torch.randn(B, T, H, DK, generator=gen).to("mps", torch.bfloat16)
         r["function_reference"] = timed_function(reference, (q0, k0, v0, g0, b0))
-        for choice, pair in CHOICES.items():
-            with kernels(pair):
+        for choice, values in CHOICES.items():
+            with settings(values):
                 r[f"function_{choice}"] = timed_function(chunk_gated_delta_rule, (q0, k0, v0, g0, b0))
         cfg = Qwen3_5TextConfig(**tc)
         cfg._attn_implementation = "sdpa"
@@ -112,8 +118,8 @@ def main():
             p.requires_grad_(False)
         x0 = torch.randn(B, T, cfg.hidden_size, generator=gen).to("mps", torch.bfloat16)
         r["layer_reference"] = timed(lambda x: layer(x, position_embeddings=None), x0)
-        for choice, pair in CHOICES.items():
-            with patch.installed(), kernels(pair):
+        for choice, values in CHOICES.items():
+            with patch.installed(), settings(values):
                 r[f"layer_{choice}"] = timed(lambda x: layer(x, position_embeddings=None), x0)
         for part in ("function", "layer"):
             for choice in CHOICES:

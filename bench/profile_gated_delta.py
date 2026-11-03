@@ -178,9 +178,10 @@ def rule_through_autograd(B, T, H):
     dout = torch.randn(B, T, H, DV, generator=g0).to("mps")
     raw = inputs(B, T, H, seed=3)
     out = {}
-    for label, pair in PAIRINGS.items():
-        old = op.KERNEL, op.KERNEL_BWD
-        op.KERNEL, op.KERNEL_BWD = pair
+    for label, values in PAIRINGS.items():
+        old = {k: getattr(op, k) for k in values}
+        for key_, val in values.items():
+            setattr(op, key_, val)
         try:
             xs = [x.detach().clone().requires_grad_(True) for x in (q, k, v, g, beta, s0)]
 
@@ -202,11 +203,15 @@ def rule_through_autograd(B, T, H):
             out[label] = {"function_fwd": gpu_ms(fn_fwd), "function_fwd_bwd": gpu_ms(fn_fb),
                           "dropin_fwd": gpu_ms(drop_fwd), "dropin_fwd_bwd": gpu_ms(drop_fb)}
         finally:
-            op.KERNEL, op.KERNEL_BWD = old
+            for key_, val in old.items():
+                setattr(op, key_, val)
     return out
 
 
-PAIRINGS = {"d0_head_fwd_column_bwd": ("auto", "column"), "chunked": ("chunked", "chunked")}
+# op settings, as in bench_gated_delta.py: the 0.2.0 drop-in; the chunked kernels; the chunked kernels with the fused prologue
+PAIRINGS = {"d0_head_fwd_column_bwd": dict(KERNEL="auto", KERNEL_BWD="column", FUSED_NORM=False),
+            "chunked": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=False),
+            "chunked_fused_norm": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True)}
 
 
 def op_counts(fn):

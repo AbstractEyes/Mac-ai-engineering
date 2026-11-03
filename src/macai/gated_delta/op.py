@@ -4,7 +4,7 @@ import math
 
 import torch
 
-from . import _chunked
+from . import _chunked, _norm
 from ._metal import BLK, library
 
 
@@ -15,6 +15,9 @@ KERNEL = "chunked"
 # (one threadgroup a head, used only where its shape allows). Any forward pairs with any backward: each forward saves
 # what the chosen backward reads (see GatedDeltaRule.forward).
 KERNEL_BWD = "chunked"
+# the drop-in's query / key prologue (float32 cast, l2 normalization, query scaling) as one Metal pass each way (_norm.py)
+# when use_qk_l2norm_in_kernel=True; False runs it as PyTorch operations
+FUSED_NORM = True
 
 
 def head_shape(dk: int, dv: int) -> bool:
@@ -173,10 +176,15 @@ def chunk_gated_delta_rule(query, key, value, g, beta, chunk_size: int = 64, ini
         # boundary; not implemented yet, and running without it would silently carry state across sequences
         raise NotImplementedError("macai's gated delta rule does not take packed rows (cu_seqlens) yet")
     dtype = query.dtype
-    q, k, v = query.float(), key.float(), value.float()
-    if use_qk_l2norm_in_kernel:
-        q, k = l2norm(q), l2norm(k)
-    q = q * q.shape[-1] ** -0.5
+    if use_qk_l2norm_in_kernel and FUSED_NORM and _norm.supported(query) and _norm.supported(key):
+        q = _norm.L2NormScale.apply(query, query.shape[-1] ** -0.5)
+        k = _norm.L2NormScale.apply(key, 1.0)
+    else:
+        q, k = query.float(), key.float()
+        if use_qk_l2norm_in_kernel:
+            q, k = l2norm(q), l2norm(k)
+        q = q * q.shape[-1] ** -0.5
+    v = value.float()
     B, T, H, DK = q.shape
     DV = v.shape[-1]
     s0 = (torch.zeros(B, H, DK, DV, device=q.device, dtype=torch.float32) if initial_state is None
