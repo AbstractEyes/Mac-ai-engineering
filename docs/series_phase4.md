@@ -132,3 +132,9 @@ per step stays 1.34-1.37x), and the pool shrinks by a third. Every registered ru
 batches: 0.8B 4 x 4 and 9B 2 x 8 (if the 9B reference still runs out at 2 x 8, the pair runs at 1 x 16, both arms alike). The
 footprint stays the registered memory measure; with the cache emptied it shows the kernels' extra transient buffers more (41.8
 against 34.4 GB here) while their live tensors are fewer (21.7 against 24.2 GiB).
+
+### 5. 21:06-21:08: the 9B at 2 x 8 with the cache emptied: step 1 runs, step 2 runs out (`p42_9b_2x8_emptycache_ref_oom`)
+Step 1 took 65 s; step 2 ran out ("MPS allocated: 61.86 GiB, other allocations: 17.63 GiB, max allowed: 80.64 GiB. Tried to
+allocate 2.38 GiB"). With the cache emptied the pool is close to the live tensors, so at 2 sequences the live tensors themselves
+outgrow the ~63 GiB the weights leave under the high watermark. The 9B pair runs at 1 x 16, both arms with the cache emptied:
+the reference passed step 5 (where the run with the cache kept had stopped) at a steady 59-60 GB footprint.
