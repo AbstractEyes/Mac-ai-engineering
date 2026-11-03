@@ -43,7 +43,9 @@ How the measures are read (fixed before the registered runs, after the smoke run
   has read the loss off the GPU); the runner's clock (the same moment, unrounded) is reported beside it. The 0.8B reference is
   the mean of its two runs.
 - Memory: the guard's peak physical footprint (polled every 2 s; it includes the GPU buffers the process owns), with the Metal
-  driver's allocation at each step beside it.
+  driver's allocation at each step beside it, and the allocator's live tensors when each forward returns (a forward hook: the
+  memory a step needs, which the footprint mixes with the allocator's cache). The 0.8B reference is the mean of its two runs.
+- `bench/phase4_report.py` computes every figure below from the runs' records and writes `bench/phase4_logs/phase4_results.json`.
 
 ## The log
 
