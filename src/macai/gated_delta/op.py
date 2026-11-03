@@ -43,10 +43,9 @@ def _prep(lib, q, k, g, beta):
 
 
 def _state_grid(dv: int, H: int, Z: int):
-    per = 8 * _chunked.NCB * _chunked.NSG
-    if dv % per != 0:
-        raise ValueError(f"the chunked kernels need the value head width to be a multiple of {per}, got {dv}")
-    return dict(threads=(dv // per * 32 * _chunked.NSG, H, Z), group_size=(32 * _chunked.NSG, 1, 1))
+    """The state passes' launch: threadgroups of up to NSG simdgroups, each simdgroup 8 * NCB value columns."""
+    nsg = _chunked.state_simdgroups(dv)
+    return dict(threads=(dv // (8 * _chunked.NCB * nsg) * 32 * nsg, H, Z), group_size=(32 * nsg, 1, 1))
 
 
 class GatedDeltaRule(torch.autograd.Function):
@@ -139,8 +138,9 @@ class GatedDeltaRule(torch.autograd.Function):
             dq, dk = torch.empty_like(q), torch.empty_like(k)
             dv = torch.empty(B, T, H, DV, device=dev, dtype=torch.float32)
             dg, dbeta = torch.empty_like(beta), torch.empty_like(beta)
+            nb_ = 32 * _chunked.NSGB
             lib.gdc_bwd_chunk(q, k, beta, do, gc, a, kg, m, sc, dsn, vn, xu, dvn, dq, dk, dv, dg, dbeta, T, H, DV, sstride, nstates,
-                              threads=(nt * 128, H, B), group_size=(128, 1, 1))
+                              threads=(nt * nb_, H, B), group_size=(nb_, 1, 1))
             return dq, dk, dv, dg, dbeta, ds0, None
         q, k, v, g, beta, ckpt = ctx.saved_tensors
         lib = library(DK)
