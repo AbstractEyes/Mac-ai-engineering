@@ -459,6 +459,318 @@ parameters after every micro-batch: 46 / 126 ms a step), a new input shape (2.1%
 - MLX's products are timed by the wall clock (PyTorch's by Metal events and the wall clock: the two agree within a few percent
   at these sizes).
 
+## D4, the layer's surroundings fused (registered before any code)
+
+| item | registered |
+|---|---|
+| the parts, in the order of step 0's measured shares | 1. the zero-centered RMSNorm (the input and post-attention norms of every layer, the full-attention q / k norms, the final norm): one kernel each way, the input saved and r recomputed, the weight's gradient only when it trains (float32 partials and a second pass, no float atomics); optional, measured apart: the residual add folded into the norm. 2. the convolution path: the depthwise causal convolution (kernel 4) and its SiLU reading the projection's [B, T, C] output in place, float32 accumulation, SiLU on the float32 pre-activation, q, k, v written so the rule's drop-in reads them without copies; the backward recomputes the pre-activation, dx with one writer, the weight's gradient only when it trains; measure whether the layout removes in_proj_qkv's slow LoRA-B backward. 3. the gated RMSNorm (rows of 128): one kernel each way (dx, dz), transformers' rounding points. 4. the glue: beta and g in one pass each way (A_log's and dt_bias's gradients only when they train); the transposes, split and reshape copies removed; the 9B repeat of q and k if it costs a copy. 5. SwiGLU (transformers' rounding): built only if it can meet the speed bar, else recorded as not adopted |
+| installation | by macai.patch beside the rule; each part a setting, selectable off; a method replaced only while its source matches transformers 5.22.1 (else the original stays, with a warning); the projections stay PEFT's module calls (LoRA and its dropout unchanged); an admitted part becomes the default at the end |
+| parity bar | the forward and every gradient against float64 on the CPU at the harness's shapes (odd lengths, B > 1, float32 / bfloat16 / float16, the real head counts and widths): the part's error at most twice the PyTorch path's own error against float64, both measured, at every shape and dtype; and one end-to-end check of whole decoder layers (both kinds, LoRA on) patched and unpatched, both against float64, at the bench shapes |
+| speed bar | each part >= 1.5x its PyTorch path, forward + backward, at both bench shapes (0.8B 4 x 1,024, 9B 2 x 1,024), Metal events, the baseline and the design in interleaved rounds; else not adopted |
+| predictions | each part within 3x its bandwidth floor (step 0's floors); the bench linear-attention layer 0.8B ~60 -> 44-50 ms, 9B ~180 -> 158-170 ms; the training step 0.8B 10.98 -> 9.6-10.4 s, 9B 50.9 -> 45-49 s |
+| integration | after the admissions, through bench/phase4_train.py with an option that installs the parts: Qwen3.5-0.8B 2 x 8, the cache emptied, the recomputed states, 4 epochs (100 steps): the loss read as Phase 4 read it against references A, B, C, the guard's peak footprint <= 53.5 GB, the steady step against D2m's 10.978 s; Qwen3.5-9B 1 x 16, the cache emptied, 1 epoch (25 steps): footprint <= 74.6 GB, the steady step (11-25) against D2m's 51.13 s; step 0's profile again at 0.8B with the parts on |
+
+## D4: the parts as built (`macai.layer`, [layer.md](layer.md))
+
+Each part is one Metal kernel forward and one backward (`torch.mps.compile_shader`), instantiated for float32, bfloat16 and
+float16 inputs (and each weight dtype), with 4-element vector loads and float32 arithmetic.
+
+| part | setting | forward | backward | kept for the backward |
+|---|---|---|---|---|
+| zero-centered RMSNorm | `RMSNORM` (replaces `Qwen3_5RMSNorm.forward`) | y = x rsqrt(mean(x^2) + eps) (1 + w), float32, one rounding. A row is spread over S simdgroups (1 up to 512 wide, 2 at 1,024, 8 at 4,096), its values held in registers between the sum and the output; any row stride (the query norm reads every other 256-wide half of the projection's rows in place) | dx = r ((1 + w) dy - x r^2 <x, (1 + w) dy> / D), r recomputed; dw only when the weight trains: float32 partial rows, then a simdgroup a column | x (transformers' path keeps a float32 copy of x and the float32 normalized product) |
+| convolution path | `CONV` (inside the replaced `Qwen3_5GatedDeltaNet.forward`) | a thread owns 4 adjacent channels and walks 32 time steps, the last 3 inputs in registers; u in float32, SiLU on it, one rounding; q and k written as [B, T, H_v, 128] in the input dtype, each key head once for each value head it serves (the 9B repeat, without its copy); v written in float32 (the rule computes in float32: its drop-in neither casts nor copies it) | the same walk with a 3-step look-ahead: u and du recomputed in registers, dx[t] = sum_j w_j du[t + 3 - j] written in the projection's own [B, T, C] layout, one writer an element; dq, dk summed over the value heads a key head serves; dw only when the weight trains (float32 partials a tile, a second pass) | the projection's output (transformers' path keeps it and the rounded pre-activation) |
+| gated RMSNorm | `GATED_NORM` (replaces `Qwen3_5RMSNormGated.forward`) | one simdgroup a 128-wide row (4 elements a lane, one `simd_sum`), 8 rows a threadgroup; transformers' rounding points: x_hat rounded to the input dtype, times w rounded, times silu(z) in float32, rounded | dx and dz in one pass, float32, r recomputed; dw only when the weight trains | x and z |
+| beta and g | `GATES` (inside the replaced forward) | beta = sigmoid(b), g = -exp(A_log) softplus(a + dt_bias), both written in float32 (softplus with PyTorch's threshold of 20, log1p accurate below it) | db, da in one pass; A_log's and dt_bias's gradients only when they train (PyTorch's reductions) | b, a |
+| SwiGLU | `SWIGLU` (replaces `Qwen3_5MLP.forward`; the three projections stay module calls in the original order) | silu(gate) rounded to the input dtype, times up, rounded (transformers' rounding); 8 elements a thread | dgate, dup in one pass, silu recomputed | gate, up |
+
+The replaced linear-attention forward takes the parts for a forward with no cache or with a cache that holds no state of the
+layer yet (a prefill, and every training forward: see "The first chain" below), filling the cache as transformers fills it; with
+a cache holding the layer's states (decoding) or packed rows, transformers' own forward runs. It calls the projections in the
+original order, then the rule through the modeling module's own name for it (so macai's rule, and the step profiler's wrapper
+of it, see the same call). Not built: the residual add folded
+into the post-attention norm (optional in the registration): the residual adds are 0.3% / 0.2% of the step (step 0) and the
+fold saves, by its bytes, about 0.07 ms a layer at the bench shapes; it would need the decoder layer's forward replaced too.
+
+## D4: parity (`tests/test_layer.py`; the test run of record `bench/layer_logs/d4_tests.log`, every case's errors in `d4_parity.jsonl`)
+
+Each part on its real widths (hidden 1,024 / 4,096; q / k heads of 256; 16 / 32 value heads of 128; convolution channels 6,144 /
+8,192; MLP 3,584 / 12,288), (rows, tokens) (1, 1), (2, 7), (3, 33), (2, 129) (the convolution (1, 1), (2, 3), (2, 33), (3, 100):
+inside, across and past a 32-step tile), float32 / bfloat16 / float16; inputs and upstream gradients drawn in the run's dtype,
+so the float64 reference sees the same values. Error = the largest absolute difference over the reference's largest magnitude,
+each output and each gradient separately; the bar: the part's error <= 2 x transformers' path's error on the same case.
+
+| part (cases) | float32: worst error, part / PyTorch path; worst ratio | bfloat16 | float16 | verdict |
+|---|---|---|---|---|
+| zero-centered RMSNorm, hidden widths, q / k norms, trained weight (39) | 1.5e-7 / 2.3e-7; 1.05 | 3.4e-3 / 3.4e-3; 1.00 | 4.2e-4 / 4.2e-4; 1.00 | MET |
+| convolution path, frozen and trained weight (30) | 1.9e-7 / 1.8e-7; 1.60 (the trained weight's gradient) | 3.3e-3 / 6.1e-3; 1.00 | 3.7e-4 / 7.9e-4; 1.00 | MET |
+| gated RMSNorm, frozen and trained weight (30) | 2.2e-7 / 1.9e-7; 1.61 (the trained weight's gradient) | 5.8e-3 / 7.0e-3; 1.00 | 6.8e-4 / 7.4e-4; 1.00 | MET |
+| beta and g, frozen and trained (30) | 2.2e-7 / 2.2e-7; 1.91 (dt_bias's gradient, PyTorch's sum in both paths) | 3.1e-3 / 6.2e-3; 1.00 | 3.5e-4 / 7.6e-4; 1.15 | MET |
+| SwiGLU (24) | 2.3e-7 / 2.7e-7; 1.00 | 5.0e-3 / 5.3e-3; 1.00 | 5.6e-4 / 6.8e-4; 1.00 | MET |
+
+The whole decoder layers end to end: LoRA rank 32 on the record's targets (dropout 0.05 with fixed masks, the same draws in
+every run), bf16 weights and activations under bf16 autocast, the rule's kernels with the recomputed states; every part off
+against every part on, both against a float64 CPU run of the same layer (transformers' code with its float32 casts kept at
+float64, transformers' own rule):
+
+| layer, bench shape | output: off / on | input gradient: off / on | LoRA weight gradients: on / off ratio, range (worst) | verdict |
+|---|---|---|---|---|
+| 0.8B linear attention, 4 x 1,024 | 6.4e-3 / 5.6e-3 | 6.9e-3 / 6.2e-3 | 0.75-1.17 over 12 (down_proj's A) | MET |
+| 0.8B full attention | 5.1e-3 / 5.1e-3 | 7.2e-3 / 4.9e-3 | 0.90-1.08 over 14 | MET |
+| 9B linear attention, 2 x 1,024 | 1.22e-2 / 1.03e-2 | 2.57e-2 / 2.11e-2 | 0.81-1.12 over 12 | MET |
+| 9B full attention | 8.9e-3 / 8.5e-3 | 1.10e-2 / 9.0e-3 | 0.89-1.28 over 14 (v_proj's A) | MET |
+
+Beside them: every part off gives transformers' bits exactly; every part on calls the same submodules in the same order (the
+MLP's activation module aside, which the SwiGLU replaces) and draws the same LoRA dropout masks; a source that differs from 5.22.1
+leaves the original method with a warning; a forward handed a fresh cache (as every training forward is, entry 9) takes the
+parts and leaves the cache as transformers' own forward does. The suite: 490 passed (the 331 before D4 and 159 new).
+
+As chains: the parts round once where transformers rounds two or three times (the convolution's u before SiLU; beta before the
+rule; the gated norm's and SwiGLU's backward intermediates) and keep v and beta in float32 -> in bfloat16 their errors are at or
+below the PyTorch path's (ratio <= 1.00 for every part); in float32 both paths sit at a few units of float32 rounding, and the
+largest ratios (1.6-1.9) are the trained weights' gradients, sums over the rows.
+
+## D4: speed (`bench/bench_layer.py`, `bench/layer_logs/d4_parts.json`, 13:10-13:13 PST)
+
+The parts on the decoder layers step 0 timed (built from each model's config, bf16, frozen, bf16 autocast), inputs laid out as
+the layer hands them, the gradient to the part's inputs; Metal events, back-to-back calls filling at least ~10 ms, the median of
+7; the PyTorch path and the kernel alternating in each of 5 rounds (the order flipped every round), the median over the rounds.
+The convolution path's PyTorch path is everything the kernel replaces: transformers' transposes, `causal_conv1d_fn`, split,
+reshape and (9B) repeat, then what the rule's drop-in does before its kernels (the strided q and k copied contiguous at 0.8B, v
+cast to float32); beta and g's includes the drop-in's cast of beta. Floors: step 0's (each part's least traffic at 356 GB/s).
+
+Forward / forward + backward in ms:
+
+| part | 0.8B, 4 x 1,024: PyTorch path | kernel | speed-up (f + b) | kernel / floor | 9B, 2 x 1,024: PyTorch path | kernel | speed-up | kernel / floor |
+|---|---|---|---|---|---|---|---|---|
+| zero-centered RMSNorm (input norm) | 0.733 / 2.297 | 0.050 / 0.143 | 16.06x | 1.21x | 1.482 / 4.529 | 0.079 / 0.240 | 18.87x | 1.02x |
+| zero-centered RMSNorm (q_norm, strided rows) | 1.563 / 4.744 | 0.108 / 0.277 | 17.13x | 1.18x | 1.649 / 4.859 | 0.110 / 0.270 | 18.00x | 1.15x |
+| zero-centered RMSNorm (k_norm) | 0.385 / 1.138 | 0.081 / 0.158 | 7.20x | 2.68x | 0.352 / 1.098 | 0.049 / 0.130 | 8.45x | 2.21x |
+| convolution path | 2.783 / 9.126 | 0.365 / 0.978 | 9.33x | 1.38x | 2.841 / 8.235 | 0.296 / 0.829 | 9.93x | 1.76x |
+| (the same against `causal_conv1d_fn` alone, step 0's part) | 1.674 / 5.979 | | 6.11x | | 1.141 / 4.279 | | 5.16x | |
+| gated RMSNorm | 2.375 / 6.708 | 0.200 / 0.489 | 13.72x | 1.30x | 2.412 / 6.753 | 0.211 / 0.516 | 13.09x | 1.37x |
+| beta and g | 0.057 / 0.131 | 0.026 / 0.082 | 1.60x | see below | 0.065 / 0.142 | 0.033 / 0.089 | 1.60x | see below |
+| SwiGLU | 0.383 / 1.185 | 0.242 / 0.714 | 1.66x | 1.08x | 0.746 / 2.154 | 0.432 / 1.273 | 1.69x | 1.13x |
+
+The whole decoder layers, every part off against every part on (the same interleaved rounds):
+
+| layer, forward / forward + backward, ms | 0.8B off | 0.8B on | f + b | 9B off | 9B on | f + b |
+|---|---|---|---|---|---|---|
+| linear attention (registered) | 24.92 / 61.88 | 18.77 / 42.17 | 1.47x (-19.7 ms) | 87.57 / 183.17 | 79.90 / 159.56 | 1.15x (-23.6 ms) |
+| full attention (not registered) | 25.87 / 63.38 | 22.75 / 52.97 | 1.20x (-10.4 ms) | 84.98 / 182.40 | 80.42 / 166.09 | 1.10x (-16.3 ms) |
+
+The rounds' spread on the linear layer: 0.8B on 40.7-43.0 ms, off 61.0-63.0; 9B on 159.0-161.6, off 182.6-183.5.
+
+The LoRA-B question (step 0: in_proj_qkv's LoRA-B backward 5x slower on transformers' transposed gradient at two rows or more):
+in_proj_qkv with LoRA rank 32 at the 0.8B micro-batch shape 2 x 903, forward + backward, its output's gradient as transformers'
+path hands it (the transpose of a [B, C, T] tensor) 6.746 ms against 5.327 ms as the fused convolution path hands it ([B, T, C]):
+1.27x, the 1.4 ms step 0 located in the transposed layout gone (forward 2.70 / 2.66 ms).
+
+Why, as chains:
+- The norms: transformers' zero-centered RMSNorm runs the float32 copy of x, the square, the mean, the rsqrt, the product, the
+  weight's 1 + w and the product with it, and the cast back, each a pass over float32 tensors, and their backwards -> 17-20x
+  the least traffic -> one pass each way over the bf16 rows, the row kept in registers between its sum and its output -> 1.0-1.2x
+  the floor at the hidden widths and on the query norm's strided rows, 16-19x faster. The key norm's rows are a fifth of the
+  query's (two or four heads), so its two launches weigh more: 2.2-2.7x its floor, 7-8x faster.
+- The convolution path: transformers transposes the projection's output, PyTorch's depthwise kernel copies that view into
+  channel-first order, rounds u, SiLU runs as its own pass, the result is transposed back and split; at 0.8B the strided q and k
+  are copied contiguous by the drop-in, at 9B repeated over the value heads; v is cast to float32; the backward runs MPSGraph's
+  channel-first data gradient and copies back -> 9.1 / 8.2 ms a layer for 0.71 / 0.47 ms of least traffic -> one pass each way
+  in the projection's own layout, the pre-activation recomputed in registers -> 1.4-1.8x the floor, 9.3-9.9x faster (5.2-6.1x
+  against the convolution call alone).
+- The gated norm: the same chain as the zero-centered norm plus the SiLU gate's passes -> one pass each way -> 13-14x, at
+  1.3-1.4x the floor.
+- Beta and g: eight small PyTorch kernels each way (sigmoid; A_log's cast and exp; a's cast, the add, softplus, the products;
+  beta's cast in the drop-in) against one each way. The tensors are 65,536 / 65,536 elements (0.8B / 9B bench shapes): the
+  kernels' own bytes need ~5 us, so both paths are launch-bound -> 1.60x at both shapes, on 0.13-0.14 ms. Against step 0's floor
+  for its glue part (beta, g and the layout copies, now done by the convolution kernel) the kernel is under it (0.29x / 0.23x);
+  the convolution and the gates together run at 1.07x / 1.08x of step 0's convolution and glue floors together.
+- SwiGLU: transformers' path is two passes forward (silu, the product) and three backward, 28 bytes an element against the fused
+  16 -> 1.66-1.69x, the kernel at 1.08-1.13x the floor: the speed bar met (step 0 had expected it out of reach).
+- The layer: the parts' own savings add to 19.2 ms at 0.8B (the two norms 2 x 2.15, the convolution path 8.15, the gated norm
+  6.22, SwiGLU 0.47, beta / g 0.05) against the layer's 19.7 ms; the rest is in_proj_qkv's backward on a gradient in its own
+  layout (step 0 put that at 0.85 ms at this shape). At 9B they add to 23.2 ms against the layer's 23.6, of a layer whose frozen
+  products alone need 144 ms.
+
+## D4: admission
+
+| part | speed bar (>= 1.5x, f + b, both shapes) | parity bar | verdict |
+|---|---|---|---|
+| zero-centered RMSNorm (`RMSNORM`) | 16.1x / 18.9x (input norm); 17.1x / 18.0x (q_norm); 7.2x / 8.4x (k_norm) | MET | ADMITTED |
+| convolution path (`CONV`) | 9.33x / 9.93x | MET | ADMITTED |
+| gated RMSNorm (`GATED_NORM`) | 13.72x / 13.09x | MET | ADMITTED |
+| beta and g (`GATES`) | 1.60x / 1.60x | MET | ADMITTED |
+| SwiGLU (`SWIGLU`) | 1.66x / 1.69x | MET | ADMITTED |
+| the residual add folded into the norm (optional) | not built | | not adopted (not built) |
+
+## D4: integration (`bench/layer_logs/d4_0.8b_2x8_100steps.json`, `d4_9b_1x16_25steps.json`, `profile_d4_0.8b_2x8.json`; `bench/layer_report.py` -> `d4_results.json`)
+
+D2m's confirmation runs again with the admitted parts on (`bench/phase4_train.py --layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU`,
+recorded with each run; every replaced method checked in force when training began), at commit 3564a41 (the fix of the first
+chain's fault, below), the tree clean, one job at a time under the guard, read the way Phase 4 and D2m read them.
+
+### Qwen3.5-0.8B, 2 x 8 sequences, the cache emptied each micro-batch, the recomputed states, 4 epochs (100 steps), 14:02-14:18 PST
+
+| measure | bar / prediction | D4 | D2m (the same run without the parts) | verdict |
+|---|---|---|---|---|
+| the guard's peak footprint | <= 53.5 GB | 41.58 GB | 46.32 GB | MET |
+| the steady step (trainer's clock, steps 11-100) | against 10.978 s; predicted 9.6-10.4 s | 9.178 s (-16.4%) | 10.978 s | prediction MISSED (faster) |
+| the loss: root mean square of the step-loss difference against A / B / C | the reference runs among themselves: .0034 / .0034 / .0034 | .0034 / .0044 / .0041 (against D2m .0033) | .0029 / .0030 / .0035 | |
+| Phase 4's reading 2: the largest gap from the reference pair's mean | <= 2 x the pair's largest spread = .0159 | .0086 (step 59) | .0077 | met |
+| Phase 4's final loss within 1% of the pair's mean (0.1967) | <= 1% | 0.1948 (0.94%) | 0.1983 (0.83%) | met |
+| Phase 4's root mean square, gap over spread (0.87 expected of a run drawn like the reference; the control run C 0.85, Phase 4's kernels 0.95) | | 1.03 | 0.72 | |
+| mean loss (the pair's mean 0.5776) | | 0.5754 (-0.37%) | 0.5773 | |
+| the allocator's live tensors at a forward's end (peak) / the driver's memory (peak) | | 12.94 GiB / 36.80 GB | 15.10 GiB / 41.76 GB | |
+
+The step time by window, the same batches in both runs (the data order is seeded):
+
+| steps | 1-10 | 11-25 | 26-50 | 51-75 | 76-100 | 11-100 |
+|---|---|---|---|---|---|---|
+| D4, s a step (trainer's clock) | 9.10 | 9.73 | 9.24 | 9.00 | 8.96 | 9.178 |
+| D2m | 10.90 | 11.07 | 10.96 | 10.92 | 11.00 | 10.978 |
+| D4 / D2m | 0.835 | 0.880 | 0.843 | 0.824 | 0.815 | 0.836 |
+
+As chains:
+- The step: the surroundings fall 153.5 ms a micro-batch, the rule's drop-in 14.7 ms (the copies of q, k and v it no longer
+  makes) and in_proj_qkv's backward 18.3 ms (on the gradient in its own layout: LoRA-B 13.9, the base product 4.4): ~187 ms of a
+  1,253 ms micro-batch (the profile below), ~1.5 s of a step of 8 micro-batches -> 10.98 -> 9.18 s, faster than the 9.6-10.4 s
+  predicted (the prediction counted the surroundings at 3x their floors, and neither the drop-in's copies nor the LoRA-B layout).
+- The loss: the parts round once where transformers rounds two or three times; the run's LoRA starts from its own draw (the
+  trainer seeds nothing before it) -> its curve differs from A, B and C by about what they differ among themselves (Phase 4's
+  reading 2 and the final loss met; the gap over the spread 1.03, at the top of the runs read so far: D2m 0.72, the control run
+  C 0.85, Phase 4's kernels 0.95).
+- Memory: the norms keep their bf16 input instead of float32 copies; the convolution keeps the projection's output and nothing of
+  its own; the gated norm and SwiGLU keep their inputs -> the live tensors at a forward's end fall 2.2 GiB (15.10 -> 12.94) and
+  the driver's pool 5.0 GB (41.76 -> 36.80) -> the footprint 46.32 -> 41.58 GB, 15% under the reference implementation's 48.65.
+- Steps 19-26 gain least: 84.8 s against D2m's 93.0 (-8.8%, against -16.4% over the run); the first chain (the norms and SwiGLU
+  alone) ran those same steps slower than D2m (97.1 s) while gaining 5% over the run. Both runs share the batches, so the cause
+  sits in those batches (they are the run's slowest steps in every run); the profile covers steps 3-7 and does not reach them.
+
+### Qwen3.5-9B, 1 x 16 sequences, the cache emptied, 1 epoch (25 steps)
+
+| measure | bar / prediction | D4 | the norms and SwiGLU alone (the first chain) | D2m | verdict |
+|---|---|---|---|---|---|
+| the guard's peak footprint (25 steps) | <= 74.6 GB | 60.44 GB | 62.90 GB | 64.35 GB (through step 25) | MET |
+| the steady step (trainer's clock, steps 11-25) | against 51.13 s; predicted 45-49 s | 46.20 s (-9.6%) | 48.27 s (-5.6%) | 51.13 s | prediction met |
+| steps 1-10, s a step | | 45.6 | 47.8 | 50.4 | |
+| the allocator's live tensors at a forward's end, peak through step 25 / the driver's memory | | 17.28 GiB / 54.46 GB | 17.78 GiB / 58.21 GB | 20.59 GiB / 60.22 GB | |
+| the loss at steps 1-2 (the same weights: the adapters' B starts at zero) | | 2.2223 / 2.0706 | 2.2240 / 2.0703 | 2.2249 / 2.0694 | |
+
+The 9B run is one epoch, so its learning rate falls over 25 steps where D2m's fell over 100: past step 2 the two losses are not
+comparable step by step (registered: the footprint and the step only). As a chain: at 9B the frozen products are 55% of the step
+(step 0) and the parts' share 9% -> the parts take 4.9 s of a 51.1 s step (-9.6%), inside the predicted 45-49 s; the memory moves
+as at 0.8B (live tensors -3.3 GiB, the footprint -3.9 GB).
+
+### The step profile again, 0.8B with every part on (`profile_d4_0.8b_2x8.json`, steps 3, 5, 7)
+
+The same profiler, options and steps as step 0's run of record (`bench/profile_step.py`, steps 3, 5, 7 of 8, every micro-batch
+as A / B / C), with the fused convolution path marked under step 0's name for the convolution and beta / g apart. Valid as step
+0 was: the profiled pass against its unprofiled replay 1.052 (median 1.053; 2 of 24 micro-batches over 1.10), the components'
+sum against the wall clock 0.9995, no stack mismatches or negative segments; the profiled steps as trained 0.81-0.83 of D2m's same
+steps, the unprofiled ones 0.81-0.87.
+
+| group, ms a micro-batch (share) | step 0 | D4 | change |
+|---|---|---|---|
+| the layers' frozen products | 285.9 (22.8%) | 279.7 (26.6%) | -6.2 |
+| the LM head and the loss | 266.7 (21.3%) | 269.6 (25.6%) | +2.9 |
+| the surroundings | 186.8 (14.9%) | 33.3 (3.2%) | -153.5 |
+| the LoRA adapters' extra work | 160.4 (12.8%) | 135.1 (12.8%) | -25.3 |
+| the vision tower | 138.5 (11.1%) | 134.1 (12.7%) | -4.4 |
+| the rule | 90.3 (7.2%) | 75.7 (7.2%) | -14.7 |
+| data, optimizer and the Trainer | 57.6 (4.6%) | 61.0 (5.8%) | +3.4 |
+| the full-attention layers' attention | 55.0 (4.4%) | 53.8 (5.1%) | -1.2 |
+| (beside) a new input shape, A - B | 26.5 (2.1%) | 17.9 (1.7%) | -8.7 |
+| the micro-batch | 1,253.1 | 1,052.8 | -200.3 (-16.0%) |
+
+Where the time moved, by component (ms a micro-batch, forward / backward):
+
+| component | step 0 | D4 | saved |
+|---|---|---|---|
+| the gated norm | 18.07 / 28.48 | 1.29 / 1.40 | 43.9 |
+| the convolution path | 11.68 / 38.02 | 2.58 / 3.93 | 43.2 |
+| the rule (the drop-in's copies of q and k and its cast of v gone) | 33.62 / 56.71 | 21.62 / 54.04 | 14.7 |
+| in_proj_qkv's LoRA-B (its backward on the gradient in its own layout) | 1.74 / 20.04 | 1.74 / 6.15 | 13.9 |
+| the linear-attention layers' post-attention / input norms | 4.78 / 9.61; 4.67 / 9.62 | 0.44 / 0.43; 0.41 / 0.58 | 13.5; 13.3 |
+| the glue (the transposes, split, repeat and their backward copies gone; beta / g now apart) | 3.57 / 14.68 | 2.73 / 3.21 | 12.3 |
+| the full-attention q_norm / k_norm | 3.49 / 8.11; 0.86 / 1.93 | 0.24 / 0.49; 0.07 / 0.16 | 10.9; 2.6 |
+| the full-attention layers' input / post-attention norms | 1.52 / 3.09; 1.47 / 3.18 | 0.08 / 0.14; 0.08 / 0.14 | 4.4; 4.4 |
+| in_proj_qkv's base product (its backward on the gradient in its own layout) | 30.36 / 38.96 | 33.18 / 31.76 | 4.4 |
+| the SwiGLU (linear / full-attention layers) | 2.30 / 5.26; 0.79 / 1.76 | 1.58 / 3.07; 0.51 / 1.03 | 2.9; 1.0 |
+| beta and g (new, apart) | | 0.12 / 0.13 | -0.25 |
+
+What is left at 5% of the step or more outside D3-D5: the LM head and the loss (25.6%), the vision tower (12.7%), data, the
+optimizer and the Trainer (5.8%): the two entries step 0 proposed, unchanged and now larger shares.
+
+### The first chain, and why its convolution path never ran (records kept as `d4_norms_swiglu_*`)
+
+The first integration chain (13:17-13:57 PST, commit a0d3d57) was launched with every part on and recorded so, but the step
+profile it ended with showed the convolution path at 11.3 / 37.8 ms a micro-batch, step 0's 11.7 / 38.0, while the norms had
+fallen tenfold. As a chain:
+
+- qwen-symbolic-thinking's `run()` sets the model's `use_cache` off, then transformers' Trainer sets the model's `use_cache` from
+  its own arguments as its constructor ends (trainer.py, "Finalize"), which in this recipe leaves it on;
+- so every training forward builds a fresh cache and hands it to every layer (a probe: 72 of 72 linear-attention calls of a
+  training step carried one, holding no state yet);
+- the replaced linear-attention forward took any cache for decoding and ran transformers' own forward -> the convolution path and
+  beta / g never ran in training, while the norms, the gated norm and SwiGLU (methods of their own modules) did.
+
+The fix (commit 3564a41): a cache holding no state of the layer yet takes the parts and is filled as transformers fills it (the
+convolution's window through the cache's own method, the rule's final state); a cache holding the layer's states (decoding, a
+continued prefill) still takes transformers' forward. Tested against transformers' forward with a fresh cache: the parts run, the
+cache's convolution state is the same bits, its recurrent state agrees to the rule's precision, and a decode step from either
+cache gives the same output; a probe then counted 72 fused convolution and gate calls in a training step. The parts bench and the
+end-to-end check had run without a cache and were not affected.
+
+What the first chain measured is the norms of both kinds and SwiGLU alone:
+
+| measure | D2m | the norms and SwiGLU (first chain) | every part (the run of record, below) |
+|---|---|---|---|
+| 0.8B steady step (steps 11-100) | 10.978 s | 10.433 s (-5.0%) | 9.178 s (-16.4%) |
+| 0.8B guard's peak footprint | 46.32 GB | 48.52 GB | 41.58 GB |
+| 0.8B final / mean loss | 0.1983 / 0.5773 | 0.1978 / 0.5765 | 0.1948 / 0.5754 |
+| 9B steady step (steps 11-25) | 51.13 s | 48.27 s (-5.6%) | 46.20 s (-9.6%) |
+| 9B guard's peak footprint (25 steps) | 64.35 GB (through step 25) | 62.90 GB | 60.44 GB |
+| 0.8B profile: the surroundings, ms a micro-batch | 186.8 (step 0) | 88.3 | 33.3 |
+
+## D4's verdicts in short
+
+| registered | measured | verdict |
+|---|---|---|
+| parity: each part's error <= 2 x the PyTorch path's against float64, every shape and dtype | 157 cases; the worst ratio 1.91 (a trained parameter's gradient in float32); in bfloat16 every part at or below the PyTorch path (ratio <= 1.00) | MET |
+| parity: whole decoder layers with LoRA, patched and unpatched against float64 | output and input gradient at or below the unpatched layer's error; LoRA gradients 0.75-1.28x | MET |
+| speed: each part >= 1.5x its PyTorch path at both bench shapes | the norms 7.2-18.9x, the convolution path 9.3 / 9.9x, the gated norm 13.7 / 13.1x, beta and g 1.60 / 1.60x, SwiGLU 1.66 / 1.69x | MET: all five ADMITTED, now the default |
+| prediction: each part within 3x its floor (step 0's floors) | 1.02-1.76x, the key norm 2.21-2.68x; beta / g with the convolution 1.07-1.08x of their step-0 floors together (beta / g alone launch-bound) | met |
+| prediction: the bench linear-attention layer 0.8B ~60 -> 44-50 ms | 61.88 -> 42.17 ms | missed (faster) |
+| prediction: 9B ~180 -> 158-170 ms | 183.17 -> 159.56 ms | met |
+| prediction: the training step 0.8B 10.98 -> 9.6-10.4 s | 9.178 s (steps 11-100; D2m 10.978) | missed (faster) |
+| prediction: 9B 50.9 -> 45-49 s | 46.20 s (steps 11-25; D2m 51.13) | met |
+| integration 0.8B: footprint <= 53.5 GB; the loss as Phase 4 read it | 41.58 GB (D2m 46.32); the largest gap .0086 against the bar .0159, the final loss 0.94% from the reference pair's | MET; like the reference |
+| integration 9B: footprint <= 74.6 GB | 60.44 GB (D2m 64.35 through step 25) | MET |
+
+In plain words: every surrounding part now runs as one Metal pass each way, at or near the time its memory traffic needs, and
+none loses precision against transformers' own path. A whole linear-attention layer at the bench shapes is 1.47x (0.8B) / 1.15x
+(9B) faster for it, and a LoRA training step 16% (0.8B, 10.98 -> 9.18 s) / 10% (9B, 51.1 -> 46.2 s) faster, with a smaller
+footprint (41.6 against 46.3 GB; 60.4 against 64.4) and the loss of the reference. The surroundings are now 3% of a 0.8B
+micro-batch (from 15%); the step is the products, the vocabulary work, the adapters' passes and the vision tower.
+
+## D4: not done, and what is uncertain
+
+- The residual add folded into the post-attention norm (optional in the registration): not built (0.3% / 0.2% of the step;
+  about 0.07 ms a layer at the bench shapes by its bytes; it needs the decoder layer's forward replaced as well).
+- The q / k l2 normalization and the query scale are not folded into the convolution's epilogue (prior art s.2.4): the
+  registered design writes q and k for the rule's drop-in, whose fused prologue still makes one pass each way over them.
+- The gated norm reads the rule's output after the drop-in's cast to the input dtype (transformers' rounding point); reading the
+  float32 output would save that cast each way (~0.3 ms a 0.8B bench layer) but changes the drop-in's return.
+- Beta and g are launch-bound: their two kernels take ~0.08 ms for ~2 MB of traffic. Folding them into the rule's prologue and
+  epilogue (flash-linear-attention's form, prior art s.5) would remove the launches; it changes the rule's interface.
+- The rotary embedding (0.5% / 0.3% of the step, 6-8x its floor) and the full-attention output gate: not registered, not built.
+- Steps 19-26 of the 0.8B run gain least (-8.8% against -16.4%), in both D4 runs (the first chain ran them slower than D2m):
+  tied to those batches, not traced (the profile reaches steps 3-7 only).
+- The first chain's footprint was 2.2 GB over D2m's with fewer live tensors (a larger driver pool); with every part on it is 4.7 GB
+  under. The pool's response to the changed set of buffer sizes is not traced here.
+- The 9B run is one epoch (registered): its loss past step 2 is not comparable step by step with D2m's four-epoch schedule.
+- Qwen3.5-MoE and Qwen3-Next: the layer parts are installed into Qwen3.5 (dense) only; the rule into all three.
+- The parts are timed at the bench shapes and in training; long sequences (D3's range) are not timed.
+
 ## The log
 
 ### 1. 2026-11-03 11:4x-11:5x PST: the instrument and its check (commit 8fb6609)
@@ -486,5 +798,45 @@ The large-square rate per form (`products_square_forms.json`): it showed the chi
 parts run again with the byte formulas corrected (the glue's and the attention's views; the residual add fed the same memory
 twice in run 1) and the floors at the best measured rate (12.9 TFLOP/s): `layer_parts.json`.
 
+### 6. 2026-11-03 12:4x-13:00 PST: D4's code and a first check against float64 (commits ed4b988, 8fee8cf)
+The prior art copied into the repo first (`docs/prior_art_layer.md`). Then `macai.layer`: five kernels each way through
+`torch.mps.compile_shader` (a probe first: `vec<bfloat, 4>` loads, the storage offset applied by the dispatch, Metal's float ->
+bfloat conversion equal to PyTorch's), their autograd functions, the four replaced methods with the source check. A smoke script
+against float64 put every part at the expected error, with one fault: the weight gradients' second pass summed the partial rows
+one after another, and a float32 RMSNorm weight gradient read 3x the PyTorch path's error (2.4e-7 against 7.9e-8 over 144 rows)
+-> each second pass now gives every column a simdgroup (each lane every 32nd partial, then a tree): the same case at 1.05x.
+
+### 7. 13:01-13:17: the tests, the bench, a trainer smoke run (commits 8fee8cf, a0d3d57)
+Two faults in the first test run, both in the test: the float64 reference ran first on the very tensor the GPU runs then copied
+(`Tensor.to` returns the tensor itself when nothing changes, so `requires_grad_` marked the shared CPU leaf and the GPU runs'
+gradients flowed back into float64 on the GPU: "Undefined type Double"); and the dropout-mask comparison counted inputs that are
+exactly zero (28 against 23 of 75,776, where the norms' outputs differ in the last bit) as dropped. Both fixed in the test; the
+masks agree wherever the inputs are nonzero. The end-to-end check passed at both sizes on its first clean run. The parts bench:
+a one-round dry run, then the record (5 interleaved rounds, 13:10-13:13). A trainer smoke run with every part on
+(`smoke_d4_0.8b`: 16 items, 8 steps) trained, every replaced method in force.
+
+### 8. 13:17-13:57: the first integration chain: the convolution path and beta / g fell back (records `d4_norms_swiglu_*`)
+0.8B 13:17-13:35 (10.433 s a step), 9B 13:35-13:55 (48.27 s), the profile 13:55-13:57. The profile showed the convolution path
+at step 0's time; the cause (a fresh cache in every training forward) is set out under "The first chain" above. The 0.8B run's
+steps 19-26 ran slower than D2m's; first read here as the machine's load, then found again in the second chain's run on the same
+steps (entry 10), so tied to the batches.
+
+### 9. 13:57-14:02: the cause and the fix (commit 3564a41)
+A probe run (the runner with a wrapper, 4 items, 2 steps): 72 of 72 linear-attention calls carried a fresh cache, none ran the
+fused path. The fix, its test (the fresh cache against transformers' forward), a second probe (72 of 72 fused), the suite again
+(490 passed), the first chain's records renamed (their content untouched: inside, their names are the originals).
+
+### 10. 14:02-14:39: the second integration chain (commit 3564a41, the tree clean)
+0.8B 14:02-14:18 (9.178 s a step, footprint 41.58 GB), 9B 14:18-14:37 (46.20 s, 60.44 GB), the profile 14:37-14:39. All under the
+guard, all rc 0, one job at a time.
+
+### 11. 14:4x: the report, the defaults
+`bench/layer_report.py` -> `d4_results.json` (the first chain's reading beside). Every part admitted becomes the default
+(`macai.layer`: all five on). `bench/bench_gated_delta.py` and `bench/profile_layer.py` now install the rule alone, so they keep
+measuring what they measured (the rule against transformers' reference; transformers' parts in step 0's bench);
+`bench/phase4_train.py` keeps every part off unless `--layer` says otherwise (the runs before D4 reproduce).
+
 ### Next
-D4 at his word, in the order above; the two proposed entries outside D3-D5 wait for his word too.
+D4 is done and on by default. D5 (the products and the adapters' path) at his word: the LoRA adapters' extra work is now 12.8% of
+a 0.8B micro-batch (135 ms), in_proj_qkv's LoRA-B backward no longer an outlier. The two proposed entries outside D3-D5 wait for
+his word too, now larger shares of a shorter step (0.8B: the LM head and the loss 25.6%, the vision tower 12.7%).

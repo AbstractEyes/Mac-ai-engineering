@@ -407,7 +407,7 @@ def main():
            "rate_source": rate_source, "bandwidth_gbps": BW, "reps": REPS, "lora": LORA, "lora_targets": TARGETS,
            "pad_row_fraction": PAD_ROW_FRACTION, "models": {}}
     warm_gpu(2.0)
-    patch.install()
+    patch.install(layer=False)      # the rule's kernels; the layer parts off (step 0 measured transformers' parts)
     for model, shp in shapes.items():
         tc = text_config(MODELS[model])
         out["models"][model] = {}

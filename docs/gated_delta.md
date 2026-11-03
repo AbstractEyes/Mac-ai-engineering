@@ -84,6 +84,7 @@ were fewer.
 ## Next
 - The per-chunk backward is bandwidth-bound on the chunk states (now recomputed in the backward), and double-buffered staging
   in the state passes: series_phase3.md, "Next".
-- The layer's other parts on this GPU: the input projections, the gated norm, the short convolution; at 9B the rule is now
-  about 11 of the layer's 178 ms.
+- The layer's other parts: the norms, the short convolution, beta and g, the gated norm and SwiGLU are now Metal kernels too
+  (`macai.layer`, [layer.md](layer.md), series design D4); the products and the LoRA adapters' path are the series' next entry
+  (D5).
 - Packed rows (cu_seqlens), refused until supported.

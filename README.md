@@ -8,8 +8,11 @@ instruments, a full correctness harness and the chunked kernels on simdgroup mat
 them in real LoRA training of Qwen3.5 0.8B and 9B: the same loss as the reference, steps 1.375x / 1.22x faster
 ([docs/series_phase4.md](docs/series_phase4.md)). Their larger allocator footprint is fixed: the chunk states are now
 recomputed in the backward (the same bits), and the process's footprint sits under the reference's at the same speed
-([docs/series_memory.md](docs/series_memory.md)). The rest of the design series is not done. Treat the numbers below as
-measurements of a prototype.
+([docs/series_memory.md](docs/series_memory.md)). The rest of the layer around the rule (the RMSNorms, the short convolution,
+beta and g, the gated norm, SwiGLU) now runs as Metal kernels too, on by default (`macai.layer`): a LoRA training step of
+Qwen3.5 10.98 -> 9.18 s at 0.8B and 51.1 -> 46.2 s at 9B against the kernels before, with a smaller footprint and the
+reference's loss ([docs/series_layer.md](docs/series_layer.md)). The rest of the design series (the products and the adapters'
+path, the rule's chunking) is not done. Treat the numbers below as measurements of a prototype.
 
 ## What is here
 - `macai.gated_delta`: the gated delta rule (the linear attention in three of every four layers of Qwen3.5 / Qwen3-Next) as
@@ -19,7 +22,14 @@ measurements of a prototype.
   1.94x (0.8B) / 1.43x (9B), forward + backward at 4 / 2 x 1,024 tokens, wall clock (0.2.0's recurrent kernels: 1.6x and
   1.22-1.23x).
   Design and measurements: [docs/gated_delta.md](docs/gated_delta.md), [docs/series_phase3.md](docs/series_phase3.md).
-- `macai.patch`: installs that kernel into transformers' Qwen3.5-family modeling code, so existing training code runs it.
+- `macai.layer`: the rest of Qwen3.5's decoder layers as Metal kernels (series design D4): the zero-centered RMSNorm, the
+  linear-attention layer's short convolution with its SiLU (reading the projection's output in place and writing the rule's
+  inputs), beta and g, the gated RMSNorm and SwiGLU, each one pass forward and one backward, at their parity bars against float64:
+  7-19x their PyTorch paths (beta / g and SwiGLU 1.6-1.7x); a whole Qwen3.5 linear-attention layer 1.47x (0.8B) / 1.15x (9B)
+  faster again. Each part is a setting. Design and measurements: [docs/layer.md](docs/layer.md),
+  [docs/series_layer.md](docs/series_layer.md).
+- `macai.patch`: installs the rule and the layer parts into transformers' Qwen3.5-family modeling code (each replaced method only
+  while its source matches the transformers version it was written against), so existing training code runs them.
 - `macai.configure`: the settings measured for long PyTorch training on the Apple GPU (allocator watermarks, thread counts).
 
 ## Install
@@ -44,3 +54,4 @@ measurements of a prototype.
 ## Tests and benchmarks
     pytest                                  # parity on small shapes (needs an Apple GPU)
     python bench/bench_gated_delta.py       # the kernel against the reference at Qwen3.5 training shapes
+    python bench/bench_layer.py             # the layer parts against their PyTorch paths, and whole layers, interleaved

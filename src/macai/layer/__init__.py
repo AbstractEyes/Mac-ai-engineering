@@ -23,12 +23,13 @@ from ._gates import Gates, gates
 from ._rmsnorm import ZeroCenteredRMSNorm, rms_norm
 from ._swiglu import SwiGLU, swiglu
 
-# the parts in force (series design D4; docs/series_layer.md gives each part's measurements and verdict)
-RMSNORM = False
-CONV = False
-GATED_NORM = False
-GATES = False
-SWIGLU = False
+# the parts in force: every part admitted by series design D4 (parity against float64 within twice the PyTorch path's error,
+# >= 1.5x its PyTorch path at both bench shapes) and on by default since; docs/series_layer.md gives each part's measurements
+RMSNORM = True
+CONV = True
+GATED_NORM = True
+GATES = True
+SWIGLU = True
 
 PARTS = ("RMSNORM", "CONV", "GATED_NORM", "GATES", "SWIGLU")
 

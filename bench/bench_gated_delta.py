@@ -5,6 +5,9 @@ forward and forward + backward, at LoRA-training shapes (the layer's weights fro
     python bench/bench_gated_delta.py            # writes bench/results/gated_delta_<stamp>.json
     python bench/bench_gated_delta.py --memory   # the memory designs only: bench/memory_logs/function_cost.json
 
+The layer is timed with the rule's kernels alone (macai.patch.installed(layer=False)): the layer parts of macai.layer are
+measured by bench/bench_layer.py.
+
 --memory times the rule (forward, forward + backward) under each memory design of the default kernels (op.SIZE_CLASSES,
 op.RECOMPUTE_STATES; docs/series_memory.md) in interleaved rounds, and measures what one forward keeps for its backward.
 """
@@ -180,7 +183,7 @@ def main():
         x0 = torch.randn(B, T, cfg.hidden_size, generator=gen).to("mps", torch.bfloat16)
         r["layer_reference"] = timed(lambda x: layer(x, position_embeddings=None), x0)
         for choice, values in CHOICES.items():
-            with patch.installed(), settings(values):
+            with patch.installed(layer=False), settings(values):      # the rule alone (the layer parts off)
                 r[f"layer_{choice}"] = timed(lambda x: layer(x, position_embeddings=None), x0)
         for part in ("function", "layer"):
             for choice in CHOICES:
