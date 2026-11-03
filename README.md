@@ -3,6 +3,10 @@
 Metal kernels and settings for training and running machine-learning models on Apple Silicon, built and measured on one
 machine: a MacBook Pro with an M3 Max (40-core GPU, 128 GB unified memory), macOS 26, PyTorch 2.15.
 
+**Status: prototype.** 0.1.0 and 0.2.0 are a first recurrent kernel, the baseline of an engineering series that is planned, not
+done: prior art, GPU instruments, a full correctness harness, a registered design series (chunked kernels on simdgroup
+matrices next) and integration in real training. Treat the numbers below as the baseline's, not a finished result.
+
 ## What is here
 - `macai.gated_delta`: the gated delta rule (the linear attention in three of every four layers of Qwen3.5 / Qwen3-Next) as
   Metal kernels with a hand-written backward, a drop-in for transformers' reference implementation, which is all a Mac gets
