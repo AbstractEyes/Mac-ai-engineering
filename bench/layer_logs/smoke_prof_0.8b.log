@@ -1,0 +1,56 @@
+[guard] start 11:58:36 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.14 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/profile_step.py --name smoke_prof_0.8b --logdir bench/layer_logs --model 0.8b --arm kernels --memory recompute --epochs 1 --batch 2 --accum 8 --empty-cache --n-items 24 --profile-steps 2 --stop-after 3
+[profile] runner pid 92528
+[phase4] runner pid 92528
+W1103 11:58:38.464000 92528 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+[phase4] macai {"version": "0.2.0", "KERNEL": "chunked", "KERNEL_BWD": "chunked", "FUSED_NORM": true, "chunk": 16, "SIZE_CLASSES": false, "RECOMPUTE_STATES": true}
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+  6 pictures did not answer (first ['art-075014', 'art-076023', 'art-070017', 'art-043029', 'art-081041']: ['no locator', 'no locator', 'no locator', 'no locator', 'no locator'])
+train 20261103_195839_smoke_prof_0.8b: 24 items (18 with a picture), 42 examples by form {'full': 18, 'short': 18, 'spec_full': 6}; images fetched in 0 s
+Loading weights:   0%|          | 0/473 [00:00<?, ?it/s]Loading weights:  50%|█████     | 237/473 [00:00<00:00, 1720.01it/s]Loading weights: 100%|██████████| 473/473 [00:00<00:00, 3361.48it/s]
+LoRA modules by name: {'out_proj': 18, 'in_proj_qkv': 18, 'in_proj_z': 18, 'gate_proj': 24, 'up_proj': 24, 'down_proj': 24, 'q_proj': 6, 'k_proj': 6, 'v_proj': 6, 'o_proj': 6}
+trainable params: 20,447,232 || all params: 873,433,152 || trainable%: 2.3410
+  a mixed batch (a picture row, a specification row) encodes: input_ids (2, 749)
+  3 steps of 2 x 8 sequences; 1.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "torch_empty_cache_steps": 1, "linear_attention_layers": 18, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "trainable_parameters": 20447232, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 92599.28125, "lora_A_first_values": [-0.013428, 0.000456, -0.011169, 0.002304], "PYTHONHASHSEED": null}
+  0%|          | 0/3 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+ 33%|███▎      | 1/3 [00:07<00:14,  7.02s/it]  step 1/3: loss 2.8737, 7 s spent, 14 s left, 7.05 s/step
+                                             {'loss': '2.874', 'grad_norm': '15.45', 'learning_rate': '0', 'epoch': '0.381'}
+ 33%|███▎      | 1/3 [00:07<00:14,  7.02s/it][profile] step 2 mb 0: tokens [2, 536] A 826 B 795 C 873 ms (C/B 1.098); events 873 ms over 4068 marks
+[profile] step 2 mb 1: tokens [2, 764] A 1083 B 1079 C 1071 ms (C/B 0.992); events 1070 ms over 4044 marks
+[profile] step 2 mb 2: tokens [2, 345] A 578 B 531 C 541 ms (C/B 1.018); events 540 ms over 4068 marks
+[profile] step 2 mb 3: tokens [2, 520] A 828 B 763 C 849 ms (C/B 1.113); events 849 ms over 4068 marks
+[profile] step 2 mb 4: tokens [2, 778] A 1152 B 1087 C 1116 ms (C/B 1.027); events 1115 ms over 4044 marks
+[profile] step 2 mb 5: tokens [2, 412] A 702 B 667 C 717 ms (C/B 1.075); events 717 ms over 4068 marks
+[profile] step 2 mb 6: tokens [2, 473] A 754 B 739 C 798 ms (C/B 1.080); events 797 ms over 4068 marks
+[guard]      30 s footprint  14.43 GB (peak  16.86) swap +0.00 GB pressure 1
+[profile] step 2 mb 7: tokens [2, 446] A 707 B 709 C 728 ms (C/B 1.027); events 728 ms over 4068 marks
+ 67%|██████▋   | 2/3 [00:27<00:14, 14.82s/it]  step 2/3: loss 2.7815, 27 s spent, 14 s left, 13.66 s/step
+                                             {'loss': '2.782', 'grad_norm': '12.22', 'learning_rate': '0.0002', 'epoch': '0.7619'}
+ 67%|██████▋   | 2/3 [00:27<00:14, 14.82s/it][profile] step 2: as trained 6.96 s (micro-batches 6.63 s, outside 0.33 s); C / B 1.0507
+100%|██████████| 3/3 [00:31<00:00,  9.82s/it]  step 3/3: loss 2.4261, 31 s spent, 0 s left, 10.4 s/step
+                                             {'loss': '2.426', 'grad_norm': '6.419', 'learning_rate': '0.0001', 'epoch': '1'}
+100%|██████████| 3/3 [00:31<00:00,  9.82s/it]  step 3/3: loss nan, 31 s spent, 0 s left, 10.4 s/step
+                                             {'train_runtime': '31.2', 'train_samples_per_second': '1.346', 'train_steps_per_second': '0.096', 'train_loss': '2.694', 'epoch': '1'}
+100%|██████████| 3/3 [00:31<00:00,  9.82s/it]100%|██████████| 3/3 [00:31<00:00, 10.39s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-0.8B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 42 collated (the longest 778 tokens)
+
+trained in 0.5 min: 3 steps, loss 2.6938, 10.79 s/step
+[phase4] smoke_prof_0.8b: 3 steps, final loss 2.4261116981506348, steady None s a step (trainer clock, steps 11-3)
+[phase4] wrote bench/layer_logs/smoke_prof_0.8b.json
+[profile] wrote bench/layer_logs/smoke_prof_0.8b.json
+[guard] end 11:59:12 rc 0 peak footprint 16.86 GB wall 36 s

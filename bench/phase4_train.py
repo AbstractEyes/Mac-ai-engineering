@@ -140,7 +140,10 @@ def steady(by_step: dict, warmup: int = WARMUP_STEPS):
     return round((by_step[last] - by_step[warmup]) / (last - warmup), 3)
 
 
-def main() -> int:
+def main(argv=None, customize=None) -> int:
+    """argv: the arguments (default sys.argv[1:]). customize: called as customize(Trainer, rec=..., args=...) once the run's
+    Trainer subclass is built, returns the Trainer class to train with (bench/profile_step.py adds its profiler this way);
+    None keeps the runner as it is."""
     print(f"[phase4] runner pid {os.getpid()}", flush=True)
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True)
@@ -161,7 +164,7 @@ def main() -> int:
                          "memory; docs/series_phase4.md entry 4)")
     ap.add_argument("--data", default=os.path.expanduser("~/mirel/data/mac_bench/reader_train"),
                     help="the folder holding the sample file, its fetched pictures (out/images) and the runs' outputs (phase4)")
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
     if a.memory is not None and a.arm != "kernels":
         ap.error("--memory is a setting of the kernels arm")
 
@@ -306,6 +309,8 @@ def main() -> int:
                 if a.n_items is None:
                     assert n == EXAMPLES, f"the sample gives {n} examples, not the registered {EXAMPLES}"
 
+        if customize is not None:
+            Trainer = customize(Trainer, rec=rec, args=a)
         # the trainer imports both from transformers inside run(). transformers' lazy module replaces itself in sys.modules at
         # its first name lookup (5.22.1), so the names are set on the module object that is current now, and checked
         tf = sys.modules["transformers"]

@@ -15,7 +15,7 @@ node of forward mark j belongs to the component that was innermost just before m
     inst.module(model.layers[0].mlp, "mlp")          # forward pre / post hooks, and the backward nodes
     inst.function(module_namespace, "fn", "fn")      # a module-level function wrapped the same way
     tl.start(); loss = model(x).sum(); loss.backward(); tl.stop()
-    rows = tl.attribute()                            # {(component, "fwd" | "bwd"): [gpu ms, cpu ms, segments]}
+    rows = tl.attribute()        # {(component, "fwd" | "bwd"): [gpu ms, cpu ms, segments, net cpu ms, gpu ms waiting on the cpu]}
     inst.remove(); tl.release()
 
 Every mark costs a Metal event record: PyTorch ends the current command encoder and commits the command buffer at each one,
@@ -26,6 +26,10 @@ command buffer holds no GPU work (two marks back to back, or a mark right after 
 buffer) is reported late by up to ~0.1 ms while the GPU runs the next buffer, so short segments came out negative and time
 moved between neighbours. With the fence every event follows work in its own command buffer, and segments match the operations'
 own times (bench/layer_logs/timeline_check.json).
+
+The CPU's time of a segment is given twice: gross (from one mark to the next, the marks' own cost included) and net (from the
+end of one mark's own work, its fence and event, to the start of the next's: the hooks' Python and the autograd nodes of the
+instrument stay in it).
 """
 import time
 
@@ -52,6 +56,20 @@ def _release(eid: int) -> None:
     _C._mps_releaseEvent(eid)
 
 
+def warm_events(n: int) -> None:
+    """Create n timing events once and return them to PyTorch's pool, so a profiled pass does not pay their creation."""
+    fence = torch.zeros(1, device="mps")
+    ids = []
+    for _ in range(n):
+        e = _acquire()
+        fence.add_(1.0)
+        _record(e)
+        ids.append(e)
+    torch.mps.synchronize()
+    for e in ids:
+        _release(e)
+
+
 class _Mark(torch.autograd.Function):
     """Identity in the forward; in the backward, a mark on the timeline (keyed by the forward mark that created it)."""
 
@@ -68,7 +86,7 @@ class _Mark(torch.autograd.Function):
 
 
 class Timeline:
-    """Marks: P (program marks on the issuing thread: a component entered or left, or a point) and B (backward nodes, each
+    """Marks: enter / exit (program marks on the issuing thread: a component entered or left) and B (backward nodes, each
     carrying the index of the program mark that created it)."""
 
     def __init__(self, fence: bool = True):
@@ -79,7 +97,7 @@ class Timeline:
         self.clear()
 
     def clear(self):
-        self.eid, self.cpu, self.kind, self.comp, self.ref = [], [], [], [], []
+        self.eid, self.cpu, self.cpu0, self.kind, self.comp, self.ref = [], [], [], [], [], []
 
     def start(self):
         self.on = True
@@ -88,10 +106,12 @@ class Timeline:
         self.on = False
 
     def _add(self, kind, comp, ref) -> int:
+        t0 = time.perf_counter_ns()
         eid = _acquire()
         if self.fence is not None:
             self.fence.add_(1.0)        # needs no gradient: no autograd record
         _record(eid)
+        self.cpu0.append(t0)
         self.cpu.append(time.perf_counter_ns())
         self.eid.append(eid)
         self.kind.append(kind)
@@ -110,8 +130,8 @@ class Timeline:
             self._add("B", None, j)
 
     def resolve(self) -> list:
-        """Each mark's time in ms after the first mark. Call after the GPU has finished (torch.mps.synchronize()): each
-        elapsed-time query waits for its events."""
+        """Each mark's time in ms after the first mark. Each elapsed-time query waits for its events; the device is
+        synchronized first."""
         torch.mps.synchronize()
         if not self.eid:
             return []
@@ -132,18 +152,11 @@ class Timeline:
             _release(e)
         self.clear()
 
-    def attribute(self, times=None) -> dict:
-        """{(component, direction): [gpu ms, cpu ms, segments]} by exclusive time, plus the timeline's checks under the key
-        '_checks' (the span, the sum of the segments, segments with a negative GPU time, stack mismatches)."""
-        t = self.resolve() if times is None else times
-        n = len(t)
-        owner_after = {}
-        stack = []
-        mismatches = 0
-        prev_p = {}
-        last_p = None
-        rows = {}
-        neg = 0
+    def owners(self):
+        """For each mark i, the (component, direction) its following segment belongs to; and the stack checks."""
+        n = len(self.eid)
+        owner_after, prev_p = {}, {}
+        stack, mismatches, last_p = [], 0, None
         for i in range(n):
             k = self.kind[i]
             if k in ("enter", "exit"):
@@ -151,40 +164,72 @@ class Timeline:
                 last_p = i
                 if k == "enter":
                     stack.append(self.comp[i])
+                elif stack and stack[-1] == self.comp[i]:
+                    stack.pop()
                 else:
-                    if stack and stack[-1] == self.comp[i]:
-                        stack.pop()
-                    else:
-                        mismatches += 1
-                        for q in range(len(stack) - 1, -1, -1):
-                            if stack[q] == self.comp[i]:
-                                del stack[q]
-                                break
-                owner_after[i] = (stack[-1] if stack else "(outside)", "fwd")
-        for i in range(n - 1):
-            k = self.kind[i]
-            if k == "B":
+                    mismatches += 1
+                    for q in range(len(stack) - 1, -1, -1):
+                        if stack[q] == self.comp[i]:
+                            del stack[q]
+                            break
+                owner_after[i] = stack[-1] if stack else "(outside)"
+        out = []
+        for i in range(n):
+            if self.kind[i] == "B":
                 p = prev_p.get(self.ref[i])
-                owner = (owner_after[p][0] if p is not None else "(outside)", "bwd")
+                out.append((owner_after[p] if p is not None else "(outside)", "bwd"))
             else:
-                owner = owner_after[i]
-                # program marks issued during the backward (around it) keep their own component; a component whose name
-                # says backward is reported in the backward direction
-                if owner[0].endswith(":bwd"):
-                    owner = (owner[0][:-4], "bwd")
+                c = owner_after[i]
+                # a program component named "<name>:bwd" (the call that runs the backward) is reported as the backward's
+                out.append((c[:-4], "bwd") if c.endswith(":bwd") else (c, "fwd"))
+        return out, {"stack_mismatches": mismatches, "open_at_end": list(stack)}
+
+    def lags(self, times) -> list:
+        """How far the GPU trails the CPU at each mark, ms: the event's time minus the CPU's issue time, both from mark 0.
+        Near the timeline's minimum the GPU had caught up with the CPU (it was waiting for work); well above it the CPU was
+        ahead. The CPU's issue time alone cannot tell the two apart: when the GPU is behind, the CPU waits for a free slot in
+        Metal's queue of command buffers, and that wait lands in the issue time of the next operation."""
+        if not times:
+            return []
+        c0 = self.cpu[0]
+        return [times[i] - (self.cpu[i] - c0) / 1e6 for i in range(len(times))]
+
+    def attribute(self, times=None, caught_up_ms: float = 1.0) -> dict:
+        """{(component, direction): [gpu ms, cpu ms gross, segments, cpu ms net, gpu ms waiting]} by exclusive time, plus the
+        timeline's checks under the key '_checks' (the span, the sum of the segments, segments with a negative GPU time, the
+        stack, the lag's minimum and median). 'gpu ms waiting': the segment's GPU time when the GPU had caught up with the CPU
+        at the segment's end (its lag within caught_up_ms of the timeline's minimum): the GPU was waiting for the CPU."""
+        t = self.resolve() if times is None else times
+        n = len(t)
+        own, checks = self.owners()
+        lag = self.lags(t)
+        lag_min = min(lag) if lag else 0.0
+        rows, neg = {}, 0
+        for i in range(n - 1):
             g = t[i + 1] - t[i]
             c = (self.cpu[i + 1] - self.cpu[i]) / 1e6
+            cn = (self.cpu0[i + 1] - self.cpu[i]) / 1e6
             if g < 0:
                 neg += 1
-            r = rows.setdefault(owner, [0.0, 0.0, 0])
+            r = rows.setdefault(own[i], [0.0, 0.0, 0, 0.0, 0.0])
             r[0] += g
             r[1] += c
             r[2] += 1
-        rows["_checks"] = {"marks": n, "backward_marks": sum(1 for k in self.kind if k == "B"),
-                           "span_ms": (t[-1] - t[0]) if n else 0.0,
-                           "sum_ms": sum(v[0] for k, v in rows.items() if k != "_checks"),
-                           "negative_segments": neg, "stack_mismatches": mismatches, "open_at_end": list(stack)}
+            r[3] += cn
+            if lag[i + 1] < lag_min + caught_up_ms:
+                r[4] += g
+        srt = sorted(lag)
+        rows["_checks"] = dict(checks, marks=n, backward_marks=sum(1 for k in self.kind if k == "B"),
+                               span_ms=(t[-1] - t[0]) if n else 0.0,
+                               sum_ms=sum(v[0] for k, v in rows.items() if k != "_checks"), negative_segments=neg,
+                               lag_min_ms=round(lag_min, 4), lag_median_ms=round(srt[len(srt) // 2], 4) if srt else 0.0)
         return rows
+
+    def raw(self, times) -> list:
+        """The marks as rows (index, kind, component, forward mark it mirrors, GPU ms, CPU ms), for one timeline kept whole."""
+        c0 = self.cpu[0] if self.cpu else 0
+        return [[i, self.kind[i], self.comp[i], self.ref[i], round(times[i], 4), round((self.cpu[i] - c0) / 1e6, 4)]
+                for i in range(len(times))]
 
 
 def _float_grad_tensors(xs):
@@ -192,13 +237,16 @@ def _float_grad_tensors(xs):
 
 
 class Instrument:
-    """Marks on modules (forward pre / post hooks) and on module-level functions (wrappers), each with its backward nodes."""
+    """Marks on modules (forward pre / post hooks) and on functions or methods (wrappers), each with its backward nodes.
+    While `quiet` is above zero (inside a component marked with quiet=True) nested hooks and wrappers mark nothing: a whole
+    layer can be timed as one component."""
 
     def __init__(self, tl: Timeline, backward: bool = True):
         self.tl = tl
         self.backward = backward
         self.handles = []
         self.patched = []
+        self.quiet = 0
 
     # the backward nodes: one node for all the tensors that need a gradient at a mark
     def _wrap_args(self, j, args, kwargs):
@@ -219,7 +267,7 @@ class Instrument:
             kwargs[k] = y
         return tuple(args), kwargs
 
-    def _wrap_out(self, j, out):
+    def wrap_out(self, j, out):
         if j < 0 or not self.backward or not torch.is_grad_enabled():
             return out
         if isinstance(out, torch.Tensor):
@@ -233,7 +281,7 @@ class Instrument:
             new = list(out)
             for i, y in zip(idx, ys):
                 new[i] = y
-            return type(out)(new) if isinstance(out, list) else tuple(new)
+            return new if isinstance(out, list) else tuple(new)
         if hasattr(out, "keys") and hasattr(out, "__setitem__"):        # a ModelOutput (an ordered dict with attributes)
             names = [k for k in out.keys() if isinstance(out[k], torch.Tensor) and out[k].requires_grad
                      and out[k].is_floating_point()]
@@ -245,40 +293,68 @@ class Instrument:
             return out
         return out
 
-    def module(self, mod: torch.nn.Module, comp: str):
+    def module(self, mod: torch.nn.Module, comp: str, quiet: bool = False):
         tl = self.tl
+        marked = []         # per call (calls of one module may nest): whether its enter was marked
 
         def pre(m, args, kwargs):
+            if self.quiet:
+                marked.append(False)
+                return None
+            marked.append(True)
             j = tl.enter(comp)
+            if quiet:
+                self.quiet += 1
             return self._wrap_args(j, args, kwargs)
 
         def post(m, args, kwargs, out):
+            if not marked.pop():
+                return None
+            if quiet:
+                self.quiet -= 1
             j = tl.exit(comp)
-            return self._wrap_out(j, out)
+            return self.wrap_out(j, out)
 
         self.handles.append(mod.register_forward_pre_hook(pre, with_kwargs=True))
         self.handles.append(mod.register_forward_hook(post, with_kwargs=True))
 
-    def function(self, owner, name: str, comp: str):
-        orig = getattr(owner, name)
+    def wrap(self, fn, comp):
+        """fn wrapped with an enter / exit mark; comp is a name, or a function of (args, kwargs) giving the name."""
         tl = self.tl
 
         def wrapped(*args, **kwargs):
-            j = tl.enter(comp)
+            if self.quiet:
+                return fn(*args, **kwargs)
+            name = comp(args, kwargs) if callable(comp) else comp
+            j = tl.enter(name)
             args, kwargs = self._wrap_args(j, args, kwargs)
-            out = orig(*args, **kwargs)
-            j = tl.exit(comp)
-            return self._wrap_out(j, out)
+            out = fn(*args, **kwargs)
+            j = tl.exit(name)
+            return self.wrap_out(j, out)
 
-        wrapped.__wrapped__ = orig
-        setattr(owner, name, wrapped)
-        self.patched.append((owner, name, orig))
+        wrapped.__wrapped__ = fn
+        return wrapped
+
+    def replace(self, owner, name: str, new):
+        """Set owner.name = new until remove(); an attribute owner held only through its class is deleted again then."""
+        had = name in getattr(owner, "__dict__", {})
+        self.patched.append((owner, name, owner.__dict__[name] if had else None, had))
+        setattr(owner, name, new)
+
+    def function(self, owner, name: str, comp):
+        """Wrap owner.name (a module-level function, or a bound method of an instance) until remove()."""
+        orig = getattr(owner, name)
+        self.replace(owner, name, self.wrap(orig, comp))
         return orig
 
     def remove(self):
         for h in self.handles:
             h.remove()
         self.handles = []
-        for owner, name, orig in reversed(self.patched):
-            setattr(owner, name, orig)
+        for owner, name, old, had in reversed(self.patched):
+            if had:
+                setattr(owner, name, old)
+            else:
+                delattr(owner, name)
         self.patched = []
+        self.quiet = 0
