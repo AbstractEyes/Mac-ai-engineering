@@ -54,3 +54,16 @@ def test_matches_transformers(dtype):
     assert o.dtype == ro.dtype
     assert torch.allclose(o.float(), ro.float(), atol=tol, rtol=tol)
     assert torch.allclose(sT, rsT.float(), atol=1e-4, rtol=1e-4)
+
+
+@mps
+@pytest.mark.parametrize("kernel,kernel_bwd", [("auto", "column"), ("auto", "head"), ("column", "column")])
+def test_every_kernel_pair_matches(kernel, kernel_bwd):
+    from macai.gated_delta import op
+    old = op.KERNEL, op.KERNEL_BWD
+    op.KERNEL, op.KERNEL_BWD = kernel, kernel_bwd
+    try:
+        test_matches_recurrence((2, 37, 3, 128, 64))
+        test_matches_recurrence((1, 19, 2, 128, 128))
+    finally:
+        op.KERNEL, op.KERNEL_BWD = old

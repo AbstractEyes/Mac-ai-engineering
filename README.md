@@ -6,12 +6,13 @@ machine: a MacBook Pro with an M3 Max (40-core GPU, 128 GB unified memory), macO
 ## What is here
 - `macai.gated_delta`: the gated delta rule (the linear attention in three of every four layers of Qwen3.5 / Qwen3-Next) as
   Metal kernels with a hand-written backward, a drop-in for transformers' reference implementation, which is all a Mac gets
-  (the fast kernels upstream are CUDA-only). Design and measurements: [docs/gated_delta.md](docs/gated_delta.md).
+  (the fast kernels upstream are CUDA-only): the rule 1.6x the reference forward + backward, a whole Qwen3.5 linear-attention
+  layer 1.22x, on an M3 Max. Design and measurements: [docs/gated_delta.md](docs/gated_delta.md).
 - `macai.patch`: installs that kernel into transformers' Qwen3.5-family modeling code, so existing training code runs it.
 - `macai.configure`: the settings measured for long PyTorch training on the Apple GPU (allocator watermarks, thread counts).
 
 ## Install
-    pip install -e .            # or: pip install "mac-ai-engineering @ git+https://github.com/AbstractEyes/Mac-ai-engineering@v0.1.0"
+    pip install -e .            # or: pip install "mac-ai-engineering @ git+https://github.com/AbstractEyes/Mac-ai-engineering@v0.2.0"
 
     import macai.patch
     macai.patch.install()       # before building the model

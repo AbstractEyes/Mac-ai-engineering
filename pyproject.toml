@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mac-ai-engineering"
-version = "0.1.0"
+version = "0.2.0"
 description = "Metal kernels and settings for machine learning on Apple Silicon, built and measured on an M3 Max."
 readme = "README.md"
 requires-python = ">=3.11"

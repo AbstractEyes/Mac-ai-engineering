@@ -7,6 +7,14 @@ import torch
 from ._metal import BLK, library
 
 
+KERNEL = "auto"       # forward: "auto" = one threadgroup a head where the shape allows (DK % 8, DV % 4, DV <= 128); "column" = 0.1.0's
+KERNEL_BWD = "column"  # backward: "column" (32 lanes a column, float atomics; the faster on an M3 Max) or "head"
+
+
+def use_head_kernel(dk: int, dv: int) -> bool:
+    return KERNEL == "auto" and dk % 8 == 0 and dv % 4 == 0 and dv <= 128 and 8 * dv >= dk + 2
+
+
 class GatedDeltaRule(torch.autograd.Function):
     """o, S_T = recurrence(q, k, v, g, beta, S_0) on [B, T, H, D] float32 tensors (q already normalized and scaled)."""
 
@@ -21,10 +29,16 @@ class GatedDeltaRule(torch.autograd.Function):
         sT = torch.empty(B, H, DK, DV, device=q.device, dtype=torch.float32)
         nb = math.ceil(T / BLK)
         ckpt = torch.empty(B, H, nb, DK, DV, device=q.device, dtype=torch.float32) if save else torch.empty(1, device=q.device)
-        lib.gdr_fwd(q, k, v, g, beta, s0, o, sT, ckpt, T, H, DV, int(save),
-                    threads=(DV // 32 * 1024, H, B), group_size=(1024, 1, 1))
+        head = use_head_kernel(DK, DV)
+        if head:
+            lib.gdr_fwd8(q, k, v, g, beta, s0, o, sT, ckpt, T, H, DV, int(save),
+                         threads=(8 * DV, H, B), group_size=(8 * DV, 1, 1))
+        else:
+            lib.gdr_fwd(q, k, v, g, beta, s0, o, sT, ckpt, T, H, DV, int(save),
+                        threads=(DV // 32 * 1024, H, B), group_size=(1024, 1, 1))
         if save:
             ctx.save_for_backward(q, k, v, g, beta, ckpt)
+            ctx.head = head and KERNEL_BWD == "head"   # both forwards save the same state layout, so either backward reads it
         return o, sT
 
     @staticmethod
@@ -36,12 +50,16 @@ class GatedDeltaRule(torch.autograd.Function):
         do = torch.zeros_like(v) if do is None else do.to(torch.float32).contiguous()
         dsT = (torch.zeros(B, H, DK, DV, device=q.device, dtype=torch.float32) if dsT is None
                else dsT.to(torch.float32).contiguous())
-        dq, dk = torch.zeros_like(q), torch.zeros_like(k)
+        make = torch.empty_like if ctx.head else torch.zeros_like     # the head kernel writes every element once
+        dq, dk, dg, dbeta = make(q), make(k), make(g), make(beta)
         dv = torch.empty_like(v)
-        dg, dbeta = torch.zeros_like(g), torch.zeros_like(beta)
         ds0 = torch.empty(B, H, DK, DV, device=q.device, dtype=torch.float32)
-        lib.gdr_bwd(q, k, v, g, beta, ckpt, do, dsT, dq, dk, dv, dg, dbeta, ds0, T, H, DV,
-                    threads=(DV // 32 * 1024, H, B), group_size=(1024, 1, 1))
+        if ctx.head:
+            lib.gdr_bwd8(q, k, v, g, beta, ckpt, do, dsT, dq, dk, dv, dg, dbeta, ds0, T, H, DV,
+                         threads=(8 * DV, H, B), group_size=(8 * DV, 1, 1))
+        else:
+            lib.gdr_bwd(q, k, v, g, beta, ckpt, do, dsT, dq, dk, dv, dg, dbeta, ds0, T, H, DV,
+                        threads=(DV // 32 * 1024, H, B), group_size=(1024, 1, 1))
         return dq, dk, dv, dg, dbeta, ds0, None
 
 

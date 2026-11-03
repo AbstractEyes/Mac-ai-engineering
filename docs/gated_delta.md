@@ -41,11 +41,18 @@ Speed (bench/bench_gated_delta.py, M3 Max):
 | Qwen3.5-0.8B, 4 x 1,024 | 10.8 / 64.1 ms | 11.2 / 57.0 ms | 112.7 ms | 99.3 ms (1.13x) |
 | Qwen3.5-9B, 2 x 1,024 | 10.7 / 64.4 ms | 10.9 / 46.9 ms | 252.4 ms | 213.7 ms (1.18x) |
 
-## Next (0.2.0): why 0.1.0 is not faster, and the plan
-- The forward is latency-bound: each token's step waits on its loads and two cross-lane sums, and 32 lanes per column put
-  B x H x DV x 32 threads in flight, several waves on 40 GPU cores, each wave walking all T tokens. ~10 ms = ~3.5 us a step.
-- Plan: 8 lanes per column (16 rows each, sums by three shuffle rounds), so one threadgroup of 1,024 threads holds a whole head
-  (128 columns) and the grid is B x H threadgroups, about one wave; the next token's k, q, g, beta staged in threadgroup memory
-  while the current one computes; in the backward, the column sums done in-threadgroup (no atomics) and the block's states
-  recomputed from the block checkpoint in registers.
-- Admission: >= 1.2x the reference on the whole layer, forward + backward, at both shapes, parity unchanged.
+## 0.2.0: one threadgroup a head for the forward
+The forward now runs a whole head in one threadgroup (8 lanes a column, DK / 8 rows each, cross-lane sums by three shuffle rounds,
+B x H threadgroups): 1.8x the reference's forward. The backward stays 0.1.0's column kernel (a one-threadgroup-a-head backward,
+which recomputes each block's states from its saved start, measured slower on the M3 Max and is kept behind KERNEL_BWD = "head");
+both forwards save the same state layout, so either backward reads it. Parity: 8 tests pass (every forward/backward pairing).
+
+| shape | rule fwd / fwd+bwd, reference | rule, Metal 0.2.0 | layer fwd+bwd, reference | layer, Metal 0.2.0 |
+|---|---|---|---|---|
+| Qwen3.5-0.8B, 4 x 1,024 | 10.7 / 64.2 ms | 6.1 / 40.4 ms (1.77x / 1.59x) | 112.9 ms | 91.7 ms (1.23x) |
+| Qwen3.5-9B, 2 x 1,024 | 10.9 / 64.5 ms | 6.0 / 39.6 ms (1.81x / 1.63x) | 250.5 ms | 204.9 ms (1.22x) |
+
+## Next
+- The backward (~34 ms of the rule's 40): a chunked (WY-form) algorithm on simdgroup matrices, the shape GPUs run best, in place
+  of one token at a time.
+- The layer's other parts on this GPU: the input projections (13 ms), the gated norm (6 ms), the short convolution (5 ms).

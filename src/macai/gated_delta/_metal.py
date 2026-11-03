@@ -188,6 +188,181 @@ kernel void gdr_bwd(device const float* q [[buffer(0)]], device const float* k [
   }
   for (uint r = 0; r < R; ++r) ds0[sbase + (ulong)(lane + 32 * r) * DV + j] = dS[r];
 }
+
+// ---- one threadgroup a head: 8 lanes a column (DK / 8 rows each), DV / 4 simdgroups (DV <= 128), no atomics ----
+#define R8 (DK / 8)
+
+inline float sum8(float x) {
+  x += simd_shuffle_xor(x, 1);
+  x += simd_shuffle_xor(x, 2);
+  x += simd_shuffle_xor(x, 4);
+  return x;
+}
+
+kernel void gdr_fwd8(device const float* q [[buffer(0)]], device const float* k [[buffer(1)]],
+                     device const float* v [[buffer(2)]], device const float* g [[buffer(3)]],
+                     device const float* beta [[buffer(4)]], device const float* s0 [[buffer(5)]],
+                     device float* o [[buffer(6)]], device float* sT [[buffer(7)]], device float* ckpt [[buffer(8)]],
+                     constant uint& T [[buffer(9)]], constant uint& H [[buffer(10)]], constant uint& DV [[buffer(11)]],
+                     constant uint& save [[buffer(12)]],
+                     uint3 tg [[threadgroup_position_in_grid]], uint lane [[thread_index_in_simdgroup]],
+                     uint sg [[simdgroup_index_in_threadgroup]]) {
+  const uint b = tg.z, h = tg.y, sub = lane & 7u, j = sg * 4u + (lane >> 3);
+  const uint NB = (T + BLK - 1) / BLK;
+  const ulong sbase = (ulong)(b * H + h) * DK * DV;
+  float s[R8];
+  for (uint r = 0; r < R8; ++r) s[r] = s0[sbase + (ulong)(sub + 8 * r) * DV + j];
+  for (uint t = 0; t < T; ++t) {
+    if (save != 0 && (t % BLK) == 0) {
+      const ulong cb = ((ulong)(b * H + h) * NB + t / BLK) * DK * DV;
+      for (uint r = 0; r < R8; ++r) ckpt[cb + (ulong)(sub + 8 * r) * DV + j] = s[r];
+    }
+    const ulong bth = ((ulong)b * T + t) * H + h;
+    const float a = exp(g[bth]);
+    const float bt = beta[bth];
+    const float vj = v[bth * DV + j];
+    float kr[R8];
+    float u = 0.0f;
+    for (uint r = 0; r < R8; ++r) {
+      kr[r] = k[bth * DK + sub + 8 * r];
+      s[r] *= a;
+      u = fma(s[r], kr[r], u);
+    }
+    u = sum8(u);
+    const float d = bt * (vj - u);
+    float ov = 0.0f;
+    for (uint r = 0; r < R8; ++r) {
+      s[r] = fma(d, kr[r], s[r]);
+      ov = fma(s[r], q[bth * DK + sub + 8 * r], ov);
+    }
+    ov = sum8(ov);
+    if (sub == 0) o[bth * DV + j] = ov;
+  }
+  for (uint r = 0; r < R8; ++r) sT[sbase + (ulong)(sub + 8 * r) * DV + j] = s[r];
+}
+
+kernel void gdr_bwd8(device const float* q [[buffer(0)]], device const float* k [[buffer(1)]],
+                     device const float* v [[buffer(2)]], device const float* g [[buffer(3)]],
+                     device const float* beta [[buffer(4)]], device const float* ckpt [[buffer(5)]],
+                     device const float* dout [[buffer(6)]], device const float* dsT [[buffer(7)]],
+                     device float* dq [[buffer(8)]], device float* dk [[buffer(9)]],
+                     device float* dv [[buffer(10)]], device float* dg [[buffer(11)]],
+                     device float* dbeta [[buffer(12)]], device float* ds0 [[buffer(13)]],
+                     constant uint& T [[buffer(14)]], constant uint& H [[buffer(15)]], constant uint& DV [[buffer(16)]],
+                     uint3 tg [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]],
+                     uint lane [[thread_index_in_simdgroup]], uint sg [[simdgroup_index_in_threadgroup]]) {
+  threadgroup float red[32 * DK];
+  threadgroup float reds[64];
+  const uint b = tg.z, h = tg.y, sub = lane & 7u, cg = lane >> 3, j = sg * 4u + cg;
+  const uint NSG = DV / 4u;
+  const uint NB = (T + BLK - 1) / BLK;
+  const ulong sbase = (ulong)(b * H + h) * DK * DV;
+  float dS[R8];
+  for (uint r = 0; r < R8; ++r) dS[r] = dsT[sbase + (ulong)(sub + 8 * r) * DV + j];
+  for (int blk = (int)NB - 1; blk >= 0; --blk) {
+    const uint t0 = (uint)blk * BLK;
+    const uint n = min((uint)BLK, T - t0);
+    const ulong cb = ((ulong)(b * H + h) * NB + (uint)blk) * DK * DV;
+    float c0[R8];
+    for (uint r = 0; r < R8; ++r) c0[r] = ckpt[cb + (ulong)(sub + 8 * r) * DV + j];
+    for (int tt = BLK - 1; tt >= 0; --tt) {
+      if ((uint)tt < n) {
+        // the state before step t0 + tt, recomputed from the block's saved start
+        float sp[R8];
+        for (uint r = 0; r < R8; ++r) sp[r] = c0[r];
+        for (int w = 0; w < BLK - 1; ++w) {
+          if (w < tt) {
+            const ulong bw = ((ulong)b * T + (t0 + (uint)w)) * H + h;
+            const float aw = exp(g[bw]);
+            const float bw_ = beta[bw];
+            const float vw = v[bw * DV + j];
+            float uw = 0.0f;
+            for (uint r = 0; r < R8; ++r) {
+              sp[r] *= aw;
+              uw = fma(sp[r], k[bw * DK + sub + 8 * r], uw);
+            }
+            uw = sum8(uw);
+            const float dw = bw_ * (vw - uw);
+            for (uint r = 0; r < R8; ++r) sp[r] = fma(dw, k[bw * DK + sub + 8 * r], sp[r]);
+          }
+        }
+        const ulong bth = ((ulong)b * T + (t0 + (uint)tt)) * H + h;
+        const float a = exp(g[bth]);
+        const float bt = beta[bth];
+        const float vj = v[bth * DV + j];
+        float u = 0.0f;
+        for (uint r = 0; r < R8; ++r) u = fma(a * sp[r], k[bth * DK + sub + 8 * r], u);
+        u = sum8(u);
+        const float d = bt * (vj - u);
+        const float doj = dout[bth * DV + j];
+        float part[R8];
+        float dd = 0.0f;
+        for (uint r = 0; r < R8; ++r) {
+          const float kk = k[bth * DK + sub + 8 * r];
+          part[r] = doj * fma(d, kk, a * sp[r]);
+          dS[r] = fma(doj, q[bth * DK + sub + 8 * r], dS[r]);
+          dd = fma(dS[r], kk, dd);
+        }
+        dd = sum8(dd);
+        if (sub == 0) dv[bth * DV + j] = dd * bt;
+        const float du = -dd * bt;
+        for (uint r = 0; r < R8; ++r) {
+          part[r] += simd_shuffle_xor(part[r], 8);
+          part[r] += simd_shuffle_xor(part[r], 16);
+        }
+        if (cg == 0) for (uint r = 0; r < R8; ++r) red[sg * DK + sub + 8 * r] = part[r];
+        float da = 0.0f;
+        for (uint r = 0; r < R8; ++r) {
+          const float kk = k[bth * DK + sub + 8 * r];
+          const float st = a * sp[r];
+          part[r] = fma(d, dS[r], du * st);
+          const float dst = fma(du, kk, dS[r]);
+          da = fma(sp[r], dst, da);
+          dS[r] = a * dst;
+        }
+        da = sum8(da);
+        float sbv = dd * (vj - u);
+        float sgv = da * a;
+        sbv += simd_shuffle_xor(sbv, 8);
+        sbv += simd_shuffle_xor(sbv, 16);
+        sgv += simd_shuffle_xor(sgv, 8);
+        sgv += simd_shuffle_xor(sgv, 16);
+        if (lane == 0) {
+          reds[sg] = sbv;
+          reds[32 + sg] = sgv;
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (tid < DK) {
+          float acc = 0.0f;
+          for (uint c = 0; c < NSG; ++c) acc += red[c * DK + tid];
+          dq[bth * DK + tid] = acc;
+        } else if (tid == DK) {
+          float acc = 0.0f;
+          for (uint c = 0; c < NSG; ++c) acc += reds[c];
+          dbeta[bth] = acc;
+        } else if (tid == DK + 1) {
+          float acc = 0.0f;
+          for (uint c = 0; c < NSG; ++c) acc += reds[32 + c];
+          dg[bth] = acc;
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        for (uint r = 0; r < R8; ++r) {
+          part[r] += simd_shuffle_xor(part[r], 8);
+          part[r] += simd_shuffle_xor(part[r], 16);
+        }
+        if (cg == 0) for (uint r = 0; r < R8; ++r) red[sg * DK + sub + 8 * r] = part[r];
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+        if (tid < DK) {
+          float acc = 0.0f;
+          for (uint c = 0; c < NSG; ++c) acc += red[c * DK + tid];
+          dk[bth * DK + tid] = acc;
+        }
+        threadgroup_barrier(mem_flags::mem_threadgroup);
+      }
+    }
+  }
+  for (uint r = 0; r < R8; ++r) ds0[sbase + (ulong)(sub + 8 * r) * DV + j] = dS[r];
+}
 """
 
 
