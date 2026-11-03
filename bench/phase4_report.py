@@ -11,8 +11,10 @@ import statistics
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOGS = os.path.join(HERE, "phase4_logs")
-RUNS = {"ref_a": "p41_ref_a", "ref_b": "p41_ref_b", "kernels": "p41_kernels", "ref_9b": "p42_9b_ref",
-        "kernels_9b": "p42_9b_kernels", "control_ref_c": "control_p41_ref_c"}
+# each role's run names in order of preference: the first record that exists without an error is used (the 9B pair falls back
+# to 1 x 16 sequences when its reference runs out of memory at 2 x 8)
+RUNS = {"ref_a": ["p41_ref_a"], "ref_b": ["p41_ref_b"], "kernels": ["p41_kernels"], "ref_9b": ["p42_9b_ref", "p42_9b_ref_1x16"],
+        "kernels_9b": ["p42_9b_kernels", "p42_9b_kernels_1x16"], "control_ref_c": ["control_p41_ref_c"]}
 # the registered predictions (series journal, 2026-11-02 20:xx PST)
 PRED = {"0.8b": {"kernels_s": (10.0, 12.0), "reference_s": (14.0, 15.0), "speedup": 1.25},
         "9b": {"kernels_s": (55.0, 62.0), "reference_s": (70.0, 75.0), "speedup": 1.2},
@@ -35,14 +37,37 @@ def guard(name: str) -> dict:
     return out
 
 
-def load(key: str):
-    path = os.path.join(LOGS, RUNS[key] + ".json")
+def read(name: str):
+    path = os.path.join(LOGS, name + ".json")
     if not os.path.exists(path):
         return None
     with open(path, encoding="utf-8") as fh:
         r = json.load(fh)
-    r["guard"] = guard(RUNS[key])
+    r["guard"] = guard(name)
     return r
+
+
+def load(key: str):
+    """The role's run: the first of its names whose record exists without an error, else the last record found."""
+    found = None
+    for name in RUNS[key]:
+        r = read(name)
+        if r is not None and not r.get("error"):
+            return r
+        found = r or found
+    return found
+
+
+def failures() -> list:
+    """Every record in the folder whose run did not complete, with its error and the guard's end line."""
+    out = []
+    for f in sorted(os.listdir(LOGS)):
+        if f.endswith(".json") and f not in ("phase4_results.json", "autocast_check.json"):
+            r = read(f[:-5])
+            if r and r.get("error"):
+                out.append({"name": f[:-5], "error": r["error"], "steps_logged": len(r.get("steps", [])),
+                            "guard": r["guard"], "batch": r.get("batch"), "grad_accum": r.get("grad_accum")})
+    return out
 
 
 def losses(r: dict) -> dict:
@@ -140,7 +165,7 @@ def memory(refs: list, k: dict) -> dict:
 
 def main():
     runs = {key: load(key) for key in RUNS}
-    out = {"runs": {}, "predictions": PRED}
+    out = {"runs": {}, "predictions": PRED, "runs_that_did_not_complete": failures()}
     for key, r in runs.items():
         if r is None:
             out["runs"][key] = None

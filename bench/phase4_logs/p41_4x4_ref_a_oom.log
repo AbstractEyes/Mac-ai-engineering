@@ -1,0 +1,48 @@
+[guard] start 20:48:42 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.15 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/phase4_train.py --name p41_ref_a --model 0.8b --arm reference --epochs 4 --batch 4 --accum 4
+W1102 20:48:44.290000 95648 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+  10 pictures did not answer (first ['art-075014', 'art-076023', 'art-070017', 'art-043029', 'art-081041']: ['no locator', 'no locator', 'no locator', 'no locator', 'no locator'])
+train 20261103_044845_p41_ref_a: 382 items (372 with a picture), 400 examples by form {'full': 335, 'spec_full': 10, 'short': 55}; images fetched in 0 s
+Loading weights:   0%|          | 0/473 [00:00<?, ?it/s]Loading weights:  45%|████▌     | 215/473 [00:00<00:00, 2016.94it/s]Loading weights: 100%|██████████| 473/473 [00:00<00:00, 3344.93it/s]
+LoRA modules by name: {'out_proj': 18, 'in_proj_qkv': 18, 'in_proj_z': 18, 'gate_proj': 24, 'up_proj': 24, 'down_proj': 24, 'q_proj': 6, 'k_proj': 6, 'v_proj': 6, 'o_proj': 6}
+trainable params: 20,447,232 || all params: 873,433,152 || trainable%: 2.3410
+  a mixed batch (a picture row, a specification row) encodes: input_ids (2, 751)
+  100 steps of 4 x 4 sequences; 4.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "linear_attention_layers": 18, "gated_delta_rule_at_train_begin": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule", "trainable_parameters": 20447232, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 92575.3359375, "lora_A_first_values": [-0.006683, 0.008118, -0.004913, 0.013306], "PYTHONHASHSEED": null}
+  0%|          | 0/100 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+  1%|          | 1/100 [00:17<28:46, 17.44s/it]  step 1/100: loss 2.4917, 17 s spent, 1729 s left, 17.47 s/step
+                                               {'loss': '2.492', 'grad_norm': '8.424', 'learning_rate': '0', 'epoch': '0.04'}
+  1%|          | 1/100 [00:17<28:46, 17.44s/it][guard]      30 s footprint  71.57 GB (peak  71.57) swap +0.00 GB pressure 1
+  2%|▏         | 2/100 [00:34<27:59, 17.14s/it]  step 2/100: loss 2.4167, 34 s spent, 1686 s left, 17.2 s/step
+                                               {'loss': '2.417', 'grad_norm': '7.984', 'learning_rate': '6.667e-05', 'epoch': '0.08'}
+  2%|▏         | 2/100 [00:34<27:59, 17.14s/it]  3%|▎         | 3/100 [00:47<24:25, 15.11s/it]  step 3/100: loss 2.0021, 47 s spent, 1522 s left, 15.69 s/step
+                                               {'loss': '2.002', 'grad_norm': '4.513', 'learning_rate': '0.0001333', 'epoch': '0.12'}
+  3%|▎         | 3/100 [00:47<24:25, 15.11s/it][guard]      61 s footprint  79.51 GB (peak  79.59) swap +0.00 GB pressure 1
+  4%|▍         | 4/100 [01:04<25:47, 16.12s/it]  step 4/100: loss 1.8905, 65 s spent, 1554 s left, 16.19 s/step
+                                               {'loss': '1.891', 'grad_norm': '4.053', 'learning_rate': '0.0002', 'epoch': '0.16'}
+  4%|▍         | 4/100 [01:04<25:47, 16.12s/it]  5%|▌         | 5/100 [01:20<25:33, 16.14s/it]  step 5/100: loss 1.3880, 81 s spent, 1538 s left, 16.19 s/step
+                                               {'loss': '1.388', 'grad_norm': '3.942', 'learning_rate': '0.0001999', 'epoch': '0.2'}
+  5%|▌         | 5/100 [01:20<25:33, 16.14s/it][guard]      91 s footprint  74.36 GB (peak  79.59) swap +0.00 GB pressure 1
+  6%|▌         | 6/100 [01:39<26:24, 16.86s/it]  step 6/100: loss 1.2140, 99 s spent, 1554 s left, 16.53 s/step
+                                               {'loss': '1.214', 'grad_norm': '3.054', 'learning_rate': '0.0001998', 'epoch': '0.24'}
+  6%|▌         | 6/100 [01:39<26:24, 16.86s/it]  7%|▋         | 7/100 [01:55<26:03, 16.81s/it]  step 7/100: loss 1.3041, 116 s spent, 1540 s left, 16.56 s/step
+                                               {'loss': '1.304', 'grad_norm': '2.399', 'learning_rate': '0.0001995', 'epoch': '0.28'}
+  7%|▋         | 7/100 [01:55<26:03, 16.81s/it][guard]     121 s footprint  74.03 GB (peak  79.59) swap +0.00 GB pressure 1
+[phase4] p41_ref_a FAILED: RuntimeError: MPS backend out of memory (MPS allocated: 78.17 GiB, other allocations: 1.69 GiB, max allowed: 80.64 GiB). Tried to allocate 4.12 GiB on shared pool. Use PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 to disable upper limit for memory allocations (may cause system failure).
+  7%|▋         | 7/100 [02:01<27:00, 17.42s/it]
+[phase4] wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/phase4_logs/p41_ref_a.json
+[guard] end 20:50:49 rc 1 peak footprint 79.59 GB wall 127 s

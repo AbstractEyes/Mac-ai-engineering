@@ -73,3 +73,24 @@ What the smoke runs established, as causal chains:
 - Memory: the kernels hold fewer live tensors at a forward's end (21.6 against 24.2 GB) but the process's footprint peaks higher
   (55.6 against 51.6 GB): the footprint is mostly the Metal allocator's cache of freed buffers (it keeps them up to the low
   watermark, 0.55 x 115.4 = 63.5 GB), and the kernels' many per-layer buffers of new sizes enlarge that cache.
+
+### 2. 20:48-20:53: the registered 0.8B configuration runs out of GPU memory (`p41_4x4_ref_a_oom`)
+The reference at 4 x 4 sequences a step, checkpointing off, ran 7 steps (16.6 s a step with the warm-up) and stopped in step 8:
+"MPS backend out of memory (MPS allocated: 78.17 GiB, other allocations: 1.69 GiB, max allowed: 80.64 GiB). Tried to allocate
+4.12 GiB". The second reference run, started in the same configuration, was stopped by hand at step 4
+(`p41_4x4_ref_b_stopped.log`).
+
+The cause, as a chain:
+- Without checkpointing every layer's activations stay alive until the backward -> at 4 sequences the live tensors when a
+  forward returned were 32-39 GiB in steps 1-7.
+- The largest single tensors are the vocabulary-wide ones: 4 sequences x ~1,100 tokens x 248,320 entries is 4.12 GiB in float32,
+  and there are several (the model's loss upcasts the logits to float32; accelerate's mixed precision converts the returned bf16
+  logits to float32 again: the traceback ends in its `convert_to_fp32`).
+- The Metal allocator's heaps, fragmented by batches of changing shapes, held 63-76 GiB at a forward's end -> the float32 copy of
+  step 8's longer batch did not fit under the high watermark (0.75 x 107.5 GiB = 80.6 GiB) -> out of memory.
+
+The change (the bench's own micro-batch ladder; the same 16 sequences a step): the 0.8B runs at 2 x 8. Checkpointing stays off and
+the watermarks stay as registered. Every step still takes the same 16 examples in the same order in every run, so the two arms
+see identical steps; the split changes the padding and how many sequences run at once, so the step time and the memory are now
+measured at 2 x 8, which the registered 0.8B time prediction (made for 4 x 4) did not price. The 9B pair runs first at its
+registered 2 x 8 (its activations are larger: if its reference runs out of memory, the pair runs at 1 x 16).

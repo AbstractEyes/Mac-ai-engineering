@@ -1,0 +1,176 @@
+{
+ "name": "p41_ref_a",
+ "model_id": "Qwen/Qwen3.5-0.8B",
+ "arm": "reference",
+ "epochs": 4.0,
+ "batch": 4,
+ "grad_accum": 4,
+ "sequences_a_step": 16,
+ "n_items": null,
+ "recipe": {
+  "rank": 32,
+  "alpha": 64,
+  "dropout": 0.05,
+  "lr": 0.0002,
+  "max_len": 2048,
+  "seed": 20261030,
+  "do_ship": false
+ },
+ "warmup_steps_excluded": 10,
+ "started": "2026-11-02 20:48:42 PST",
+ "repo_commit": "987a1a0",
+ "repo_dirty": false,
+ "env": {
+  "PYTORCH_MPS_HIGH_WATERMARK_RATIO": "0.75",
+  "PYTORCH_MPS_LOW_WATERMARK_RATIO": "0.55",
+  "PYTORCH_ENABLE_MPS_FALLBACK": "1",
+  "HF_HUB_OFFLINE": "1",
+  "OMP_NUM_THREADS": "8"
+ },
+ "runner_patches": [
+  "load_vlm device_map cuda -> mps",
+  "model.gradient_checkpointing_enable -> no-op",
+  "TrainingArguments gradient_checkpointing -> False",
+  "TrainingArguments logging_steps 10 -> 1",
+  "fetch_images -> the fetched pictures folder"
+ ],
+ "steps": [
+  {
+   "step": 1,
+   "t_s": 17.47,
+   "loss": 2.4916653633117676,
+   "grad_norm": 8.423921585083008,
+   "learning_rate": 0.0,
+   "epoch": 0.04,
+   "mps_alloc_gb": 0.403,
+   "mps_driver_gb": 63.1,
+   "footprint_gb": 64.773,
+   "live_at_forward_end_gb": 38.482,
+   "driver_at_forward_end_gb": 63.1
+  },
+  {
+   "step": 2,
+   "t_s": 34.406,
+   "loss": 2.4166674613952637,
+   "grad_norm": 7.9840779304504395,
+   "learning_rate": 6.666666666666667e-05,
+   "epoch": 0.08,
+   "mps_alloc_gb": 0.423,
+   "mps_driver_gb": 69.701,
+   "footprint_gb": 71.539,
+   "live_at_forward_end_gb": 38.575,
+   "driver_at_forward_end_gb": 69.701
+  },
+  {
+   "step": 3,
+   "t_s": 47.081,
+   "loss": 2.0020930767059326,
+   "grad_norm": 4.5127997398376465,
+   "learning_rate": 0.00013333333333333334,
+   "epoch": 0.12,
+   "mps_alloc_gb": 0.376,
+   "mps_driver_gb": 69.702,
+   "footprint_gb": 71.78,
+   "live_at_forward_end_gb": 32.054,
+   "driver_at_forward_end_gb": 69.702
+  },
+  {
+   "step": 4,
+   "t_s": 64.767,
+   "loss": 1.8905487060546875,
+   "grad_norm": 4.053104877471924,
+   "learning_rate": 0.0002,
+   "epoch": 0.16,
+   "mps_alloc_gb": 0.434,
+   "mps_driver_gb": 66.514,
+   "footprint_gb": 68.612,
+   "live_at_forward_end_gb": 33.973,
+   "driver_at_forward_end_gb": 73.577
+  },
+  {
+   "step": 5,
+   "t_s": 80.946,
+   "loss": 1.3880094289779663,
+   "grad_norm": 3.9418249130249023,
+   "learning_rate": 0.00019994755690455152,
+   "epoch": 0.2,
+   "mps_alloc_gb": 0.45,
+   "mps_driver_gb": 75.452,
+   "footprint_gb": 77.685,
+   "live_at_forward_end_gb": 33.996,
+   "driver_at_forward_end_gb": 71.514
+  },
+  {
+   "step": 6,
+   "t_s": 99.207,
+   "loss": 1.2139720916748047,
+   "grad_norm": 3.0540196895599365,
+   "learning_rate": 0.00019979028262377118,
+   "epoch": 0.24,
+   "mps_alloc_gb": 0.437,
+   "mps_driver_gb": 71.282,
+   "footprint_gb": 73.587,
+   "live_at_forward_end_gb": 34.357,
+   "driver_at_forward_end_gb": 75.837
+  },
+  {
+   "step": 7,
+   "t_s": 115.902,
+   "loss": 1.3040753602981567,
+   "grad_norm": 2.3988893032073975,
+   "learning_rate": 0.0001995283421166614,
+   "epoch": 0.28,
+   "mps_alloc_gb": 0.388,
+   "mps_driver_gb": 71.532,
+   "footprint_gb": 73.944,
+   "live_at_forward_end_gb": 33.112,
+   "driver_at_forward_end_gb": 75.655
+  }
+ ],
+ "final_logs": [],
+ "gated_delta_rule": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule",
+ "versions": {
+  "torch": "2.15.0",
+  "transformers": "5.22.1",
+  "peft": "0.21.2",
+  "qwen_symbolic_thinking": "0.1.35",
+  "python": "3.12.16"
+ },
+ "mps_recommended_max_gb": 107.52,
+ "sample": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/sample_every55.json",
+ "pictures": {
+  "items": 382,
+  "pictures_by_locator": {
+   "url": 357,
+   "zip_member": 15
+  }
+ },
+ "examples": 400,
+ "accelerator": {
+  "mixed_precision": "bf16",
+  "native_amp": true,
+  "device": "mps"
+ },
+ "checks": {
+  "modules_checkpointing": [],
+  "logging_steps": 1,
+  "args_gradient_checkpointing": false,
+  "linear_attention_layers": 18,
+  "gated_delta_rule_at_train_begin": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule",
+  "trainable_parameters": 20447232,
+  "model_dtype": "torch.bfloat16",
+  "device": "mps:0",
+  "lora_A_abs_sum": 92575.3359375,
+  "lora_A_first_values": [
+   -0.006683,
+   0.008118,
+   -0.004913,
+   0.013306
+  ],
+  "PYTHONHASHSEED": null
+ },
+ "error": "RuntimeError: MPS backend out of memory (MPS allocated: 78.17 GiB, other allocations: 1.69 GiB, max allowed: 80.64 GiB). Tried to allocate 4.12 GiB on shared pool. Use PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 to disable upper limit for memory allocations (may cause system failure).",
+ "traceback": "Traceback (most recent call last):\n  File \"/Users/philipcoelho/mirel/mac_ai_engineering/bench/phase4_train.py\", line 258, in main\n    summ = T.run(model_id=MODELS[a.model], inputs=[sample], out_dir=os.path.join(a.data, \"phase4\"), epochs=a.epochs,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/qwen_symbolic_thinking/train.py\", line 327, in run\n    result = trainer.train()\n             ^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1559, in train\n    return inner_training_loop(\n           ^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1643, in _inner_training_loop\n    self._run_epoch(\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 1889, in _run_epoch\n    tr_loss_step = self.training_step(model, inputs, num_items_in_batch)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 2062, in training_step\n    loss = self.compute_loss(model, inputs, num_items_in_batch=num_items_in_batch)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/transformers/trainer.py\", line 2144, in compute_loss\n    outputs = model(**inputs)\n              ^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 1787, in _wrapped_call_impl\n    return self._call_impl(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 1893, in _call_impl\n    return inner()\n           ^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/nn/modules/module.py\", line 1841, in inner\n    result = forward_call(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/accelerate/utils/operations.py\", line 943, in forward\n    return model_forward(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/accelerate/utils/operations.py\", line 931, in __call__\n    return convert_to_fp32(self.model_forward(*args, **kwargs))\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/accelerate/utils/operations.py\", line 910, in convert_to_fp32\n    return recursively_apply(_convert_to_fp32, tensor, test_type=_is_fp16_bf16_tensor)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/accelerate/utils/operations.py\", line 120, in recursively_apply\n    k: recursively_apply(\n       ^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/accelerate/utils/operations.py\", line 127, in recursively_apply\n    return func(data, *args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/accelerate/utils/operations.py\", line 902, in _convert_to_fp32\n    return tensor.float()\n           ^^^^^^^^^^^^^^\nRuntimeError: MPS backend out of memory (MPS allocated: 78.17 GiB, other allocations: 1.69 GiB, max allowed: 80.64 GiB). Tried to allocate 4.12 GiB on shared pool. Use PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0 to disable upper limit for memory allocations (may cause system failure).\n",
+ "wall_s": 125.6,
+ "ended": "2026-11-02 20:50:48 PST"
+}

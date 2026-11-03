@@ -1,0 +1,40 @@
+[guard] start 20:51:09 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.15 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/phase4_train.py --name p41_ref_b --model 0.8b --arm reference --epochs 4 --batch 4 --accum 4
+W1102 20:51:11.462000 96018 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+  10 pictures did not answer (first ['art-075014', 'art-076023', 'art-070017', 'art-043029', 'art-081041']: ['no locator', 'no locator', 'no locator', 'no locator', 'no locator'])
+train 20261103_045112_p41_ref_b: 382 items (372 with a picture), 400 examples by form {'full': 335, 'spec_full': 10, 'short': 55}; images fetched in 0 s
+Loading weights:   0%|          | 0/473 [00:00<?, ?it/s]Loading weights:  42%|████▏     | 197/473 [00:00<00:00, 1782.37it/s]Loading weights: 100%|██████████| 473/473 [00:00<00:00, 3601.61it/s]
+LoRA modules by name: {'out_proj': 18, 'in_proj_qkv': 18, 'in_proj_z': 18, 'gate_proj': 24, 'up_proj': 24, 'down_proj': 24, 'q_proj': 6, 'k_proj': 6, 'v_proj': 6, 'o_proj': 6}
+trainable params: 20,447,232 || all params: 873,433,152 || trainable%: 2.3410
+  a mixed batch (a picture row, a specification row) encodes: input_ids (2, 751)
+  100 steps of 4 x 4 sequences; 4.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "linear_attention_layers": 18, "gated_delta_rule_at_train_begin": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule", "trainable_parameters": 20447232, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 92583.5546875, "lora_A_first_values": [0.021606, -0.016602, 0.010315, 0.014709], "PYTHONHASHSEED": null}
+  0%|          | 0/100 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+  1%|          | 1/100 [00:20<34:09, 20.70s/it]  step 1/100: loss 2.4917, 21 s spent, 2053 s left, 20.73 s/step
+                                               {'loss': '2.492', 'grad_norm': '8.332', 'learning_rate': '0', 'epoch': '0.04'}
+  1%|          | 1/100 [00:20<34:09, 20.70s/it][guard]      30 s footprint  71.55 GB (peak  71.55) swap +0.00 GB pressure 1
+  2%|▏         | 2/100 [00:40<33:00, 20.21s/it]  step 2/100: loss 2.4167, 41 s spent, 1989 s left, 20.3 s/step
+                                               {'loss': '2.417', 'grad_norm': '7.855', 'learning_rate': '6.667e-05', 'epoch': '0.08'}
+  2%|▏         | 2/100 [00:40<33:00, 20.21s/it]  3%|▎         | 3/100 [00:55<28:48, 17.82s/it]  step 3/100: loss 2.0010, 56 s spent, 1797 s left, 18.53 s/step
+                                               {'loss': '2.001', 'grad_norm': '4.503', 'learning_rate': '0.0001333', 'epoch': '0.12'}
+  3%|▎         | 3/100 [00:55<28:48, 17.82s/it][guard]      61 s footprint  71.72 GB (peak  71.78) swap +0.00 GB pressure 1
+  4%|▍         | 4/100 [01:15<30:06, 18.82s/it]  step 4/100: loss 1.8860, 76 s spent, 1822 s left, 18.98 s/step
+                                               {'loss': '1.886', 'grad_norm': '3.982', 'learning_rate': '0.0002', 'epoch': '0.16'}
+  4%|▍         | 4/100 [01:15<30:06, 18.82s/it][guard]      91 s footprint  73.80 GB (peak  79.59) swap +0.00 GB pressure 1
+/opt/homebrew/Cellar/python@3.12/3.12.16/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py:279: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '
+[note] stopped by hand at step 4 (20:52:43) after p41_ref_a ran out of the allowed GPU memory at step 8 in the same configuration; the run was killed with its chain, so the guard wrote no end line
