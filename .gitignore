@@ -1,0 +1,16 @@
+# editors
+.idea/
+.vscode/
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+# local benchmark output
+bench/results/
+# the PyCharm starter script
+main.py
