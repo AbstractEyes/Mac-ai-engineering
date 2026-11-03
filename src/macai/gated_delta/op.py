@@ -8,13 +8,13 @@ from . import _chunked
 from ._metal import BLK, library
 
 
-# forward: "chunked" = the chunked kernels (_chunked.py); "auto" = 0.2.0's one threadgroup a head where the shape allows
-# (DK % 8, DV % 4, DV <= 128), else 0.1.0's; "column" = 0.1.0's
-KERNEL = "auto"
+# forward: "chunked" = the chunked kernels (_chunked.py; docs/series_phase3.md); "auto" = 0.2.0's one threadgroup a head
+# where the shape allows (DK % 8, DV % 4, DV <= 128), else 0.1.0's; "column" = 0.1.0's
+KERNEL = "chunked"
 # backward: "chunked" = the chunked kernels; "column" = 0.1.0's (32 lanes a column, float atomics); "head" = 0.2.0's
-# (one threadgroup a head, used only after the "auto" forward). Any forward pairs with any backward: each forward saves
+# (one threadgroup a head, used only where its shape allows). Any forward pairs with any backward: each forward saves
 # what the chosen backward reads (see GatedDeltaRule.forward).
-KERNEL_BWD = "column"
+KERNEL_BWD = "chunked"
 
 
 def head_shape(dk: int, dv: int) -> bool:
