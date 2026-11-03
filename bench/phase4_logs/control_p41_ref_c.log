@@ -1,0 +1,286 @@
+[guard] start 23:12:09 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.15 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/phase4_train.py --name control_p41_ref_c --model 0.8b --arm reference --epochs 4 --batch 2 --accum 8 --empty-cache
+W1102 23:12:11.727000 64450 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+  10 pictures did not answer (first ['art-075014', 'art-076023', 'art-070017', 'art-043029', 'art-081041']: ['no locator', 'no locator', 'no locator', 'no locator', 'no locator'])
+train 20261103_071212_control_p41_ref_c: 382 items (372 with a picture), 400 examples by form {'full': 335, 'spec_full': 10, 'short': 55}; images fetched in 0 s
+Loading weights:   0%|          | 0/473 [00:00<?, ?it/s]Loading weights:  30%|██▉       | 140/473 [00:00<00:00, 1378.44it/s]Loading weights: 100%|██████████| 473/473 [00:00<00:00, 3195.71it/s]
+LoRA modules by name: {'out_proj': 18, 'in_proj_qkv': 18, 'in_proj_z': 18, 'gate_proj': 24, 'up_proj': 24, 'down_proj': 24, 'q_proj': 6, 'k_proj': 6, 'v_proj': 6, 'o_proj': 6}
+trainable params: 20,447,232 || all params: 873,433,152 || trainable%: 2.3410
+  a mixed batch (a picture row, a specification row) encodes: input_ids (2, 751)
+  100 steps of 2 x 8 sequences; 4.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "torch_empty_cache_steps": 1, "linear_attention_layers": 18, "gated_delta_rule_at_train_begin": "transformers.models.qwen3_5.modeling_qwen3_5.torch_chunk_gated_delta_rule", "trainable_parameters": 20447232, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 92596.234375, "lora_A_first_values": [-0.009888, 0.019897, 0.006134, 0.005493], "PYTHONHASHSEED": null}
+  0%|          | 0/100 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+  1%|          | 1/100 [00:13<21:51, 13.25s/it]  step 1/100: loss 2.5636, 13 s spent, 1314 s left, 13.27 s/step
+                                               {'loss': '2.564', 'grad_norm': '8.93', 'learning_rate': '0', 'epoch': '0.04'}
+  1%|          | 1/100 [00:13<21:51, 13.25s/it][guard]      30 s footprint  23.56 GB (peak  32.01) swap +0.00 GB pressure 1
+  2%|▏         | 2/100 [00:27<22:51, 14.00s/it]  step 2/100: loss 2.4262, 28 s spent, 1362 s left, 13.9 s/step
+                                               {'loss': '2.426', 'grad_norm': '7.819', 'learning_rate': '6.667e-05', 'epoch': '0.08'}
+  2%|▏         | 2/100 [00:27<22:51, 14.00s/it]  3%|▎         | 3/100 [00:38<20:05, 12.43s/it]  step 3/100: loss 2.0274, 38 s spent, 1240 s left, 12.79 s/step
+                                               {'loss': '2.027', 'grad_norm': '4.423', 'learning_rate': '0.0001333', 'epoch': '0.12'}
+  3%|▎         | 3/100 [00:38<20:05, 12.43s/it]  4%|▍         | 4/100 [00:54<22:30, 14.07s/it]  step 4/100: loss 1.8655, 55 s spent, 1318 s left, 13.73 s/step
+                                               {'loss': '1.866', 'grad_norm': '3.909', 'learning_rate': '0.0002', 'epoch': '0.16'}
+  4%|▍         | 4/100 [00:54<22:30, 14.07s/it][guard]      61 s footprint  27.74 GB (peak  32.01) swap +0.00 GB pressure 1
+  5%|▌         | 5/100 [01:10<22:57, 14.50s/it]  step 5/100: loss 1.3883, 70 s spent, 1334 s left, 14.04 s/step
+                                               {'loss': '1.388', 'grad_norm': '3.643', 'learning_rate': '0.0001999', 'epoch': '0.2'}
+  5%|▌         | 5/100 [01:10<22:57, 14.50s/it]  6%|▌         | 6/100 [01:26<23:38, 15.09s/it]  step 6/100: loss 1.2055, 86 s spent, 1355 s left, 14.41 s/step
+                                               {'loss': '1.205', 'grad_norm': '3.028', 'learning_rate': '0.0001998', 'epoch': '0.24'}
+  6%|▌         | 6/100 [01:26<23:38, 15.09s/it][guard]      91 s footprint  27.68 GB (peak  34.25) swap +0.00 GB pressure 1
+  7%|▋         | 7/100 [01:40<22:39, 14.61s/it]  step 7/100: loss 1.2423, 100 s spent, 1330 s left, 14.3 s/step
+                                               {'loss': '1.242', 'grad_norm': '2.384', 'learning_rate': '0.0001995', 'epoch': '0.28'}
+  7%|▋         | 7/100 [01:40<22:39, 14.61s/it]  8%|▊         | 8/100 [01:55<22:52, 14.92s/it]  step 8/100: loss 1.1418, 116 s spent, 1330 s left, 14.46 s/step
+                                               {'loss': '1.142', 'grad_norm': '2.467', 'learning_rate': '0.0001992', 'epoch': '0.32'}
+  8%|▊         | 8/100 [01:55<22:52, 14.92s/it][guard]     121 s footprint  29.82 GB (peak  34.25) swap +0.00 GB pressure 1
+  9%|▉         | 9/100 [02:11<22:51, 15.07s/it]  step 9/100: loss 1.1257, 131 s spent, 1325 s left, 14.56 s/step
+                                               {'loss': '1.126', 'grad_norm': '2.105', 'learning_rate': '0.0001987', 'epoch': '0.36'}
+  9%|▉         | 9/100 [02:11<22:51, 15.07s/it][guard]     151 s footprint  31.12 GB (peak  34.25) swap +0.00 GB pressure 1
+ 10%|█         | 10/100 [02:27<23:19, 15.55s/it]  step 10/100: loss 0.9873, 148 s spent, 1329 s left, 14.77 s/step
+                                                {'loss': '0.9873', 'grad_norm': '1.911', 'learning_rate': '0.0001981', 'epoch': '0.4'}
+ 10%|█         | 10/100 [02:27<23:19, 15.55s/it] 11%|█         | 11/100 [02:41<22:07, 14.92s/it]  step 11/100: loss 1.0780, 161 s spent, 1304 s left, 14.65 s/step
+                                                {'loss': '1.078', 'grad_norm': '2.7', 'learning_rate': '0.0001974', 'epoch': '0.44'}
+ 11%|█         | 11/100 [02:41<22:07, 14.92s/it] 12%|█▏        | 12/100 [02:55<21:42, 14.80s/it]  step 12/100: loss 0.9867, 176 s spent, 1288 s left, 14.64 s/step
+                                                {'loss': '0.9867', 'grad_norm': '1.622', 'learning_rate': '0.0001967', 'epoch': '0.48'}
+ 12%|█▏        | 12/100 [02:55<21:42, 14.80s/it][guard]     182 s footprint  33.18 GB (peak  34.25) swap +0.00 GB pressure 1
+ 13%|█▎        | 13/100 [03:10<21:40, 14.94s/it]  step 13/100: loss 0.8483, 191 s spent, 1278 s left, 14.69 s/step
+                                                {'loss': '0.8483', 'grad_norm': '1.635', 'learning_rate': '0.0001958', 'epoch': '0.52'}
+ 13%|█▎        | 13/100 [03:10<21:40, 14.94s/it] 14%|█▍        | 14/100 [03:25<21:13, 14.81s/it]  step 14/100: loss 0.9767, 205 s spent, 1262 s left, 14.68 s/step
+                                                {'loss': '0.9767', 'grad_norm': '1.691', 'learning_rate': '0.0001948', 'epoch': '0.56'}
+ 14%|█▍        | 14/100 [03:25<21:13, 14.81s/it][guard]     212 s footprint  36.44 GB (peak  36.44) swap +0.00 GB pressure 1
+ 15%|█▌        | 15/100 [03:39<20:37, 14.56s/it]  step 15/100: loss 1.0735, 219 s spent, 1244 s left, 14.63 s/step
+                                                {'loss': '1.073', 'grad_norm': '1.698', 'learning_rate': '0.0001937', 'epoch': '0.6'}
+ 15%|█▌        | 15/100 [03:39<20:37, 14.56s/it] 16%|█▌        | 16/100 [03:53<20:17, 14.49s/it]  step 16/100: loss 0.9042, 234 s spent, 1227 s left, 14.61 s/step
+                                                {'loss': '0.9042', 'grad_norm': '1.449', 'learning_rate': '0.0001925', 'epoch': '0.64'}
+ 16%|█▌        | 16/100 [03:53<20:17, 14.49s/it][guard]     242 s footprint  39.47 GB (peak  39.47) swap +0.00 GB pressure 1
+ 17%|█▋        | 17/100 [04:08<20:08, 14.56s/it]  step 17/100: loss 0.8485, 248 s spent, 1213 s left, 14.62 s/step
+                                                {'loss': '0.8485', 'grad_norm': '1.56', 'learning_rate': '0.0001913', 'epoch': '0.68'}
+ 17%|█▋        | 17/100 [04:08<20:08, 14.56s/it] 18%|█▊        | 18/100 [04:23<20:00, 14.65s/it]  step 18/100: loss 0.8335, 263 s spent, 1200 s left, 14.63 s/step
+                                                {'loss': '0.8335', 'grad_norm': '1.562', 'learning_rate': '0.0001899', 'epoch': '0.72'}
+ 18%|█▊        | 18/100 [04:23<20:00, 14.65s/it][guard]     272 s footprint  37.60 GB (peak  39.79) swap +0.00 GB pressure 1
+ 19%|█▉        | 19/100 [04:40<20:59, 15.55s/it]  step 19/100: loss 0.8369, 281 s spent, 1198 s left, 14.79 s/step
+                                                {'loss': '0.8369', 'grad_norm': '1.428', 'learning_rate': '0.0001884', 'epoch': '0.76'}
+ 19%|█▉        | 19/100 [04:40<20:59, 15.55s/it] 20%|██        | 20/100 [04:56<20:45, 15.57s/it]  step 20/100: loss 0.8407, 297 s spent, 1186 s left, 14.83 s/step
+                                                {'loss': '0.8407', 'grad_norm': '1.86', 'learning_rate': '0.0001869', 'epoch': '0.8'}
+ 20%|██        | 20/100 [04:56<20:45, 15.57s/it][guard]     303 s footprint  35.35 GB (peak  41.11) swap +0.00 GB pressure 1
+ 21%|██        | 21/100 [05:10<19:55, 15.13s/it]  step 21/100: loss 0.8901, 311 s spent, 1169 s left, 14.8 s/step
+                                                {'loss': '0.8901', 'grad_norm': '1.518', 'learning_rate': '0.0001852', 'epoch': '0.84'}
+ 21%|██        | 21/100 [05:10<19:55, 15.13s/it] 22%|██▏       | 22/100 [05:27<20:11, 15.54s/it]  step 22/100: loss 0.7734, 327 s spent, 1160 s left, 14.87 s/step
+                                                {'loss': '0.7734', 'grad_norm': '1.408', 'learning_rate': '0.0001835', 'epoch': '0.88'}
+ 22%|██▏       | 22/100 [05:27<20:11, 15.54s/it][guard]     333 s footprint  36.42 GB (peak  41.11) swap +0.00 GB pressure 1
+ 23%|██▎       | 23/100 [05:43<20:17, 15.82s/it]  step 23/100: loss 1.0452, 344 s spent, 1151 s left, 14.94 s/step
+                                                {'loss': '1.045', 'grad_norm': '1.393', 'learning_rate': '0.0001817', 'epoch': '0.92'}
+ 23%|██▎       | 23/100 [05:43<20:17, 15.82s/it] 24%|██▍       | 24/100 [05:59<19:55, 15.73s/it]  step 24/100: loss 0.6922, 359 s spent, 1137 s left, 14.97 s/step
+                                                {'loss': '0.6922', 'grad_norm': '1.53', 'learning_rate': '0.0001797', 'epoch': '0.96'}
+ 24%|██▍       | 24/100 [05:59<19:55, 15.73s/it][guard]     363 s footprint  35.96 GB (peak  41.11) swap +0.00 GB pressure 1
+ 25%|██▌       | 25/100 [06:14<19:27, 15.57s/it]  step 25/100: loss 0.7731, 374 s spent, 1123 s left, 14.98 s/step
+                                                {'loss': '0.7731', 'grad_norm': '1.537', 'learning_rate': '0.0001777', 'epoch': '1'}
+ 25%|██▌       | 25/100 [06:14<19:27, 15.57s/it][guard]     393 s footprint  36.06 GB (peak  41.11) swap +0.00 GB pressure 1
+ 26%|██▌       | 26/100 [06:30<19:17, 15.64s/it]  step 26/100: loss 0.5868, 390 s spent, 1111 s left, 15.01 s/step
+                                                {'loss': '0.5868', 'grad_norm': '1.264', 'learning_rate': '0.0001757', 'epoch': '1.04'}
+ 26%|██▌       | 26/100 [06:30<19:17, 15.64s/it] 27%|██▋       | 27/100 [06:43<18:16, 15.03s/it]  step 27/100: loss 0.7719, 404 s spent, 1092 s left, 14.96 s/step
+                                                {'loss': '0.7719', 'grad_norm': '1.28', 'learning_rate': '0.0001735', 'epoch': '1.08'}
+ 27%|██▋       | 27/100 [06:43<18:16, 15.03s/it] 28%|██▊       | 28/100 [06:57<17:32, 14.62s/it]  step 28/100: loss 0.6075, 417 s spent, 1074 s left, 14.91 s/step
+                                                {'loss': '0.6075', 'grad_norm': '1.179', 'learning_rate': '0.0001713', 'epoch': '1.12'}
+ 28%|██▊       | 28/100 [06:57<17:32, 14.62s/it][guard]     424 s footprint  39.03 GB (peak  41.11) swap +0.00 GB pressure 1
+ 29%|██▉       | 29/100 [07:14<18:11, 15.37s/it]  step 29/100: loss 0.4669, 435 s spent, 1064 s left, 14.99 s/step
+                                                {'loss': '0.4669', 'grad_norm': '1.22', 'learning_rate': '0.000169', 'epoch': '1.16'}
+ 29%|██▉       | 29/100 [07:14<18:11, 15.37s/it] 30%|███       | 30/100 [07:29<17:55, 15.36s/it]  step 30/100: loss 0.5711, 450 s spent, 1050 s left, 15.0 s/step
+                                                {'loss': '0.5711', 'grad_norm': '1.456', 'learning_rate': '0.0001666', 'epoch': '1.2'}
+ 30%|███       | 30/100 [07:29<17:55, 15.36s/it][guard]     454 s footprint  44.66 GB (peak  45.15) swap +0.00 GB pressure 1
+ 31%|███       | 31/100 [07:46<18:07, 15.76s/it]  step 31/100: loss 0.6685, 467 s spent, 1039 s left, 15.05 s/step
+                                                {'loss': '0.6685', 'grad_norm': '1.37', 'learning_rate': '0.0001641', 'epoch': '1.24'}
+ 31%|███       | 31/100 [07:46<18:07, 15.76s/it][guard]     484 s footprint  41.67 GB (peak  47.47) swap +0.00 GB pressure 1
+ 32%|███▏      | 32/100 [08:02<17:59, 15.88s/it]  step 32/100: loss 0.6491, 483 s spent, 1026 s left, 15.09 s/step
+                                                {'loss': '0.6491', 'grad_norm': '1.403', 'learning_rate': '0.0001616', 'epoch': '1.28'}
+ 32%|███▏      | 32/100 [08:02<17:59, 15.88s/it] 33%|███▎      | 33/100 [08:15<16:38, 14.91s/it]  step 33/100: loss 0.5305, 495 s spent, 1006 s left, 15.01 s/step
+                                                {'loss': '0.5305', 'grad_norm': '1.641', 'learning_rate': '0.000159', 'epoch': '1.32'}
+ 33%|███▎      | 33/100 [08:15<16:38, 14.91s/it] 34%|███▍      | 34/100 [08:30<16:30, 15.01s/it]  step 34/100: loss 0.5432, 511 s spent, 991 s left, 15.02 s/step
+                                                {'loss': '0.5432', 'grad_norm': '1.497', 'learning_rate': '0.0001564', 'epoch': '1.36'}
+ 34%|███▍      | 34/100 [08:30<16:30, 15.01s/it][guard]     515 s footprint  34.88 GB (peak  47.47) swap +0.00 GB pressure 1
+ 35%|███▌      | 35/100 [08:45<16:20, 15.08s/it]  step 35/100: loss 0.5306, 526 s spent, 977 s left, 15.03 s/step
+                                                {'loss': '0.5306', 'grad_norm': '1.386', 'learning_rate': '0.0001537', 'epoch': '1.4'}
+ 35%|███▌      | 35/100 [08:45<16:20, 15.08s/it] 36%|███▌      | 36/100 [08:58<15:19, 14.37s/it]  step 36/100: loss 0.5926, 539 s spent, 958 s left, 14.96 s/step
+                                                {'loss': '0.5926', 'grad_norm': '1.518', 'learning_rate': '0.0001509', 'epoch': '1.44'}
+ 36%|███▌      | 36/100 [08:58<15:19, 14.37s/it][guard]     545 s footprint  32.91 GB (peak  47.47) swap +0.00 GB pressure 1
+ 37%|███▋      | 37/100 [09:13<15:23, 14.66s/it]  step 37/100: loss 0.5108, 554 s spent, 943 s left, 14.97 s/step
+                                                {'loss': '0.5108', 'grad_norm': '1.372', 'learning_rate': '0.0001481', 'epoch': '1.48'}
+ 37%|███▋      | 37/100 [09:13<15:23, 14.66s/it] 38%|███▊      | 38/100 [09:29<15:32, 15.04s/it]  step 38/100: loss 0.5279, 570 s spent, 930 s left, 15.0 s/step
+                                                {'loss': '0.5279', 'grad_norm': '1.347', 'learning_rate': '0.0001453', 'epoch': '1.52'}
+ 38%|███▊      | 38/100 [09:29<15:32, 15.04s/it][guard]     575 s footprint  34.32 GB (peak  47.47) swap +0.00 GB pressure 1
+ 39%|███▉      | 39/100 [09:45<15:26, 15.18s/it]  step 39/100: loss 0.6364, 585 s spent, 916 s left, 15.01 s/step
+                                                {'loss': '0.6364', 'grad_norm': '1.215', 'learning_rate': '0.0001423', 'epoch': '1.56'}
+ 39%|███▉      | 39/100 [09:45<15:26, 15.18s/it] 40%|████      | 40/100 [09:57<14:07, 14.13s/it]  step 40/100: loss 0.6015, 597 s spent, 896 s left, 14.93 s/step
+                                                {'loss': '0.6015', 'grad_norm': '1.637', 'learning_rate': '0.0001394', 'epoch': '1.6'}
+ 40%|████      | 40/100 [09:57<14:07, 14.13s/it][guard]     605 s footprint  35.17 GB (peak  47.47) swap +0.00 GB pressure 1
+ 41%|████      | 41/100 [10:12<14:17, 14.53s/it]  step 41/100: loss 0.5268, 613 s spent, 881 s left, 14.94 s/step
+                                                {'loss': '0.5268', 'grad_norm': '1.334', 'learning_rate': '0.0001364', 'epoch': '1.64'}
+ 41%|████      | 41/100 [10:12<14:17, 14.53s/it] 42%|████▏     | 42/100 [10:27<14:09, 14.65s/it]  step 42/100: loss 0.5033, 627 s spent, 867 s left, 14.94 s/step
+                                                {'loss': '0.5033', 'grad_norm': '1.349', 'learning_rate': '0.0001334', 'epoch': '1.68'}
+ 42%|████▏     | 42/100 [10:27<14:09, 14.65s/it][guard]     636 s footprint  38.10 GB (peak  47.47) swap +0.00 GB pressure 1
+ 43%|████▎     | 43/100 [10:43<14:15, 15.01s/it]  step 43/100: loss 0.4461, 643 s spent, 853 s left, 14.96 s/step
+                                                {'loss': '0.4461', 'grad_norm': '1.287', 'learning_rate': '0.0001303', 'epoch': '1.72'}
+ 43%|████▎     | 43/100 [10:43<14:15, 15.01s/it] 44%|████▍     | 44/100 [10:59<14:26, 15.47s/it]  step 44/100: loss 0.5961, 660 s spent, 840 s left, 15.0 s/step
+                                                {'loss': '0.5961', 'grad_norm': '1.288', 'learning_rate': '0.0001272', 'epoch': '1.76'}
+ 44%|████▍     | 44/100 [10:59<14:26, 15.47s/it][guard]     666 s footprint  37.41 GB (peak  47.47) swap +0.00 GB pressure 1
+ 45%|████▌     | 45/100 [11:13<13:41, 14.95s/it]  step 45/100: loss 0.5577, 674 s spent, 823 s left, 14.97 s/step
+                                                {'loss': '0.5577', 'grad_norm': '1.31', 'learning_rate': '0.0001241', 'epoch': '1.8'}
+ 45%|████▌     | 45/100 [11:13<13:41, 14.95s/it] 46%|████▌     | 46/100 [11:29<13:39, 15.17s/it]  step 46/100: loss 0.6058, 689 s spent, 809 s left, 14.98 s/step
+                                                {'loss': '0.6058', 'grad_norm': '1.44', 'learning_rate': '0.0001209', 'epoch': '1.84'}
+ 46%|████▌     | 46/100 [11:29<13:39, 15.17s/it][guard]     696 s footprint  37.94 GB (peak  47.47) swap +0.00 GB pressure 1
+ 47%|████▋     | 47/100 [11:43<13:16, 15.04s/it]  step 47/100: loss 0.4759, 704 s spent, 794 s left, 14.98 s/step
+                                                {'loss': '0.4759', 'grad_norm': '1.365', 'learning_rate': '0.0001177', 'epoch': '1.88'}
+ 47%|████▋     | 47/100 [11:44<13:16, 15.04s/it] 48%|████▊     | 48/100 [11:58<12:55, 14.91s/it]  step 48/100: loss 0.4980, 719 s spent, 779 s left, 14.97 s/step
+                                                {'loss': '0.498', 'grad_norm': '1.473', 'learning_rate': '0.0001145', 'epoch': '1.92'}
+ 48%|████▊     | 48/100 [11:58<12:55, 14.91s/it][guard]     726 s footprint  35.55 GB (peak  47.47) swap +0.00 GB pressure 1
+ 49%|████▉     | 49/100 [12:10<12:00, 14.13s/it]  step 49/100: loss 0.6025, 731 s spent, 761 s left, 14.92 s/step
+                                                {'loss': '0.6025', 'grad_norm': '1.39', 'learning_rate': '0.0001113', 'epoch': '1.96'}
+ 49%|████▉     | 49/100 [12:10<12:00, 14.13s/it] 50%|█████     | 50/100 [12:24<11:39, 14.00s/it]  step 50/100: loss 0.5630, 745 s spent, 745 s left, 14.89 s/step
+                                                {'loss': '0.563', 'grad_norm': '1.371', 'learning_rate': '0.0001081', 'epoch': '2'}
+ 50%|█████     | 50/100 [12:24<11:39, 14.00s/it][guard]     757 s footprint  37.25 GB (peak  47.47) swap +0.00 GB pressure 1
+ 51%|█████     | 51/100 [12:41<12:01, 14.73s/it]  step 51/100: loss 0.4057, 761 s spent, 731 s left, 14.92 s/step
+                                                {'loss': '0.4057', 'grad_norm': '1.119', 'learning_rate': '0.0001049', 'epoch': '2.04'}
+ 51%|█████     | 51/100 [12:41<12:01, 14.73s/it] 52%|█████▏    | 52/100 [12:55<11:49, 14.78s/it]  step 52/100: loss 0.3002, 776 s spent, 716 s left, 14.92 s/step
+                                                {'loss': '0.3002', 'grad_norm': '1.019', 'learning_rate': '0.0001016', 'epoch': '2.08'}
+ 52%|█████▏    | 52/100 [12:55<11:49, 14.78s/it][guard]     787 s footprint  37.53 GB (peak  47.47) swap +0.00 GB pressure 1
+ 53%|█████▎    | 53/100 [13:11<11:40, 14.90s/it]  step 53/100: loss 0.3487, 791 s spent, 702 s left, 14.93 s/step
+                                                {'loss': '0.3487', 'grad_norm': '1.082', 'learning_rate': '9.838e-05', 'epoch': '2.12'}
+ 53%|█████▎    | 53/100 [13:11<11:40, 14.90s/it] 54%|█████▍    | 54/100 [13:24<11:06, 14.48s/it]  step 54/100: loss 0.4458, 805 s spent, 685 s left, 14.9 s/step
+                                                {'loss': '0.4458', 'grad_norm': '1.156', 'learning_rate': '9.514e-05', 'epoch': '2.16'}
+ 54%|█████▍    | 54/100 [13:24<11:06, 14.48s/it][guard]     817 s footprint  36.66 GB (peak  47.47) swap +0.00 GB pressure 1
+ 55%|█████▌    | 55/100 [13:40<11:11, 14.92s/it]  step 55/100: loss 0.3161, 821 s spent, 671 s left, 14.92 s/step
+                                                {'loss': '0.3161', 'grad_norm': '1.072', 'learning_rate': '9.191e-05', 'epoch': '2.2'}
+ 55%|█████▌    | 55/100 [13:40<11:11, 14.92s/it] 56%|█████▌    | 56/100 [13:52<10:23, 14.17s/it]  step 56/100: loss 0.2875, 833 s spent, 654 s left, 14.87 s/step
+                                                {'loss': '0.2875', 'grad_norm': '1.142', 'learning_rate': '8.869e-05', 'epoch': '2.24'}
+ 56%|█████▌    | 56/100 [13:52<10:23, 14.17s/it][guard]     847 s footprint  34.77 GB (peak  47.47) swap +0.00 GB pressure 1
+ 57%|█████▋    | 57/100 [14:08<10:25, 14.54s/it]  step 57/100: loss 0.3056, 848 s spent, 640 s left, 14.88 s/step
+                                                {'loss': '0.3056', 'grad_norm': '1.171', 'learning_rate': '8.548e-05', 'epoch': '2.28'}
+ 57%|█████▋    | 57/100 [14:08<10:25, 14.54s/it] 58%|█████▊    | 58/100 [14:22<10:07, 14.47s/it]  step 58/100: loss 0.2984, 863 s spent, 625 s left, 14.87 s/step
+                                                {'loss': '0.2984', 'grad_norm': '1.23', 'learning_rate': '8.228e-05', 'epoch': '2.32'}
+ 58%|█████▊    | 58/100 [14:22<10:07, 14.47s/it][guard]     878 s footprint  37.99 GB (peak  47.47) swap +0.00 GB pressure 1
+ 59%|█████▉    | 59/100 [14:38<10:09, 14.87s/it]  step 59/100: loss 0.3249, 879 s spent, 610 s left, 14.89 s/step
+                                                {'loss': '0.3249', 'grad_norm': '1.306', 'learning_rate': '7.91e-05', 'epoch': '2.36'}
+ 59%|█████▉    | 59/100 [14:38<10:09, 14.87s/it] 60%|██████    | 60/100 [14:53<10:00, 15.02s/it]  step 60/100: loss 0.2950, 894 s spent, 596 s left, 14.9 s/step
+                                                {'loss': '0.295', 'grad_norm': '1.238', 'learning_rate': '7.595e-05', 'epoch': '2.4'}
+ 60%|██████    | 60/100 [14:53<10:00, 15.02s/it][guard]     908 s footprint  39.12 GB (peak  47.47) swap +0.00 GB pressure 1
+ 61%|██████    | 61/100 [15:09<09:50, 15.15s/it]  step 61/100: loss 0.3935, 909 s spent, 581 s left, 14.91 s/step
+                                                {'loss': '0.3935', 'grad_norm': '1.419', 'learning_rate': '7.282e-05', 'epoch': '2.44'}
+ 61%|██████    | 61/100 [15:09<09:50, 15.15s/it] 62%|██████▏   | 62/100 [15:23<09:20, 14.74s/it]  step 62/100: loss 0.3083, 923 s spent, 566 s left, 14.89 s/step
+                                                {'loss': '0.3083', 'grad_norm': '1.433', 'learning_rate': '6.971e-05', 'epoch': '2.48'}
+ 62%|██████▏   | 62/100 [15:23<09:20, 14.74s/it][guard]     938 s footprint  35.99 GB (peak  47.47) swap +0.00 GB pressure 1
+ 63%|██████▎   | 63/100 [15:38<09:09, 14.85s/it]  step 63/100: loss 0.2751, 938 s spent, 551 s left, 14.89 s/step
+                                                {'loss': '0.2751', 'grad_norm': '1.385', 'learning_rate': '6.664e-05', 'epoch': '2.52'}
+ 63%|██████▎   | 63/100 [15:38<09:09, 14.85s/it] 64%|██████▍   | 64/100 [15:50<08:29, 14.14s/it]  step 64/100: loss 0.2967, 951 s spent, 535 s left, 14.85 s/step
+                                                {'loss': '0.2967', 'grad_norm': '1.542', 'learning_rate': '6.361e-05', 'epoch': '2.56'}
+ 64%|██████▍   | 64/100 [15:50<08:29, 14.14s/it][guard]     969 s footprint  34.94 GB (peak  47.47) swap +0.00 GB pressure 1
+ 65%|██████▌   | 65/100 [16:04<08:15, 14.15s/it]  step 65/100: loss 0.5695, 965 s spent, 520 s left, 14.84 s/step
+                                                {'loss': '0.5695', 'grad_norm': '1.361', 'learning_rate': '6.061e-05', 'epoch': '2.6'}
+ 65%|██████▌   | 65/100 [16:04<08:15, 14.15s/it] 66%|██████▌   | 66/100 [16:19<08:08, 14.37s/it]  step 66/100: loss 0.2837, 980 s spent, 505 s left, 14.85 s/step
+                                                {'loss': '0.2837', 'grad_norm': '1.382', 'learning_rate': '5.766e-05', 'epoch': '2.64'}
+ 66%|██████▌   | 66/100 [16:19<08:08, 14.37s/it] 67%|██████▋   | 67/100 [16:34<07:53, 14.36s/it]  step 67/100: loss 0.3125, 994 s spent, 490 s left, 14.84 s/step
+                                                {'loss': '0.3125', 'grad_norm': '1.451', 'learning_rate': '5.475e-05', 'epoch': '2.68'}
+ 67%|██████▋   | 67/100 [16:34<07:53, 14.36s/it][guard]     999 s footprint  39.99 GB (peak  47.47) swap +0.00 GB pressure 1
+ 68%|██████▊   | 68/100 [16:50<07:57, 14.92s/it]  step 68/100: loss 0.2815, 1010 s spent, 475 s left, 14.86 s/step
+                                                {'loss': '0.2815', 'grad_norm': '1.38', 'learning_rate': '5.188e-05', 'epoch': '2.72'}
+ 68%|██████▊   | 68/100 [16:50<07:57, 14.92s/it] 69%|██████▉   | 69/100 [17:05<07:42, 14.91s/it]  step 69/100: loss 0.3359, 1025 s spent, 461 s left, 14.86 s/step
+                                                {'loss': '0.3359', 'grad_norm': '1.38', 'learning_rate': '4.907e-05', 'epoch': '2.76'}
+ 69%|██████▉   | 69/100 [17:05<07:42, 14.91s/it][guard]    1029 s footprint  40.12 GB (peak  47.47) swap +0.00 GB pressure 1
+ 70%|███████   | 70/100 [17:18<07:16, 14.54s/it]  step 70/100: loss 0.3699, 1039 s spent, 445 s left, 14.84 s/step
+                                                {'loss': '0.3699', 'grad_norm': '1.314', 'learning_rate': '4.631e-05', 'epoch': '2.8'}
+ 70%|███████   | 70/100 [17:18<07:16, 14.54s/it] 71%|███████   | 71/100 [17:35<07:16, 15.04s/it]  step 71/100: loss 0.3642, 1055 s spent, 431 s left, 14.86 s/step
+                                                {'loss': '0.3642', 'grad_norm': '1.267', 'learning_rate': '4.36e-05', 'epoch': '2.84'}
+ 71%|███████   | 71/100 [17:35<07:16, 15.04s/it][guard]    1059 s footprint  41.90 GB (peak  47.47) swap +0.00 GB pressure 1
+ 72%|███████▏  | 72/100 [17:50<07:04, 15.17s/it]  step 72/100: loss 0.3394, 1071 s spent, 416 s left, 14.87 s/step
+                                                {'loss': '0.3394', 'grad_norm': '1.324', 'learning_rate': '4.096e-05', 'epoch': '2.88'}
+ 72%|███████▏  | 72/100 [17:50<07:04, 15.17s/it][guard]    1090 s footprint  37.36 GB (peak  47.47) swap +0.00 GB pressure 1
+ 73%|███████▎  | 73/100 [18:08<07:15, 16.13s/it]  step 73/100: loss 0.2572, 1089 s spent, 403 s left, 14.92 s/step
+                                                {'loss': '0.2572', 'grad_norm': '1.25', 'learning_rate': '3.838e-05', 'epoch': '2.92'}
+ 73%|███████▎  | 73/100 [18:08<07:15, 16.13s/it] 74%|███████▍  | 74/100 [18:23<06:43, 15.52s/it]  step 74/100: loss 0.3593, 1103 s spent, 388 s left, 14.91 s/step
+                                                {'loss': '0.3593', 'grad_norm': '1.325', 'learning_rate': '3.586e-05', 'epoch': '2.96'}
+ 74%|███████▍  | 74/100 [18:23<06:43, 15.52s/it][guard]    1120 s footprint  39.64 GB (peak  47.47) swap +0.00 GB pressure 1
+ 75%|███████▌  | 75/100 [18:37<06:17, 15.12s/it]  step 75/100: loss 0.3613, 1117 s spent, 372 s left, 14.9 s/step
+                                                {'loss': '0.3613', 'grad_norm': '1.268', 'learning_rate': '3.341e-05', 'epoch': '3'}
+ 75%|███████▌  | 75/100 [18:37<06:17, 15.12s/it] 76%|███████▌  | 76/100 [18:50<05:52, 14.70s/it]  step 76/100: loss 0.2099, 1131 s spent, 357 s left, 14.88 s/step
+                                                {'loss': '0.2099', 'grad_norm': '1.077', 'learning_rate': '3.103e-05', 'epoch': '3.04'}
+ 76%|███████▌  | 76/100 [18:50<05:52, 14.70s/it][guard]    1150 s footprint  40.71 GB (peak  47.47) swap +0.00 GB pressure 1
+ 77%|███████▋  | 77/100 [19:08<05:54, 15.42s/it]  step 77/100: loss 0.2887, 1148 s spent, 343 s left, 14.91 s/step
+                                                {'loss': '0.2887', 'grad_norm': '0.9863', 'learning_rate': '2.872e-05', 'epoch': '3.08'}
+ 77%|███████▋  | 77/100 [19:08<05:54, 15.42s/it] 78%|███████▊  | 78/100 [19:24<05:49, 15.87s/it]  step 78/100: loss 0.1876, 1165 s spent, 329 s left, 14.94 s/step
+                                                {'loss': '0.1876', 'grad_norm': '0.9802', 'learning_rate': '2.649e-05', 'epoch': '3.12'}
+ 78%|███████▊  | 78/100 [19:24<05:49, 15.87s/it][guard]    1180 s footprint  39.81 GB (peak  47.47) swap +0.00 GB pressure 1
+ 79%|███████▉  | 79/100 [19:40<05:34, 15.91s/it]  step 79/100: loss 0.1803, 1181 s spent, 314 s left, 14.95 s/step
+                                                {'loss': '0.1803', 'grad_norm': '1.086', 'learning_rate': '2.433e-05', 'epoch': '3.16'}
+ 79%|███████▉  | 79/100 [19:40<05:34, 15.91s/it] 80%|████████  | 80/100 [19:56<05:17, 15.86s/it]  step 80/100: loss 0.2911, 1197 s spent, 299 s left, 14.96 s/step
+                                                {'loss': '0.2911', 'grad_norm': '1.044', 'learning_rate': '2.225e-05', 'epoch': '3.2'}
+ 80%|████████  | 80/100 [19:56<05:17, 15.86s/it][guard]    1211 s footprint  39.71 GB (peak  47.47) swap +0.00 GB pressure 1
+ 81%|████████  | 81/100 [20:13<05:04, 16.04s/it]  step 81/100: loss 0.3738, 1213 s spent, 285 s left, 14.98 s/step
+                                                {'loss': '0.3738', 'grad_norm': '1.074', 'learning_rate': '2.026e-05', 'epoch': '3.24'}
+ 81%|████████  | 81/100 [20:13<05:04, 16.04s/it] 82%|████████▏ | 82/100 [20:28<04:43, 15.72s/it]  step 82/100: loss 0.1907, 1228 s spent, 270 s left, 14.98 s/step
+                                                {'loss': '0.1907', 'grad_norm': '0.9503', 'learning_rate': '1.834e-05', 'epoch': '3.28'}
+ 82%|████████▏ | 82/100 [20:28<04:43, 15.72s/it][guard]    1241 s footprint  42.53 GB (peak  47.47) swap +0.00 GB pressure 1
+ 83%|████████▎ | 83/100 [20:44<04:30, 15.91s/it]  step 83/100: loss 0.1978, 1245 s spent, 255 s left, 14.99 s/step
+                                                {'loss': '0.1978', 'grad_norm': '1.01', 'learning_rate': '1.652e-05', 'epoch': '3.32'}
+ 83%|████████▎ | 83/100 [20:44<04:30, 15.91s/it] 84%|████████▍ | 84/100 [20:59<04:08, 15.55s/it]  step 84/100: loss 0.1679, 1259 s spent, 240 s left, 14.99 s/step
+                                                {'loss': '0.1679', 'grad_norm': '1.012', 'learning_rate': '1.478e-05', 'epoch': '3.36'}
+ 84%|████████▍ | 84/100 [20:59<04:08, 15.55s/it][guard]    1271 s footprint  35.60 GB (peak  47.47) swap +0.00 GB pressure 1
+ 85%|████████▌ | 85/100 [21:16<03:59, 15.95s/it]  step 85/100: loss 0.1996, 1276 s spent, 225 s left, 15.01 s/step
+                                                {'loss': '0.1996', 'grad_norm': '1.013', 'learning_rate': '1.313e-05', 'epoch': '3.4'}
+ 85%|████████▌ | 85/100 [21:16<03:59, 15.95s/it] 86%|████████▌ | 86/100 [21:29<03:30, 15.07s/it]  step 86/100: loss 0.2100, 1289 s spent, 210 s left, 14.99 s/step
+                                                {'loss': '0.21', 'grad_norm': '1.033', 'learning_rate': '1.157e-05', 'epoch': '3.44'}
+ 86%|████████▌ | 86/100 [21:29<03:30, 15.07s/it][guard]    1302 s footprint  43.81 GB (peak  47.47) swap +0.00 GB pressure 1
+ 87%|████████▋ | 87/100 [21:44<03:18, 15.27s/it]  step 87/100: loss 0.2120, 1305 s spent, 195 s left, 15.0 s/step
+                                                {'loss': '0.212', 'grad_norm': '1.12', 'learning_rate': '1.01e-05', 'epoch': '3.48'}
+ 87%|████████▋ | 87/100 [21:44<03:18, 15.27s/it] 88%|████████▊ | 88/100 [21:59<03:01, 15.09s/it]  step 88/100: loss 0.2513, 1320 s spent, 180 s left, 14.99 s/step
+                                                {'loss': '0.2513', 'grad_norm': '1.364', 'learning_rate': '8.733e-06', 'epoch': '3.52'}
+ 88%|████████▊ | 88/100 [21:59<03:01, 15.09s/it][guard]    1332 s footprint  45.21 GB (peak  47.47) swap +0.00 GB pressure 1
+ 89%|████████▉ | 89/100 [22:13<02:43, 14.87s/it]  step 89/100: loss 0.1511, 1334 s spent, 165 s left, 14.99 s/step
+                                                {'loss': '0.1511', 'grad_norm': '0.9462', 'learning_rate': '7.458e-06', 'epoch': '3.56'}
+ 89%|████████▉ | 89/100 [22:13<02:43, 14.87s/it] 90%|█████████ | 90/100 [22:27<02:24, 14.50s/it]  step 90/100: loss 0.1973, 1348 s spent, 150 s left, 14.97 s/step
+                                                {'loss': '0.1973', 'grad_norm': '1.067', 'learning_rate': '6.279e-06', 'epoch': '3.6'}
+ 90%|█████████ | 90/100 [22:27<02:24, 14.50s/it][guard]    1362 s footprint  45.95 GB (peak  48.24) swap +0.00 GB pressure 1
+ 91%|█████████ | 91/100 [22:43<02:15, 15.07s/it]  step 91/100: loss 0.2050, 1364 s spent, 135 s left, 14.99 s/step
+                                                {'loss': '0.205', 'grad_norm': '1.329', 'learning_rate': '5.199e-06', 'epoch': '3.64'}
+ 91%|█████████ | 91/100 [22:43<02:15, 15.07s/it] 92%|█████████▏| 92/100 [22:58<02:00, 15.08s/it]  step 92/100: loss 0.3627, 1379 s spent, 120 s left, 14.99 s/step
+                                                {'loss': '0.3627', 'grad_norm': '1.086', 'learning_rate': '4.218e-06', 'epoch': '3.68'}
+ 92%|█████████▏| 92/100 [22:59<02:00, 15.08s/it][guard]    1392 s footprint  50.82 GB (peak  50.86) swap +0.00 GB pressure 1
+ 93%|█████████▎| 93/100 [23:14<01:47, 15.35s/it]  step 93/100: loss 0.2098, 1395 s spent, 105 s left, 15.0 s/step
+                                                {'loss': '0.2098', 'grad_norm': '1.15', 'learning_rate': '3.338e-06', 'epoch': '3.72'}
+ 93%|█████████▎| 93/100 [23:14<01:47, 15.35s/it] 94%|█████████▍| 94/100 [23:30<01:31, 15.25s/it]  step 94/100: loss 0.2986, 1410 s spent, 90 s left, 15.0 s/step
+                                                {'loss': '0.2986', 'grad_norm': '1.145', 'learning_rate': '2.559e-06', 'epoch': '3.76'}
+ 94%|█████████▍| 94/100 [23:30<01:31, 15.25s/it][guard]    1423 s footprint  47.97 GB (peak  50.86) swap +0.00 GB pressure 1
+ 95%|█████████▌| 95/100 [23:44<01:14, 14.89s/it]  step 95/100: loss 0.2782, 1424 s spent, 75 s left, 14.99 s/step
+                                                {'loss': '0.2782', 'grad_norm': '1.058', 'learning_rate': '1.882e-06', 'epoch': '3.8'}
+ 95%|█████████▌| 95/100 [23:44<01:14, 14.89s/it] 96%|█████████▌| 96/100 [23:57<00:58, 14.58s/it]  step 96/100: loss 0.1978, 1438 s spent, 60 s left, 14.98 s/step
+                                                {'loss': '0.1978', 'grad_norm': '1.098', 'learning_rate': '1.308e-06', 'epoch': '3.84'}
+ 96%|█████████▌| 96/100 [23:57<00:58, 14.58s/it] 97%|█████████▋| 97/100 [24:08<00:39, 13.32s/it]  step 97/100: loss 0.2100, 1448 s spent, 45 s left, 14.93 s/step
+                                                {'loss': '0.21', 'grad_norm': '1.262', 'learning_rate': '8.38e-07', 'epoch': '3.88'}
+ 97%|█████████▋| 97/100 [24:08<00:39, 13.32s/it][guard]    1453 s footprint  41.26 GB (peak  50.86) swap +0.00 GB pressure 1
+ 98%|█████████▊| 98/100 [24:22<00:26, 13.49s/it]  step 98/100: loss 0.2765, 1462 s spent, 30 s left, 14.92 s/step
+                                                {'loss': '0.2765', 'grad_norm': '1.145', 'learning_rate': '4.717e-07', 'epoch': '3.92'}
+ 98%|█████████▊| 98/100 [24:22<00:26, 13.49s/it] 99%|█████████▉| 99/100 [24:34<00:13, 13.21s/it]  step 99/100: loss 0.2471, 1475 s spent, 15 s left, 14.9 s/step
+                                                {'loss': '0.2471', 'grad_norm': '1.096', 'learning_rate': '2.097e-07', 'epoch': '3.96'}
+ 99%|█████████▉| 99/100 [24:34<00:13, 13.21s/it][guard]    1483 s footprint  45.50 GB (peak  50.86) swap +0.00 GB pressure 1
+100%|██████████| 100/100 [24:50<00:00, 14.02s/it]  step 100/100: loss 0.2010, 1491 s spent, 0 s left, 14.91 s/step
+                                                 {'loss': '0.201', 'grad_norm': '1.201', 'learning_rate': '5.244e-08', 'epoch': '4'}
+100%|██████████| 100/100 [24:50<00:00, 14.02s/it]  step 100/100: loss nan, 1491 s spent, 0 s left, 14.91 s/step
+                                                 {'train_runtime': '1491', 'train_samples_per_second': '1.073', 'train_steps_per_second': '0.067', 'train_loss': '0.5778', 'epoch': '4'}
+100%|██████████| 100/100 [24:50<00:00, 14.02s/it]100%|██████████| 100/100 [24:50<00:00, 14.91s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-0.8B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 1600 collated (the longest 1282 tokens)
+
+trained in 24.9 min: 100 steps, loss 0.5778, 14.92 s/step
+[phase4] control_p41_ref_c: 100 steps, final loss 0.20096451044082642, steady 14.922 s a step (trainer clock, steps 11-100)
+[phase4] wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/phase4_logs/control_p41_ref_c.json
+[guard] end 23:37:07 rc 0 peak footprint 50.86 GB wall 1497 s

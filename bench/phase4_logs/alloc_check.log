@@ -1,0 +1,3 @@
+reference                      live at the forward's end 2.65-7.57 GiB; pool after micro-batch 1 / 8 / 24: 8.84 / 8.45 / 9.53 GiB
+kernels                        live at the forward's end 2.13-6.08 GiB; pool after micro-batch 1 / 8 / 24: 7.05 / 8.03 / 10.02 GiB
+kernels, lengths padded to 64  live at the forward's end 2.30-6.55 GiB; pool after micro-batch 1 / 8 / 24: 7.09 / 8.03 / 9.03 GiB
