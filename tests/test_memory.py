@@ -177,6 +177,27 @@ def test_dropin_bit_identical(dtype, fused, layout, design):
     assert len(got) == len(want) and not bad, f"{design} {dtype} fused={fused} {layout}: tensors {bad} differ"
 
 
+def test_equality_tells_apart():
+    """The comparison itself: NaN equals NaN at the same place only; a signed zero or one unit in the last place differs."""
+    nan = float("nan")
+    assert identical(torch.tensor([1.0, nan]), torch.tensor([1.0, nan]))
+    assert not identical(torch.tensor([nan, 1.0]), torch.tensor([1.0, nan]))
+    assert not identical(torch.tensor([-0.0]), torch.tensor([0.0]))
+    assert not identical(torch.tensor([1.0]), torch.nextafter(torch.tensor([1.0]), torch.tensor([2.0])))
+    assert not identical(torch.tensor([1.0], dtype=torch.bfloat16), torch.tensor([1.0]))
+
+
+@mps
+def test_negative_control():
+    """Two settings that do compute differently (the fused prologue against PyTorch's; the chunked kernels against the
+    token-at-a-time pair) are told apart by the same comparison."""
+    a, b = dropin(torch.bfloat16, "model", True), dropin(torch.bfloat16, "model", False)
+    assert not all(identical(x, y) for x, y in zip(a, b))
+    xs64 = make(2, 65, 2, 128, 64)
+    a, b = rule(xs64, True), rule(xs64, True, KERNEL="auto", KERNEL_BWD="head")
+    assert not any(identical(x, y) for x, y in zip(a, b))
+
+
 def test_size_classes():
     """Four classes a doubling, whole pages, the smallest class that holds the size; at most 19% over from 10 MiB up."""
     import math
