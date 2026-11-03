@@ -12,6 +12,8 @@ import functools
 
 import torch
 
+from . import _memory
+
 EPS = 1e-6
 ROWS_A_GROUP = 8      # one simdgroup a row (a head vector), eight rows a threadgroup
 
@@ -77,18 +79,24 @@ def _launch(rows: int) -> dict:
 
 
 class L2NormScale(torch.autograd.Function):
-    """y = l2norm(x.float()) * scale over the last dimension, as one kernel each way."""
+    """y = l2norm(x.float()) * scale over the last dimension, as one kernel each way. classes: the buffers whose size follows
+    the input (the contiguous copy of x when one is needed, y, the saved rsqrt, dx) are size-classed (_memory.py)."""
 
     @staticmethod
-    def forward(ctx, x, scale: float):
-        x = x.contiguous()
+    def forward(ctx, x, scale: float, classes: bool = False):
+        if classes and not x.is_contiguous():
+            xc = _memory.empty(x.shape, x.dtype, x.device, True)
+            x = xc.copy_(x)
+        else:
+            x = x.contiguous()
         D = x.shape[-1]
         rows = x.numel() // D
-        y = torch.empty(x.shape, device=x.device, dtype=torch.float32)
-        r = torch.empty(rows, device=x.device, dtype=torch.float32)
+        y = _memory.empty(x.shape, torch.float32, x.device, classes)
+        r = _memory.empty((rows,), torch.float32, x.device, classes)
         s = torch.full((1,), float(scale), device=x.device, dtype=torch.float32)
         getattr(library(), "l2n_fwd_" + _SUFFIX[x.dtype])(x, y, r, s, D, rows, **_launch(rows))
         ctx.save_for_backward(x, r, s)
+        ctx.classes = classes
         return y
 
     @staticmethod
@@ -96,6 +104,11 @@ class L2NormScale(torch.autograd.Function):
         x, r, s = ctx.saved_tensors
         D = x.shape[-1]
         rows = r.numel()
-        dx = torch.empty_like(x)
-        getattr(library(), "l2n_bwd_" + _SUFFIX[x.dtype])(dy.to(torch.float32).contiguous(), x, r, s, dx, D, rows, **_launch(rows))
-        return dx, None
+        if ctx.classes:
+            dy = _memory.contiguous_as(dy, torch.float32, True)
+            dx = _memory.empty(x.shape, x.dtype, x.device, True)
+        else:
+            dy = dy.to(torch.float32).contiguous()
+            dx = torch.empty_like(x)
+        getattr(library(), "l2n_bwd_" + _SUFFIX[x.dtype])(dy, x, r, s, dx, D, rows, **_launch(rows))
+        return dx, None, None

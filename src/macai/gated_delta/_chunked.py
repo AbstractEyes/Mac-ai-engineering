@@ -18,7 +18,8 @@ Kernels (one GPU pass each):
 - gdc_prep: one threadgroup a (chunk, head, batch row), all independent: G, KG, M, A.
 - gdc_fwd: the state pass, one threadgroup a (32 value columns, head, batch row); each simdgroup owns 8 * NCB value columns of
   S for all key rows, in registers, and walks the chunks in order. Columns of S are independent, so simdgroups never wait on
-  each other. When training it stores the state entering each chunk, Vn and Xu for the backward.
+  each other. When training it stores the state entering each chunk, Vn and Xu for the backward; or (op.RECOMPUTE_STATES)
+  the training forward stores nothing and the backward runs this pass again without its outputs to rebuild them.
 - gdc_bwd_state: the reverse state pass on the same grid, carrying dS = dLoss/dS from the last chunk to the first:
       dVn = M^T dO + diag(e) K dS_{c+1}
       dS_c = exp(G_last) dS_{c+1} + Q^T diag(gamma) dO - K^T diag(beta gamma) A^T dVn
@@ -293,9 +294,11 @@ kernel void gdc_fwd(device const float* q [[buffer(0)]], device const float* k [
 #endif
   // flags: 1 = store the chunk states (Sc), Vn and Xu for the chunked backward; 2 = store the state every 8 tokens (ck8,
   // [B, H, ceil(T / 8), DK, DV], the token-at-a-time backward's checkpoints); 4 = recompute Vn and Xu of the single chunk
-  // tg.z = b * NT + c from stored states (Sc read at state c * sstride of nstates a head), without outputs
+  // tg.z = b * NT + c from stored states (Sc read at state c * sstride of nstates a head), without outputs; 8 = no outputs
+  // (o and sT are not written, q is not read): with 1, the backward's recomputation of the chunk states, Vn and Xu
   const uint NT = (T + C - 1) / C;
   const bool redo = (flags & 4u) != 0;
+  const bool outs = (flags & 12u) == 0;
   const uint h = tg.y, b = redo ? tg.z / NT : tg.z;
   const uint cbeg = redo ? tg.z % NT : 0, cend = redo ? cbeg + 1 : NT;
   const uint j0 = (tg.x * nsg + sg) * (8 * NCB);
@@ -318,7 +321,7 @@ kernel void gdc_fwd(device const float* q [[buffer(0)]], device const float* k [
 #if STAGE
     threadgroup_barrier(mem_flags::mem_threadgroup);
     stage_chunk(Ks, kc, ld, n, tid, 32 * nsg);
-    if (!redo) stage_chunk(Qs, qc, ld, n, tid, 32 * nsg);
+    if (outs) stage_chunk(Qs, qc, ld, n, tid, 32 * nsg);
     threadgroup_barrier(mem_flags::mem_threadgroup);
 #endif
     const float Gl = Gc[ch * C + min(lane, (uint)C - 1)];
@@ -352,7 +355,7 @@ kernel void gdc_fwd(device const float* q [[buffer(0)]], device const float* k [
       for (uint rb = 0; rb < NRB; ++rb) {
         const mat kt = KTILE(rb, kk);
         for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(KS[rb][cb], kt, S[kk][cb], KS[rb][cb]);
-        if (!redo) {
+        if (outs) {
           const mat qt = QTILE(rb, kk);
           for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(QS[rb][cb], qt, S[kk][cb], QS[rb][cb]);
         }
@@ -383,15 +386,17 @@ kernel void gdc_fwd(device const float* q [[buffer(0)]], device const float* k [
     }
     if (redo) continue;
     // O = diag(gamma) Q S + M Vn
-    const device float* M_ = Mm + ch * (C * C);
-    for (uint rb = 0; rb < NRB; ++rb) {
-      mat ot[NCB];
-      for (uint cb = 0; cb < NCB; ++cb) ot[cb] = scaled(QS[rb][cb], gam[rb]);
-      for (uint m = 0; m <= rb; ++m) {
-        const mat mt = ld_tile(M_, C, 8 * rb, 8 * m, C, fm, fn);
-        for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(ot[cb], mt, VN[m][cb], ot[cb]);
+    if (outs) {
+      const device float* M_ = Mm + ch * (C * C);
+      for (uint rb = 0; rb < NRB; ++rb) {
+        mat ot[NCB];
+        for (uint cb = 0; cb < NCB; ++cb) ot[cb] = scaled(QS[rb][cb], gam[rb]);
+        for (uint m = 0; m <= rb; ++m) {
+          const mat mt = ld_tile(M_, C, 8 * rb, 8 * m, C, fm, fn);
+          for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(ot[cb], mt, VN[m][cb], ot[cb]);
+        }
+        for (uint cb = 0; cb < NCB; ++cb) st_tile(ot[cb], o + row0 * DV, ldv, 8 * rb, j0 + 8 * cb, n, fm, fn);
       }
-      for (uint cb = 0; cb < NCB; ++cb) st_tile(ot[cb], o + row0 * DV, ldv, 8 * rb, j0 + 8 * cb, n, fm, fn);
     }
     // the states every 8 tokens inside the chunk (only for the token-at-a-time backward)
     if (flags & 2u) {
@@ -428,7 +433,7 @@ kernel void gdc_fwd(device const float* q [[buffer(0)]], device const float* k [
       }
     }
   }
-  if (!redo)
+  if (outs)
     for (uint kk = 0; kk < NKB; ++kk)
       for (uint cb = 0; cb < NCB; ++cb) simdgroup_store(S[kk][cb], sT + bh * SS + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
 }

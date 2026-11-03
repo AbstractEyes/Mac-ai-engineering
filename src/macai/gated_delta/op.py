@@ -4,7 +4,7 @@ import math
 
 import torch
 
-from . import _chunked, _norm
+from . import _chunked, _memory, _norm
 from ._metal import BLK, library
 
 
@@ -18,6 +18,16 @@ KERNEL_BWD = "chunked"
 # the drop-in's query / key prologue (float32 cast, l2 normalization, query scaling) as one Metal pass each way (_norm.py)
 # when use_qk_l2norm_in_kernel=True; False runs it as PyTorch operations
 FUSED_NORM = True
+# memory (docs/series_memory.md); outputs and gradients are bit-identical under every choice (tests/test_memory.py).
+# SIZE_CLASSES: every buffer the drop-in, the fused prologue and the chunked kernels allocate whose size follows the sequence
+# length (saved, temporary, the float32 copies and outputs, the gradients) is cut from a buffer of the smallest of 4 sizes a
+# doubling that holds it (_memory.py), so the Metal allocator can reuse freed buffers across lengths; False = exact sizes
+SIZE_CLASSES = False
+# RECOMPUTE_STATES: with the chunked forward and backward, the training forward keeps only its inputs (q, k, v, g, beta, S_0)
+# and the backward recomputes the per-chunk matrices, the chunk states, Vn and Xu with the same kernels before the backward
+# passes (as flash-linear-attention does); False = the forward stores them (Phase 3's choice: faster, more memory held from
+# the forward to the backward)
+RECOMPUTE_STATES = False
 
 
 def head_shape(dk: int, dv: int) -> bool:
@@ -34,13 +44,13 @@ def _even(t: torch.Tensor) -> torch.Tensor:
     return t if t.storage_offset() % 4 == 0 else t.clone()
 
 
-def _prep(lib, q, k, g, beta):
+def _prep(lib, q, k, g, beta, classes: bool = False):
     """Per chunk: the cumulative log decay G, the inverse A, the decayed Q K^T (M) and K K^T (KG)."""
     B, T, H, _ = q.shape
     nt = math.ceil(T / _chunked.C)
     c = _chunked.C
-    gc = torch.empty(B, H, nt, c, device=q.device, dtype=torch.float32)
-    a, m, kg = (torch.empty(B, H, nt, c, c, device=q.device, dtype=torch.float32) for _ in range(3))
+    gc = _memory.empty((B, H, nt, c), torch.float32, q.device, classes)
+    a, m, kg = (_memory.empty((B, H, nt, c, c), torch.float32, q.device, classes) for _ in range(3))
     lib.gdc_prep(q, k, g, beta, gc, a, m, kg, T, H, threads=(nt * 128, H, B), group_size=(128, 1, 1))
     return gc, a, m, kg
 
@@ -68,7 +78,9 @@ class GatedDeltaRule(torch.autograd.Function):
             raise NotImplementedError(f"the token-at-a-time backward supports key head widths up to 128 (got {DK}); "
                                       "the forward runs any multiple of 32, the chunked backward any multiple of 32")
         dev = q.device
-        o = torch.empty(B, T, H, DV, device=dev, dtype=torch.float32)
+        # the memory settings in force at the forward hold for its backward; size classes cover the chunked kernels' buffers
+        ctx.classes = classes = SIZE_CLASSES
+        o = _memory.empty((B, T, H, DV), torch.float32, dev, classes and KERNEL == "chunked")
         sT = torch.empty(B, H, DK, DV, device=dev, dtype=torch.float32)
         none = torch.empty(4, device=dev, dtype=torch.float32)
         nb = math.ceil(T / BLK)
@@ -76,19 +88,24 @@ class GatedDeltaRule(torch.autograd.Function):
         if KERNEL == "chunked":
             lib = _chunked.library(DK)
             nt = math.ceil(T / _chunked.C)
-            gc, a, m, kg = _prep(lib, q, k, g, beta)
+            gc, a, m, kg = _prep(lib, q, k, g, beta, classes)
             sc = vn = xu = ckpt = none
             flags = 0
-            if chunked_bwd:
-                sc = torch.empty(B, H, nt, DK, DV, device=dev, dtype=torch.float32)
-                vn = torch.empty(B, H, nt * _chunked.C, DV, device=dev, dtype=torch.float32)
-                xu = torch.empty_like(vn)
+            recompute = chunked_bwd and RECOMPUTE_STATES
+            if chunked_bwd and not recompute:
+                sc = _memory.empty((B, H, nt, DK, DV), torch.float32, dev, classes)
+                vn = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
+                xu = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
                 flags = 1
-            elif save:
-                ckpt = torch.empty(B, H, nb, DK, DV, device=dev, dtype=torch.float32)
+            elif save and not chunked_bwd:
+                ckpt = _memory.empty((B, H, nb, DK, DV), torch.float32, dev, classes)
                 flags = 2
             lib.gdc_fwd(q, k, v, beta, s0, gc, a, m, o, sT, sc, vn, xu, ckpt, T, H, DV, flags, 1, nt, **_state_grid(DV, H, B))
-            if chunked_bwd:
+            if recompute:
+                # nothing a chunk is kept: the backward rebuilds G, A, M, KG, the chunk states, Vn and Xu from the inputs
+                ctx.mode = "chunked_recompute"
+                ctx.save_for_backward(q, k, v, g, beta, s0)
+            elif chunked_bwd:
                 ctx.mode = "chunked"
                 ctx.save_for_backward(q, k, beta, gc, a, kg, m, sc, vn, xu)
             elif save:
@@ -114,33 +131,54 @@ class GatedDeltaRule(torch.autograd.Function):
     def backward(ctx, do, dsT):
         B, T, H, DK, DV = ctx.dims
         dev = ctx.saved_tensors[0].device
-        do = torch.zeros(B, T, H, DV, device=dev, dtype=torch.float32) if do is None else _even(do.to(torch.float32).contiguous())
+        chunked = ctx.mode.startswith("chunked")
+        classes = ctx.classes and chunked
+        if classes:
+            do = (_memory.empty((B, T, H, DV), torch.float32, dev, True).zero_() if do is None
+                  else _memory.contiguous_as(do, torch.float32, True))
+        else:
+            do = (torch.zeros(B, T, H, DV, device=dev, dtype=torch.float32) if do is None
+                  else _even(do.to(torch.float32).contiguous()))
         dsT = (torch.zeros(B, H, DK, DV, device=dev, dtype=torch.float32) if dsT is None
                else _even(dsT.to(torch.float32).contiguous()))
-        if ctx.mode.startswith("chunked"):
+        if chunked:
             lib = _chunked.library(DK)
             nt = math.ceil(T / _chunked.C)
             if ctx.mode == "chunked":
                 q, k, beta, gc, a, kg, m, sc, vn, xu = ctx.saved_tensors
                 sstride, nstates = 1, nt
+            elif ctx.mode == "chunked_recompute":
+                # the forward kept only its inputs: the per-chunk matrices, then the chunk states, Vn and Xu, by the forward's
+                # own kernels on the same inputs, so the same bits the stored path keeps; the state pass writes neither the
+                # output nor the final state (flag 8), so it takes the 4-float placeholder for them
+                q, k, v, g, beta, s0 = ctx.saved_tensors
+                gc, a, m, kg = _prep(lib, q, k, g, beta, classes)
+                sc = _memory.empty((B, H, nt, DK, DV), torch.float32, dev, classes)
+                vn = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
+                xu = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
+                none = torch.empty(4, device=dev, dtype=torch.float32)
+                lib.gdc_fwd(q, k, v, beta, s0, gc, a, m, none, none, sc, vn, xu, none, T, H, DV, 1 | 8, 1, nt,
+                            **_state_grid(DV, H, B))
+                sstride, nstates = 1, nt
             else:
                 # after a token-at-a-time forward: its checkpoints every BLK tokens hold the chunk states (every C / BLK-th);
                 # the per-chunk matrices and Vn, Xu are recomputed, every chunk in parallel
                 q, k, v, g, beta, ckpt = ctx.saved_tensors
-                gc, a, m, kg = _prep(lib, q, k, g, beta)
-                vn = torch.empty(B, H, nt * _chunked.C, DV, device=dev, dtype=torch.float32)
-                xu = torch.empty_like(vn)
+                gc, a, m, kg = _prep(lib, q, k, g, beta, classes)
+                vn = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
+                xu = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
                 none = torch.empty(4, device=dev, dtype=torch.float32)
                 sc, sstride, nstates = ckpt, _chunked.C // BLK, ckpt.shape[2]
                 lib.gdc_fwd(q, k, v, beta, none, gc, a, m, none, none, sc, vn, xu, none, T, H, DV, 4, sstride, nstates,
                             **_state_grid(DV, H, B * nt))
-            dsn = torch.empty(B, H, nt, DK, DV, device=dev, dtype=torch.float32)
-            dvn = torch.empty(B, H, nt * _chunked.C, DV, device=dev, dtype=torch.float32)
+            dsn = _memory.empty((B, H, nt, DK, DV), torch.float32, dev, classes)
+            dvn = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
             ds0 = torch.empty(B, H, DK, DV, device=dev, dtype=torch.float32)
             lib.gdc_bwd_state(q, k, beta, do, dsT, gc, a, m, dsn, dvn, ds0, T, H, DV, **_state_grid(DV, H, B))
-            dq, dk = torch.empty_like(q), torch.empty_like(k)
-            dv = torch.empty(B, T, H, DV, device=dev, dtype=torch.float32)
-            dg, dbeta = torch.empty_like(beta), torch.empty_like(beta)
+            make = (lambda t: _memory.empty(t.shape, t.dtype, dev, True)) if classes else torch.empty_like
+            dq, dk = make(q), make(k)
+            dv = _memory.empty((B, T, H, DV), torch.float32, dev, classes)
+            dg, dbeta = make(beta), make(beta)
             nb_ = 32 * _chunked.NSGB
             lib.gdc_bwd_chunk(q, k, beta, do, gc, a, kg, m, sc, dsn, vn, xu, dvn, dq, dk, dv, dg, dbeta, T, H, DV, sstride, nstates,
                               threads=(nt * nb_, H, B), group_size=(nb_, 1, 1))
@@ -176,23 +214,30 @@ def chunk_gated_delta_rule(query, key, value, g, beta, chunk_size: int = 64, ini
         # boundary; not implemented yet, and running without it would silently carry state across sequences
         raise NotImplementedError("macai's gated delta rule does not take packed rows (cu_seqlens) yet")
     dtype = query.dtype
+    classes = SIZE_CLASSES
     if use_qk_l2norm_in_kernel and FUSED_NORM and _norm.supported(query) and _norm.supported(key):
-        q = _norm.L2NormScale.apply(query, query.shape[-1] ** -0.5)
-        k = _norm.L2NormScale.apply(key, 1.0)
+        q = _norm.L2NormScale.apply(query, query.shape[-1] ** -0.5, classes)
+        k = _norm.L2NormScale.apply(key, 1.0, classes)
     else:
         q, k = query.float(), key.float()
         if use_qk_l2norm_in_kernel:
             q, k = l2norm(q), l2norm(k)
         q = q * q.shape[-1] ** -0.5
-    v = value.float()
+    # with size classes the float32 copies (and their gradients' conversions back) are size-classed buffers; the same values
+    v = _memory.cast(value, torch.float32, True) if classes else value.float()
     B, T, H, DK = q.shape
     DV = v.shape[-1]
     s0 = (torch.zeros(B, H, DK, DV, device=q.device, dtype=torch.float32) if initial_state is None
           else initial_state.to(torch.float32))
-    tensors = (q, k, v, g.float(), beta.float(), s0)
+    if classes:
+        gf, bf = (_memory.cast(t, torch.float32, True) for t in (g, beta))
+    else:
+        gf, bf = g.float(), beta.float()
+    tensors = (q, k, v, gf, bf, s0)
     save = torch.is_grad_enabled() and any(t.requires_grad for t in tensors)
     o, sT = GatedDeltaRule.apply(*(t.contiguous() for t in tensors), save)
-    return o.to(dtype), (sT if output_final_state else None)
+    out = _memory.cast(o, dtype, True) if classes else o.to(dtype)
+    return out, (sT if output_final_state else None)
 
 
 def recurrent_reference(q, k, v, g, beta, s0):
