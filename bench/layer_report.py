@@ -14,6 +14,7 @@ import os
 from collections import defaultdict
 
 import memory_report as MR
+import phase4_report as P4R
 import profile_report as PR
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -129,9 +130,29 @@ def integration_08(p4, name=RUN_08):
             "mean_loss": r["trainer"]["train_loss"], "mean_loss_reference_ab": ref_mean,
             "mean_loss_rel": abs(r["trainer"]["train_loss"] - ref_mean) / ref_mean,
             "d2m_final_loss": d2m["loss_final_step"], "d2m_mean_loss": d2m["trainer"]["train_loss"],
+            "phase4_readings": phase4_readings(p4, r), "d2m_phase4_readings": phase4_readings(p4, d2m),
+            "control_c_phase4_readings": phase4_readings(p4, p4["ref_c"]),
+            "steps_19_26_s": round(window_sum(r, 19, 26), 1), "d2m_steps_19_26_s": round(window_sum(d2m, 19, 26), 1),
             "live_at_forward_end_peak_gib": r["live_at_forward_end_peak_gb"], "d2m_live_peak_gib": d2m["live_at_forward_end_peak_gb"],
             "driver_peak_gb": r["mps_driver_peak_gb"], "d2m_driver_peak_gb": d2m["mps_driver_peak_gb"],
             "steps": len(r["steps"]), "wall_s": r["wall_s"]}
+
+
+def window_sum(r, lo, hi):
+    """Seconds spent on steps lo..hi (the runner's clock)."""
+    t = MR.by_step(r, "t_s")
+    return t[hi] - t[lo - 1]
+
+
+def phase4_readings(p4, r):
+    """Phase 4's loss readings against the reference pair A, B (bench/phase4_report.py): the largest gap against twice the pair's
+    largest spread (reading 2), the final loss within 1%, the root mean square of the gap over that of the spread (0.87 for a
+    run drawn like the reference), and the steps over twice the spread step by step (reading 1, which the reference fails)."""
+    p = P4R.parity(p4["ref_a"], p4["ref_b"], r)
+    return {"largest_gap": p["worst_gap"], "largest_gap_step": p["worst_gap_step"], "bar": 2 * p["max_spread"],
+            "reading2_pass": p["reading2_pass"], "final_loss_rel": p["final_loss_rel_diff"], "final_loss_pass": p["final_loss_pass"],
+            "rms_gap_over_rms_spread": p["rms_gap_over_rms_spread"],
+            "reading1_failing_steps_with_spread": len(p["reading1_failing_steps_where_spread_nonzero"])}
 
 
 def integration_9(name=RUN_9):
