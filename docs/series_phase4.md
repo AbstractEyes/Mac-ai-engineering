@@ -138,3 +138,11 @@ Step 1 took 65 s; step 2 ran out ("MPS allocated: 61.86 GiB, other allocations: 
 allocate 2.38 GiB"). With the cache emptied the pool is close to the live tensors, so at 2 sequences the live tensors themselves
 outgrow the ~63 GiB the weights leave under the high watermark. The 9B pair runs at 1 x 16, both arms with the cache emptied:
 the reference passed step 5 (where the run with the cache kept had stopped) at a steady 59-60 GB footprint.
+
+### 6. 21:56-22:01: the 0.8B at 4 x 4 with the cache emptied runs out at step 18 (`p41_4x4_emptycache_ref_a_failed`)
+17 steps at 16.0 s a step (steps 11-17), live tensors at a forward's end 32-39 GiB, the pool at the steps' ends 41 -> 76 GiB, then
+"MPS allocated: 76.70 GiB, other allocations: 1.69 GiB, max allowed: 80.64 GiB. Tried to allocate 3.75 GiB". Emptying the cache
+between forward and backward slows the pool's growth (step 8 passed) but does not stop it: the backward's freed buffers still
+accumulate across micro-batches and steps. So every comparison below runs where the ladder fits, both arms alike, the cache
+emptied each micro-batch: Qwen3.5-0.8B at 2 x 8 (P4.1 and the 0.8B half of P4.2) and Qwen3.5-9B at 1 x 16 (the 9B half).
+Checkpointing stays off and the watermarks stay as registered.
