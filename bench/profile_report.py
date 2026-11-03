@@ -61,7 +61,7 @@ def group_of(comp: str) -> str:
         return "surroundings"
     if scope == "vis":
         return "vision_tower"
-    if comp in ("top.lm_head", "top.loss", "top.peft_accelerate"):
+    if comp in ("top.lm_head", "top.loss", "top.peft_accelerate", "top.lm_head_gather", "top.loss_labels"):
         return "lm_head_and_loss"
     if scope == "top":
         return "other_model_parts"

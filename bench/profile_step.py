@@ -89,6 +89,19 @@ def build_instrument(inst: Instrument, model, M, detail: set):
     if layer_q is not None:
         inst.function(layer_q, "conv_path", "lin.conv")
         inst.function(layer_q, "gates_path", "lin.gates")
+    # the training path (macai.training, series designs D8 and D9): the hidden states gathered at the labelled positions before
+    # the head and the labels' shift and gather (in the LM head and the loss); the vision cache's own work (keys, serving,
+    # stores; the tower's marked parts inside it excluded) in the vision tower
+    inst.function(M, "slice_logits_to_keep", "top.lm_head_gather")
+    try:
+        from macai.training import _qwen3_5 as training_q, _vision_cache as vision_cache
+    except ImportError:
+        training_q = vision_cache = None
+    if training_q is not None:
+        inst.function(training_q, "head_positions", "top.loss_labels")
+        inst.function(training_q, "head_targets", "top.loss_labels")
+        inst.replace(vision_cache.VisionCache, "image_outputs",
+                     inst.wrap(vision_cache.VisionCache.__dict__["image_outputs"], "vis.cache"))
     # the attention call, through transformers' attention registry (the vision tower uses it too)
     af = M.ALL_ATTENTION_FUNCTIONS
     orig_get = af.get_interface

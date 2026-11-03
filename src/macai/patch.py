@@ -7,6 +7,9 @@ existing training and inference code runs them without changes.
   (the zero-centered RMSNorm, the gated RMSNorm, the MLP, the linear-attention module's forward), each only while its source
   matches the transformers version it was written against. Which parts run is set by macai.layer's settings (RMSNORM, CONV,
   GATED_NORM, GATES, SWIGLU), read at every call; a part that is off runs transformers' own code.
+- The training path (macai.training; docs/training.md): install() also replaces the Qwen3.5 causal LM forwards (the LM head and
+  the loss at the labelled positions only) and the multimodal model's forward (the frozen vision tower's output cached per
+  picture), each only while its source matches; their settings (HEAD_AT_LABELS, VISION_CACHE) are read at every call.
 
     import macai.patch
     macai.patch.install()          # every loaded or later-loaded Qwen3.5 / Qwen3.5-MoE / Qwen3-Next model
@@ -24,9 +27,10 @@ NAME = "torch_chunk_gated_delta_rule"
 _saved = {}
 
 
-def install(layer: bool = True) -> list:
+def install(layer: bool = True, training: bool = True) -> list:
     """Swap the rule in every module that has it; returns the modules patched. With layer, also install the layer parts'
-    methods (macai.layer; layer_patches() lists the ones in force)."""
+    methods (macai.layer; layer_patches() lists the ones in force); with training, the training path's methods
+    (macai.training; training_patches())."""
     done = []
     for path in MODULES:
         try:
@@ -40,12 +44,21 @@ def install(layer: bool = True) -> list:
     if layer:
         from .layer import _qwen3_5
         _qwen3_5.install()
+    if training:
+        from .training import _qwen3_5 as _training_qwen3_5
+        _training_qwen3_5.install()
     return done
 
 
 def layer_patches() -> list:
     """The layer parts' methods installed (macai.layer._qwen3_5.PATCHES names)."""
     from .layer import _qwen3_5
+    return _qwen3_5.installed()
+
+
+def training_patches() -> list:
+    """The training path's methods installed (macai.training._qwen3_5.PATCHES names)."""
+    from .training import _qwen3_5
     return _qwen3_5.installed()
 
 
@@ -56,11 +69,14 @@ def uninstall() -> None:
     from .layer import _qwen3_5
     if _qwen3_5.installed():
         _qwen3_5.uninstall()
+    from .training import _qwen3_5 as _training_qwen3_5
+    if _training_qwen3_5.installed():
+        _training_qwen3_5.uninstall()
 
 
 @contextlib.contextmanager
-def installed(layer: bool = True):
-    install(layer=layer)
+def installed(layer: bool = True, training: bool = True):
+    install(layer=layer, training=training)
     try:
         yield
     finally:

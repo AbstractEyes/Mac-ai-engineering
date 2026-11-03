@@ -25,7 +25,10 @@ Around the trainer the runner changes these things, the same way for both arms, 
 The kernels arm takes --memory, the kernels' memory design (docs/series_memory.md): stored (both settings off), classes
 (op.SIZE_CLASSES), recompute (op.RECOMPUTE_STATES) or classes+recompute; and --layer, the layer parts (macai.layer, series
 design D4, docs/series_layer.md): off by default (every part off, as in the runs before D4), 'default' (the library's own
-settings), 'all' or part names; the run records both. --logdir puts the record elsewhere
+settings), 'all' or part names; the run records both. --head-at-labels and --vision-cache switch on the training path's
+designs D8 (the LM head and the loss at the labelled positions only) and D9 (the frozen vision tower's output cached per
+picture) of macai.training (docs/training.md); both off by default (the runs before reproduce), recorded with the run, their
+counts (the head's calls, the cache's stores and hits and its own time) at every step. --logdir puts the record elsewhere
 (bench/phase4_run.sh passes its LOGS). The first line the runner prints is its own process id: stop a run by hand with SIGINT to
 that id only (the record is still written).
 """
@@ -56,6 +59,8 @@ SAMPLE = "sample_every55.json"
 MEMORY = {"stored": (False, False), "classes": (True, False), "recompute": (False, True), "classes+recompute": (True, True)}
 # the layer parts (macai.layer.PARTS; series design D4, docs/series_layer.md), chosen by --layer
 LAYER_PARTS = ("RMSNORM", "CONV", "GATED_NORM", "GATES", "SWIGLU")
+# the training path's designs (macai.training; series designs D8, D9), chosen by --head-at-labels and --vision-cache
+TRAINING_PARTS = ("HEAD_AT_LABELS", "VISION_CACHE")
 PEAK_POLL_S = 0.25     # the runner's own footprint poll (the guard's is 2 s): each step's peak
 
 
@@ -144,6 +149,21 @@ def steady(by_step: dict, warmup: int = WARMUP_STEPS):
     return round((by_step[last] - by_step[warmup]) / (last - warmup), 3)
 
 
+def training_counts() -> dict:
+    """The training path's counts so far (cumulative; macai.training, D8 and D9), read without touching the GPU: the head's
+    calls; each vision cache's calls, pictures and own seconds, its stored entries (pending copies included) and bytes."""
+    from macai.training import _head, _qwen3_5, _vision_cache
+    out = {"head_taken": _head.STATS["taken"], "head_fallback": _head.STATS["fallback"],
+           "head_positions": _head.STATS["positions"], "head_labelled": _head.STATS["labelled"],
+           "fallbacks": {f"{p}: {r}": n for (p, r), n in _qwen3_5.FALLBACKS.items()}}
+    caches = list(_vision_cache._caches.values())
+    if caches:
+        c = caches[0]
+        out["vision_cache"] = dict({k: (round(v, 4) if isinstance(v, float) else v) for k, v in c.stats.items()},
+                                   entries=len(c.entries), pending=len(c.pending), caches=len(caches))
+    return out
+
+
 def main(argv=None, customize=None) -> int:
     """argv: the arguments (default sys.argv[1:]). customize: called as customize(Trainer, rec=..., args=...) once the run's
     Trainer subclass is built, returns the Trainer class to train with (bench/profile_step.py adds its profiler this way);
@@ -159,6 +179,12 @@ def main(argv=None, customize=None) -> int:
                     help="the layer parts of the kernels arm (macai.layer, series design D4): 'off' (every part off: the runs "
                          "before D4, the default), 'default' (macai.layer's own settings), 'all', or part names joined by commas "
                          f"({', '.join(LAYER_PARTS)}); recorded with the run")
+    ap.add_argument("--head-at-labels", action="store_true",
+                    help="the kernels arm's LM head and loss at the labelled positions only (macai.training.HEAD_AT_LABELS, "
+                         "series design D8); off by default")
+    ap.add_argument("--vision-cache", action="store_true",
+                    help="the kernels arm's frozen vision tower output cached per picture (macai.training.VISION_CACHE, series "
+                         "design D9); off by default")
     ap.add_argument("--logdir", default=os.path.join(HERE, "phase4_logs"), help="where the run's record (<name>.json) goes")
     ap.add_argument("--epochs", type=float, required=True)
     ap.add_argument("--batch", type=int, required=True)
@@ -179,6 +205,8 @@ def main(argv=None, customize=None) -> int:
         ap.error("--layer is a setting of the kernels arm")
     if a.layer not in ("off", "default", "all") and not set(a.layer.split(",")) <= set(LAYER_PARTS):
         ap.error(f"--layer: 'off', 'default', 'all' or part names from {LAYER_PARTS}")
+    if (a.head_at_labels or a.vision_cache) and a.arm != "kernels":
+        ap.error("--head-at-labels and --vision-cache are settings of the kernels arm")
 
     os.makedirs(a.logdir, exist_ok=True)
     out_json = os.path.join(a.logdir, f"{a.name}.json")
@@ -219,10 +247,13 @@ def main(argv=None, customize=None) -> int:
                 L.configure(**dict.fromkeys(L.PARTS, True))
             elif a.layer != "default":
                 L.configure(**{p: p in a.layer.split(",") for p in L.PARTS})
+            from macai import training as TR
+            TR.configure(HEAD_AT_LABELS=a.head_at_labels, VISION_CACHE=a.vision_cache)
             rec["macai"] = {"version": macai.__version__, "KERNEL": op.KERNEL, "KERNEL_BWD": op.KERNEL_BWD,
                             "FUSED_NORM": op.FUSED_NORM, "chunk": _chunked.C, "SIZE_CLASSES": op.SIZE_CLASSES,
                             "RECOMPUTE_STATES": op.RECOMPUTE_STATES, "layer_option": a.layer, "layer": L.settings(),
-                            "layer_patches": macai.patch.layer_patches()}
+                            "layer_patches": macai.patch.layer_patches(), "training": TR.settings(),
+                            "training_patches": macai.patch.training_patches()}
             print(f"[phase4] macai {json.dumps(rec['macai'])}", flush=True)
         M = importlib.import_module(MODULE)
         fn = M.torch_chunk_gated_delta_rule
@@ -291,6 +322,8 @@ def main(argv=None, customize=None) -> int:
                     "gated_delta_rule_at_train_begin": (lambda f: f"{f.__module__}.{f.__qualname__}")(M.torch_chunk_gated_delta_rule),
                     "layer_methods_at_train_begin": {c: getattr(M, c).forward.__module__ for c in (
                         "Qwen3_5RMSNorm", "Qwen3_5RMSNormGated", "Qwen3_5MLP", "Qwen3_5GatedDeltaNet")},
+                    "training_methods_at_train_begin": {c: getattr(M, c).forward.__module__ for c in (
+                        "Qwen3_5ForConditionalGeneration", "Qwen3_5Model")},
                     "trainable_parameters": sum(p.numel() for p in model.parameters() if p.requires_grad),
                     "model_dtype": str(next(model.parameters()).dtype), "device": str(next(model.parameters()).device)}
                 # the LoRA A matrices as initialized (B starts at zero): whether two runs of the same seed start alike
@@ -315,6 +348,8 @@ def main(argv=None, customize=None) -> int:
                            live_at_forward_end_gb=round(self.live / 2 ** 30, 3),
                            driver_at_forward_end_gb=round(self.driver / 2 ** 30, 3))
                 self.live = self.driver = 0
+                if a.arm == "kernels":
+                    row["training_counts"] = training_counts()
                 rec["steps"].append(row)
 
         recorder = Recorder()
@@ -351,6 +386,9 @@ def main(argv=None, customize=None) -> int:
         rec["s_per_step_steady_trainer_clock"] = steady({r["step"]: r["spent_s"] for r in tlog})
         rec["s_per_step_steady_runner_clock"] = steady({r["step"]: r["t_s"] for r in rec["steps"]})
         rec["loss_final_step"] = rec["steps"][-1]["loss"] if rec["steps"] else None
+        if a.arm == "kernels":
+            from macai import training as TR
+            rec["training_stats"] = TR.stats()
         rec["mps_driver_peak_gb"] = max((r["mps_driver_gb"] for r in rec["steps"]), default=None)
         rec["live_at_forward_end_peak_gb"] = max((r["live_at_forward_end_gb"] for r in rec["steps"]), default=None)
         rec["footprint_peak_at_steps_gb"] = max((r["footprint_gb"] for r in rec["steps"]), default=None)
