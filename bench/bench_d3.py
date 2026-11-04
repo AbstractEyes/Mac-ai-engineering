@@ -21,8 +21,11 @@ averaged over the micro-batches: the profiles' rule rows, 75.8 / 99.2 ms); the l
 4,096 / 8,192 / 16,384 / 32,768 tokens). --kernels adds the state passes and the per-chunk backward alone (the kernels on
 prepared float32 inputs, back-to-back) at the bench shapes, a mean micro-batch of each model and two long shapes.
 
-Each round times every variant at every shape (the variants' order rotates from round to round); a figure is the median of its
-rounds' medians. Writes bench/layer_logs/<name>.json. The first line printed is the process id.
+--order shape (the default since the record d3_bench) times every variant at one shape before the next shape, so the variants
+compared at a shape run seconds apart (the variants' order rotating with the round and the shape), with --pause-s seconds idle
+between rounds; --order variant times one variant at every shape before the next (the baseline and the exploration run d3_bench_run2;
+a run of record that spanned minutes between variants drifted, d3_bench_drifted). A figure is the median of its rounds' medians.
+Writes bench/layer_logs/<name>.json. The first line printed is the process id.
 """
 import os
 import sys
@@ -217,6 +220,8 @@ def main() -> int:
     ap.add_argument("--kernels", action="store_true")
     ap.add_argument("--no-long", action="store_true")
     ap.add_argument("--no-readers", action="store_true")
+    ap.add_argument("--order", choices=("shape", "variant"), default="shape")
+    ap.add_argument("--pause-s", type=float, default=0.0, help="seconds idle between rounds (--order shape)")
     a = ap.parse_args()
     names = a.variants.split(",")
     for n in names:
@@ -238,7 +243,8 @@ def main() -> int:
            "defaults": {"op": {k: getattr(op, k) for k in ("KERNEL", "KERNEL_BWD", "FUSED_NORM", "RECOMPUTE_STATES", "SIZE_CLASSES",
                                                           "FWD_CHUNK", "VALUE_SPLIT") if hasattr(op, k)},
                         "chunked": {k: getattr(_chunked, k) for k in ("C", "NSG", "STAGE", "NSGB", "DBUF") if hasattr(_chunked, k)}},
-           "micro_batches": mbs, "shapes": {k: list(v) for k, v in shapes.items()}, "times": {}, "kernels": {}}
+           "micro_batches": mbs, "shapes": {k: list(v) for k, v in shapes.items()}, "times": {}, "kernels": {},
+           "order": a.order, "pause_s": a.pause_s}
     print(f"[bench_d3] {len(names)} variants x {len(shapes)} shapes x 3 modes x {a.rounds} rounds; commit {rec['repo_commit']}"
           f" dirty {rec['repo_dirty']}", flush=True)
     warm_gpu(2.0)
@@ -255,7 +261,38 @@ def main() -> int:
     times = {n: {s: {m: [] for m in ("fwd", "train_fwd", "fwd_bwd")} for s in shapes} for n in names}
     kern = {n: {s: [] for s in KERNEL_SHAPES} for n in names} if a.kernels else {}
     t_start = time.time()
-    for r in range(a.rounds):
+    if a.order == "shape":
+        # every variant's libraries compiled before the first timed call
+        first = next(iter(data))
+        for n in names:
+            with Settings(VARIANTS[n]):
+                time_modes(data[first][0], data[first][1], est[first], 1)
+                if a.kernels:
+                    kernel_parts(*KERNEL_SHAPES["9b_mean"])
+        for r in range(a.rounds):
+            if r and a.pause_s:
+                time.sleep(a.pause_s)
+            warm_gpu(1.0)
+            t0 = time.time()
+            for i, (s, (base, dout)) in enumerate(data.items()):
+                k = (r + i) % len(names)
+                for n in names[k:] + names[:k]:
+                    reps = a.reps if not s.startswith("long") else max(2, a.reps - 1)
+                    with Settings(VARIANTS[n]):
+                        for m, v in time_modes(base, dout, est[s], reps).items():
+                            times[n][s][m].append(v)
+                torch.mps.empty_cache()
+            if a.kernels:
+                for i, (s, (B, T, H)) in enumerate(KERNEL_SHAPES.items()):
+                    k = (r + i) % len(names)
+                    for n in names[k:] + names[:k]:
+                        with Settings(VARIANTS[n]):
+                            kern[n][s].append(kernel_parts(B, T, H))
+                    torch.mps.empty_cache()
+            spent = time.time() - t_start
+            print(f"[bench_d3] round {r + 1}/{a.rounds}: {time.time() - t0:.1f} s; spent {spent / 60:.1f} min, left "
+                  f"~{spent / (r + 1) * (a.rounds - r - 1) / 60:.1f} min", flush=True)
+    for r in range(a.rounds if a.order == "variant" else 0):
         order = names[r % len(names):] + names[:r % len(names)]
         for n in order:
             t0 = time.time()

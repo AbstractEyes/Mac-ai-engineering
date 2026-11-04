@@ -1,0 +1,50 @@
+[guard] start 20:42:09 limit 96.0 GB, swap +1.0 GB, wall 900 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/d3_probe.py --name probe_d3_0.8b --logdir bench/layer_logs --model 0.8b --arm kernels --memory recompute --layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --lora-fused --fwd-chunk 8 --value-split auto --epochs 1 --batch 2 --accum 2 --n-items 12 --empty-cache
+[probe] runner pid 59233
+[phase4] runner pid 59233
+W1103 20:42:11.319000 59233 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+[phase4] macai {"version": "0.2.0", "KERNEL": "chunked", "KERNEL_BWD": "chunked", "FUSED_NORM": true, "chunk": 16, "SIZE_CLASSES": false, "RECOMPUTE_STATES": true, "FWD_CHUNK": 8, "DBUF": 0, "VALUE_SPLIT": "auto", "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU", "layer": {"RMSNORM": true, "CONV": true, "GATED_NORM": true, "GATES": true, "SWIGLU": true}, "layer_patches": ["rmsnorm", "gated_norm", "mlp", "gated_delta_net"], "training": {"HEAD_AT_LABELS": true, "VISION_CACHE": true}, "training_patches": ["head_conditional", "head_causal_lm", "vision_cache"], "lora": {"FUSED": true}, "lora_patches": ["linear"]}
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+train 20261104_044212_probe_d3_0.8b: 12 items (12 with a picture), 24 examples by form {'short': 12, 'full': 12}; images fetched in 0 s
+Loading weights:   0%|          | 0/473 [00:00<?, ?it/s]Loading weights:  19%|█▉        | 91/473 [00:00<00:00, 877.15it/s]Loading weights:  48%|████▊     | 229/473 [00:00<00:00, 1005.16it/s]Loading weights: 100%|██████████| 473/473 [00:00<00:00, 2010.55it/s]
+LoRA modules by name: {'out_proj': 18, 'in_proj_qkv': 18, 'in_proj_z': 18, 'gate_proj': 24, 'up_proj': 24, 'down_proj': 24, 'q_proj': 6, 'k_proj': 6, 'v_proj': 6, 'o_proj': 6}
+trainable params: 20,447,232 || all params: 873,433,152 || trainable%: 2.3410
+  6 steps of 2 x 2 sequences; 1.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "torch_empty_cache_steps": 1, "linear_attention_layers": 18, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "layer_methods_at_train_begin": {"Qwen3_5RMSNorm": "macai.layer._qwen3_5", "Qwen3_5RMSNormGated": "macai.layer._qwen3_5", "Qwen3_5MLP": "macai.layer._qwen3_5", "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"}, "training_methods_at_train_begin": {"Qwen3_5ForConditionalGeneration": "macai.training._qwen3_5", "Qwen3_5Model": "macai.training._qwen3_5"}, "lora_linear_forward_at_train_begin": "macai.lora._peft", "lora_dropout_modules": ["Dropout"], "trainable_parameters": 20447232, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 92573.2421875, "lora_A_first_values": [0.018921, 0.016357, 0.021973, 0.001671], "PYTHONHASHSEED": null}
+  0%|          | 0/6 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+ 17%|█▋        | 1/6 [00:01<00:05,  1.11s/it]  step 1/6: loss 3.1764, 1 s spent, 6 s left, 1.13 s/step
+                                             {'loss': '3.176', 'grad_norm': '22.86', 'learning_rate': '0', 'epoch': '0.1667'}
+ 17%|█▋        | 1/6 [00:01<00:05,  1.11s/it] 33%|███▎      | 2/6 [00:02<00:04,  1.11s/it]  step 2/6: loss 3.0934, 2 s spent, 4 s left, 1.12 s/step
+                                             {'loss': '3.093', 'grad_norm': '29.55', 'learning_rate': '0.0002', 'epoch': '0.3333'}
+ 33%|███▎      | 2/6 [00:02<00:04,  1.11s/it] 50%|█████     | 3/6 [00:03<00:03,  1.09s/it]  step 3/6: loss 2.6567, 3 s spent, 3 s left, 1.1 s/step
+                                             {'loss': '2.657', 'grad_norm': '9.459', 'learning_rate': '0.0001809', 'epoch': '0.5'}
+ 50%|█████     | 3/6 [00:03<00:03,  1.09s/it] 67%|██████▋   | 4/6 [00:04<00:02,  1.03s/it]  step 4/6: loss 1.7098, 4 s spent, 2 s left, 1.06 s/step
+                                             {'loss': '1.71', 'grad_norm': '10.39', 'learning_rate': '0.0001309', 'epoch': '0.6667'}
+ 67%|██████▋   | 4/6 [00:04<00:02,  1.03s/it] 83%|████████▎ | 5/6 [00:05<00:01,  1.01s/it]  step 5/6: loss 2.1988, 5 s spent, 1 s left, 1.05 s/step
+                                             {'loss': '2.199', 'grad_norm': '5.53', 'learning_rate': '6.91e-05', 'epoch': '0.8333'}
+ 83%|████████▎ | 5/6 [00:05<00:01,  1.01s/it]100%|██████████| 6/6 [00:06<00:00,  1.03it/s]  step 6/6: loss 1.7140, 6 s spent, 0 s left, 1.02 s/step
+                                             {'loss': '1.714', 'grad_norm': '4.963', 'learning_rate': '1.91e-05', 'epoch': '1'}
+100%|██████████| 6/6 [00:06<00:00,  1.03it/s]  step 6/6: loss nan, 6 s spent, 0 s left, 1.02 s/step
+                                             {'train_runtime': '6.116', 'train_samples_per_second': '3.924', 'train_steps_per_second': '0.981', 'train_loss': '2.425', 'epoch': '1'}
+100%|██████████| 6/6 [00:06<00:00,  1.03it/s]100%|██████████| 6/6 [00:06<00:00,  1.02s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-0.8B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 24 collated (the longest 615 tokens)
+
+trained in 0.1 min: 6 steps, loss 2.4249, 1.2 s/step
+[phase4] probe_d3_0.8b: 6 steps, final loss 1.7140307426452637, steady None s a step (trainer clock, steps 11-6)
+[phase4] wrote bench/layer_logs/probe_d3_0.8b.json
+[probe] verdict {"micro_batches": 12, "mismatches": [], "n_mismatches": 0, "bar_met": true}
+[probe] wrote bench/layer_logs/probe_d3_0.8b.json
+[guard] end 20:42:21 rc 0 peak footprint 7.89 GB wall 12 s
