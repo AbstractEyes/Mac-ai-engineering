@@ -2,5 +2,6 @@
 torch==2.15.0
 numpy==2.5.4
 transformers==5.22.1
+peft==0.21.2
 huggingface-hub==2.4.0
 pytest==8.4.2

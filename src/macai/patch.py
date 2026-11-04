@@ -10,6 +10,9 @@ existing training and inference code runs them without changes.
 - The training path (macai.training; docs/training.md): install() also replaces the Qwen3.5 causal LM forwards (the LM head and
   the loss at the labelled positions only) and the multimodal model's forward (the frozen vision tower's output cached per
   picture), each only while its source matches; their settings (HEAD_AT_LABELS, VISION_CACHE) are read at every call.
+- The LoRA adapter path (macai.lora; docs/lora.md): install() also replaces PEFT's LoRA linear layer's forward
+  (peft.tuners.lora.layer.Linear) while its source matches PEFT 0.21.2 (any model PEFT adapts, not only Qwen3.5); its setting
+  (FUSED) is read at every call. Without PEFT installed nothing is replaced.
 
     import macai.patch
     macai.patch.install()          # every loaded or later-loaded Qwen3.5 / Qwen3.5-MoE / Qwen3-Next model
@@ -27,10 +30,10 @@ NAME = "torch_chunk_gated_delta_rule"
 _saved = {}
 
 
-def install(layer: bool = True, training: bool = True) -> list:
+def install(layer: bool = True, training: bool = True, lora: bool = True) -> list:
     """Swap the rule in every module that has it; returns the modules patched. With layer, also install the layer parts'
     methods (macai.layer; layer_patches() lists the ones in force); with training, the training path's methods
-    (macai.training; training_patches())."""
+    (macai.training; training_patches()); with lora, the fused LoRA adapter path into PEFT (macai.lora; lora_patches())."""
     done = []
     for path in MODULES:
         try:
@@ -47,6 +50,9 @@ def install(layer: bool = True, training: bool = True) -> list:
     if training:
         from .training import _qwen3_5 as _training_qwen3_5
         _training_qwen3_5.install()
+    if lora:
+        from .lora import _peft
+        _peft.install()
     return done
 
 
@@ -62,6 +68,12 @@ def training_patches() -> list:
     return _qwen3_5.installed()
 
 
+def lora_patches() -> list:
+    """The LoRA adapter path's methods installed (macai.lora._peft.PATCHES names)."""
+    from .lora import _peft
+    return _peft.installed()
+
+
 def uninstall() -> None:
     for path, fn in list(_saved.items()):
         setattr(importlib.import_module(path), NAME, fn)
@@ -72,11 +84,14 @@ def uninstall() -> None:
     from .training import _qwen3_5 as _training_qwen3_5
     if _training_qwen3_5.installed():
         _training_qwen3_5.uninstall()
+    from .lora import _peft
+    if _peft.installed():
+        _peft.uninstall()
 
 
 @contextlib.contextmanager
-def installed(layer: bool = True, training: bool = True):
-    install(layer=layer, training=training)
+def installed(layer: bool = True, training: bool = True, lora: bool = True):
+    install(layer=layer, training=training, lora=lora)
     try:
         yield
     finally:
