@@ -2086,10 +2086,29 @@ alone; the 0.8B run's says clean).
 the exploration run by variant and shape, the read-ahead diagnostics, the parity log by setting, the probes, both integration runs
 on both clocks against D5's runs and Phase 4's references, both step profiles by group).
 
+### 32. 21:37-21:5x: a review
+The test suite run again on 3dc40ed with the defaults (D3 on) and nothing else on the GPU, 21:37-21:41: 1,063 passed, 227 s,
+peak footprint 25.7 GB; every parity case's errors the same numbers as the record's but six, the whole-layer and two-layer
+cases that run the rule at its defaults (the record's test run, chain 1, ran with D3 off): their errors moved with chunk 8's
+rounding, both paths' alike, their worst ratios 1.12-1.18 (the record's 1.09-1.31), all under 2. Every figure above recomputed
+from the raw records by separate code: the parity log (the earlier 331 cases identical to D5's record; the settings that change
+no arithmetic give the current kernels' numbers in every case; chunk 8's gradients the same numbers in every case, its forward
+output 0.33-1.50x; outside the drop-in cases every error at most 3.5% of its bar), the bench of record (every variant at every
+shape; the readers' micro-batch figures rebuilt from the per-shape medians to the recorded ones), the windows on each step's own
+clock, the loss readings, the footprints, steps 1-2, the step profiles by group, the probes' and the runs' call counts: all agree
+to rounding. Notes:
+- The step: over steps 11-100 the D3 run's steps differ from D5's step for step by a median +0.57%, with a spread of 4.1% a step
+  (the standard error of the 90-step mean 0.43%). Between the two step profiles the parts D3 does not touch moved as much or
+  more (the frozen products +2.3 ms a 0.8B micro-batch, -104 ms at 9B): the run-to-run state of the machine is larger than D3's
+  share of a step, so the step neither confirms nor refutes the -0.2 to -0.5% the rule's rows imply.
+- Of the settings read alone, VALUE_SPLIT="auto" at chunk 16 read one shape 5.2% slower (the 9B micro-batch of 211 tokens, a
+  0.3 ms call, where it launches exactly what the current kernels launch): the small shapes' noise named above. The defaults
+  (chunk 8 with the split) read no shape slower (the slowest 1.033x).
+
 ### Next
 D3 is done: chunk 8 for forwards that keep no states and the automatic value split are on by default; the reads ahead stay off;
 states every 32 tokens are designed, not built. With D3 the phase's registered entries (D3-D5, D8, D9) are all read. What is
-left, each for its own entry and his word: states every 32 tokens (the per-chunk backward's state reads, ~0.5% of a 0.8B step at
+left, each for its own entry when asked for: states every 32 tokens (the per-chunk backward's state reads, ~0.5% of a 0.8B step at
 most); where a state pass's chunk spends its ~12 us beyond the products (a profiler-free hunt); D8b (a fused cross-entropy, ~2% of
 a 0.8B step; set aside 17:3x PST); the vision cache's trim; the adapter path's next steps (dY read once for G and dB; the mask
 applied as x is loaded; the weights' bf16 casts kept per optimizer step); the head's forward in another form at the labelled row
