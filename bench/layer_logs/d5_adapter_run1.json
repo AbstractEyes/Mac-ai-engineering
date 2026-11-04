@@ -1,0 +1,1571 @@
+{
+ "torch": "2.15.0",
+ "started": "2026-11-03 18:15:16 PST",
+ "rounds": 5,
+ "shapes": {
+  "0.8b": [
+   2,
+   811
+  ],
+  "9b": [
+   1,
+   768
+  ]
+ },
+ "lora": {
+  "rank": 32,
+  "alpha": 64,
+  "dropout": 0.05
+ },
+ "lora_patches": [
+  "linear"
+ ],
+ "models": {
+  "0.8b": {
+   "micro_batch": "2x811",
+   "projections": [
+    {
+     "projection": "lin.in_proj_qkv",
+     "d_in": 1024,
+     "d_out": 6144,
+     "calls": 18,
+     "shape": "1024->6144",
+     "peft_adapter_fwd_bwd_ms": 1.189,
+     "fused_adapter_fwd_bwd_ms": 0.592,
+     "peft_adapter_fwd_ms": 0.625,
+     "fused_adapter_fwd_ms": 0.26,
+     "adapter_speedup_fwd_bwd": 2.008
+    },
+    {
+     "projection": "lin.in_proj_z",
+     "d_in": 1024,
+     "d_out": 2048,
+     "calls": 18,
+     "shape": "1024->2048",
+     "peft_adapter_fwd_bwd_ms": 0.564,
+     "fused_adapter_fwd_bwd_ms": 0.282,
+     "peft_adapter_fwd_ms": 0.262,
+     "fused_adapter_fwd_ms": 0.17,
+     "adapter_speedup_fwd_bwd": 2.0
+    },
+    {
+     "projection": "lin.out_proj",
+     "d_in": 2048,
+     "d_out": 1024,
+     "calls": 18,
+     "shape": "2048->1024",
+     "peft_adapter_fwd_bwd_ms": 0.666,
+     "fused_adapter_fwd_bwd_ms": 0.313,
+     "peft_adapter_fwd_ms": 0.307,
+     "fused_adapter_fwd_ms": 0.195,
+     "adapter_speedup_fwd_bwd": 2.128
+    },
+    {
+     "projection": "lin.gate_proj",
+     "d_in": 1024,
+     "d_out": 3584,
+     "calls": 18,
+     "shape": "1024->3584",
+     "peft_adapter_fwd_bwd_ms": 0.865,
+     "fused_adapter_fwd_bwd_ms": 0.401,
+     "peft_adapter_fwd_ms": 0.427,
+     "fused_adapter_fwd_ms": 0.211,
+     "adapter_speedup_fwd_bwd": 2.157
+    },
+    {
+     "projection": "lin.up_proj",
+     "d_in": 1024,
+     "d_out": 3584,
+     "calls": 18,
+     "shape": "1024->3584",
+     "peft_adapter_fwd_bwd_ms": 0.865,
+     "fused_adapter_fwd_bwd_ms": 0.401,
+     "peft_adapter_fwd_ms": 0.427,
+     "fused_adapter_fwd_ms": 0.211,
+     "adapter_speedup_fwd_bwd": 2.157
+    },
+    {
+     "projection": "lin.down_proj",
+     "d_in": 3584,
+     "d_out": 1024,
+     "calls": 18,
+     "shape": "3584->1024",
+     "peft_adapter_fwd_bwd_ms": 1.076,
+     "fused_adapter_fwd_bwd_ms": 0.491,
+     "peft_adapter_fwd_ms": 0.498,
+     "fused_adapter_fwd_ms": 0.248,
+     "adapter_speedup_fwd_bwd": 2.191
+    },
+    {
+     "projection": "full.q_proj",
+     "d_in": 1024,
+     "d_out": 4096,
+     "calls": 6,
+     "shape": "1024->4096",
+     "peft_adapter_fwd_bwd_ms": 0.957,
+     "fused_adapter_fwd_bwd_ms": 0.441,
+     "peft_adapter_fwd_ms": 0.469,
+     "fused_adapter_fwd_ms": 0.218,
+     "adapter_speedup_fwd_bwd": 2.17
+    },
+    {
+     "projection": "full.k_proj",
+     "d_in": 1024,
+     "d_out": 512,
+     "calls": 6,
+     "shape": "1024->512",
+     "peft_adapter_fwd_bwd_ms": 0.352,
+     "fused_adapter_fwd_bwd_ms": 0.203,
+     "peft_adapter_fwd_ms": 0.249,
+     "fused_adapter_fwd_ms": 0.121,
+     "adapter_speedup_fwd_bwd": 1.734
+    },
+    {
+     "projection": "full.v_proj",
+     "d_in": 1024,
+     "d_out": 512,
+     "calls": 6,
+     "shape": "1024->512",
+     "peft_adapter_fwd_bwd_ms": 0.352,
+     "fused_adapter_fwd_bwd_ms": 0.203,
+     "peft_adapter_fwd_ms": 0.249,
+     "fused_adapter_fwd_ms": 0.121,
+     "adapter_speedup_fwd_bwd": 1.734
+    },
+    {
+     "projection": "full.o_proj",
+     "d_in": 2048,
+     "d_out": 1024,
+     "calls": 6,
+     "shape": "2048->1024",
+     "peft_adapter_fwd_bwd_ms": 0.666,
+     "fused_adapter_fwd_bwd_ms": 0.313,
+     "peft_adapter_fwd_ms": 0.307,
+     "fused_adapter_fwd_ms": 0.195,
+     "adapter_speedup_fwd_bwd": 2.128
+    },
+    {
+     "projection": "full.gate_proj",
+     "d_in": 1024,
+     "d_out": 3584,
+     "calls": 6,
+     "shape": "1024->3584",
+     "peft_adapter_fwd_bwd_ms": 0.865,
+     "fused_adapter_fwd_bwd_ms": 0.401,
+     "peft_adapter_fwd_ms": 0.427,
+     "fused_adapter_fwd_ms": 0.211,
+     "adapter_speedup_fwd_bwd": 2.157
+    },
+    {
+     "projection": "full.up_proj",
+     "d_in": 1024,
+     "d_out": 3584,
+     "calls": 6,
+     "shape": "1024->3584",
+     "peft_adapter_fwd_bwd_ms": 0.865,
+     "fused_adapter_fwd_bwd_ms": 0.401,
+     "peft_adapter_fwd_ms": 0.427,
+     "fused_adapter_fwd_ms": 0.211,
+     "adapter_speedup_fwd_bwd": 2.157
+    },
+    {
+     "projection": "full.down_proj",
+     "d_in": 3584,
+     "d_out": 1024,
+     "calls": 6,
+     "shape": "3584->1024",
+     "peft_adapter_fwd_bwd_ms": 1.076,
+     "fused_adapter_fwd_bwd_ms": 0.491,
+     "peft_adapter_fwd_ms": 0.498,
+     "fused_adapter_fwd_ms": 0.248,
+     "adapter_speedup_fwd_bwd": 2.191
+    }
+   ],
+   "shapes": {
+    "1024->6144": {
+     "peft": {
+      "fwd_ms": 2.336,
+      "fwd_bwd_ms": 4.704,
+      "rounds": {
+       "fwd": [
+        2.463,
+        2.322,
+        2.315,
+        2.339,
+        2.336
+       ],
+       "fwd_bwd": [
+        4.854,
+        4.686,
+        4.682,
+        4.744,
+        4.704
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 1.971,
+      "fwd_bwd_ms": 4.107,
+      "rounds": {
+       "fwd": [
+        2.007,
+        1.937,
+        1.951,
+        1.976,
+        1.971
+       ],
+       "fwd_bwd": [
+        4.182,
+        4.053,
+        4.097,
+        4.108,
+        4.107
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 1.711,
+      "fwd_bwd_ms": 3.515,
+      "rounds": {
+       "fwd": [
+        1.77,
+        1.691,
+        1.711,
+        1.708,
+        1.715
+       ],
+       "fwd_bwd": [
+        3.624,
+        3.491,
+        3.531,
+        3.504,
+        3.515
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.625,
+     "fused_adapter_fwd_ms": 0.26,
+     "peft_adapter_fwd_bwd_ms": 1.189,
+     "fused_adapter_fwd_bwd_ms": 0.592,
+     "adapter_speedup_fwd_bwd": 2.008,
+     "adapter_speedup_fwd": 2.404,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.022,
+      "up kernel (R + s P B^T)": 0.128,
+      "down kernel (M (G A) / (1 - p))": 0.043
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.028,
+       "flops": 106299392,
+       "tflops": 3.796
+      },
+      "G = dY B": {
+       "ms": 0.118,
+       "flops": 637796352,
+       "tflops": 5.405
+      },
+      "dB = dY^T P": {
+       "ms": 0.081,
+       "flops": 637796352,
+       "tflops": 7.874
+      },
+      "dA = G^T x_d": {
+       "ms": 0.038,
+       "flops": 106299392,
+       "tflops": 2.797
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.1119,
+      "down kernel": 0.014
+     }
+    },
+    "1024->2048": {
+     "peft": {
+      "fwd_ms": 0.876,
+      "fwd_bwd_ms": 1.81,
+      "rounds": {
+       "fwd": [
+        0.876,
+        0.876,
+        0.87,
+        0.956,
+        1.082
+       ],
+       "fwd_bwd": [
+        1.81,
+        1.767,
+        1.766,
+        2.048,
+        2.012
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 0.784,
+      "fwd_bwd_ms": 1.528,
+      "rounds": {
+       "fwd": [
+        0.784,
+        0.766,
+        0.761,
+        0.979,
+        1.066
+       ],
+       "fwd_bwd": [
+        1.52,
+        1.518,
+        1.528,
+        1.742,
+        1.738
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 0.614,
+      "fwd_bwd_ms": 1.246,
+      "rounds": {
+       "fwd": [
+        0.617,
+        0.614,
+        0.611,
+        0.612,
+        0.637
+       ],
+       "fwd_bwd": [
+        1.246,
+        1.245,
+        1.232,
+        1.251,
+        1.369
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.262,
+     "fused_adapter_fwd_ms": 0.17,
+     "peft_adapter_fwd_bwd_ms": 0.564,
+     "fused_adapter_fwd_bwd_ms": 0.282,
+     "adapter_speedup_fwd_bwd": 2.0,
+     "adapter_speedup_fwd": 1.541,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.035,
+      "up kernel (R + s P B^T)": 0.094,
+      "down kernel (M (G A) / (1 - p))": 0.066
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.071,
+       "flops": 106299392,
+       "tflops": 1.497
+      },
+      "G = dY B": {
+       "ms": 0.075,
+       "flops": 212598784,
+       "tflops": 2.835
+      },
+      "dB = dY^T P": {
+       "ms": 0.085,
+       "flops": 212598784,
+       "tflops": 2.501
+      },
+      "dA = G^T x_d": {
+       "ms": 0.066,
+       "flops": 106299392,
+       "tflops": 1.611
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0373,
+      "down kernel": 0.014
+     }
+    },
+    "2048->1024": {
+     "peft": {
+      "fwd_ms": 0.943,
+      "fwd_bwd_ms": 1.925,
+      "rounds": {
+       "fwd": [
+        1.077,
+        0.943,
+        0.934,
+        0.927,
+        1.018
+       ],
+       "fwd_bwd": [
+        2.09,
+        1.925,
+        1.923,
+        1.92,
+        2.03
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 0.831,
+      "fwd_bwd_ms": 1.572,
+      "rounds": {
+       "fwd": [
+        0.883,
+        0.831,
+        0.799,
+        0.802,
+        0.847
+       ],
+       "fwd_bwd": [
+        1.64,
+        1.566,
+        1.572,
+        1.558,
+        1.634
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 0.636,
+      "fwd_bwd_ms": 1.259,
+      "rounds": {
+       "fwd": [
+        0.638,
+        0.636,
+        0.633,
+        0.634,
+        0.639
+       ],
+       "fwd_bwd": [
+        1.281,
+        1.259,
+        1.243,
+        1.241,
+        1.268
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.307,
+     "fused_adapter_fwd_ms": 0.195,
+     "peft_adapter_fwd_bwd_ms": 0.666,
+     "fused_adapter_fwd_bwd_ms": 0.313,
+     "adapter_speedup_fwd_bwd": 2.128,
+     "adapter_speedup_fwd": 1.574,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.034,
+      "up kernel (R + s P B^T)": 0.054,
+      "down kernel (M (G A) / (1 - p))": 0.069
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.049,
+       "flops": 212598784,
+       "tflops": 4.339
+      },
+      "G = dY B": {
+       "ms": 0.04,
+       "flops": 106299392,
+       "tflops": 2.657
+      },
+      "dB = dY^T P": {
+       "ms": 0.053,
+       "flops": 106299392,
+       "tflops": 2.006
+      },
+      "dA = G^T x_d": {
+       "ms": 0.057,
+       "flops": 212598784,
+       "tflops": 3.73
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0187,
+      "down kernel": 0.028
+     }
+    },
+    "1024->3584": {
+     "peft": {
+      "fwd_ms": 1.442,
+      "fwd_bwd_ms": 2.962,
+      "rounds": {
+       "fwd": [
+        1.518,
+        1.442,
+        1.442,
+        1.438,
+        1.439
+       ],
+       "fwd_bwd": [
+        2.944,
+        2.958,
+        2.962,
+        2.972,
+        2.977
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 1.226,
+      "fwd_bwd_ms": 2.498,
+      "rounds": {
+       "fwd": [
+        1.227,
+        1.214,
+        1.226,
+        1.228,
+        1.222
+       ],
+       "fwd_bwd": [
+        2.49,
+        2.498,
+        2.518,
+        2.49,
+        2.505
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 1.015,
+      "fwd_bwd_ms": 2.097,
+      "rounds": {
+       "fwd": [
+        1.019,
+        1.016,
+        1.01,
+        1.015,
+        1.013
+       ],
+       "fwd_bwd": [
+        2.097,
+        2.079,
+        2.106,
+        2.105,
+        2.08
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.427,
+     "fused_adapter_fwd_ms": 0.211,
+     "peft_adapter_fwd_bwd_ms": 0.865,
+     "fused_adapter_fwd_bwd_ms": 0.401,
+     "adapter_speedup_fwd_bwd": 2.157,
+     "adapter_speedup_fwd": 2.024,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.023,
+      "up kernel (R + s P B^T)": 0.084,
+      "down kernel (M (G A) / (1 - p))": 0.042
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.031,
+       "flops": 106299392,
+       "tflops": 3.429
+      },
+      "G = dY B": {
+       "ms": 0.078,
+       "flops": 372047872,
+       "tflops": 4.77
+      },
+      "dB = dY^T P": {
+       "ms": 0.054,
+       "flops": 372047872,
+       "tflops": 6.89
+      },
+      "dA = G^T x_d": {
+       "ms": 0.038,
+       "flops": 106299392,
+       "tflops": 2.797
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0653,
+      "down kernel": 0.014
+     }
+    },
+    "3584->1024": {
+     "peft": {
+      "fwd_ms": 1.59,
+      "fwd_bwd_ms": 3.174,
+      "rounds": {
+       "fwd": [
+        1.59,
+        1.584,
+        1.591,
+        1.59,
+        1.589
+       ],
+       "fwd_bwd": [
+        3.15,
+        3.195,
+        3.195,
+        3.174,
+        3.168
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 1.34,
+      "fwd_bwd_ms": 2.589,
+      "rounds": {
+       "fwd": [
+        1.33,
+        1.34,
+        1.348,
+        1.337,
+        1.34
+       ],
+       "fwd_bwd": [
+        2.557,
+        2.589,
+        2.594,
+        2.597,
+        2.584
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 1.092,
+      "fwd_bwd_ms": 2.098,
+      "rounds": {
+       "fwd": [
+        1.091,
+        1.092,
+        1.092,
+        1.094,
+        1.098
+       ],
+       "fwd_bwd": [
+        2.084,
+        2.101,
+        2.094,
+        2.105,
+        2.098
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.498,
+     "fused_adapter_fwd_ms": 0.248,
+     "peft_adapter_fwd_bwd_ms": 1.076,
+     "fused_adapter_fwd_bwd_ms": 0.491,
+     "adapter_speedup_fwd_bwd": 2.191,
+     "adapter_speedup_fwd": 2.008,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.049,
+      "up kernel (R + s P B^T)": 0.043,
+      "down kernel (M (G A) / (1 - p))": 0.086
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.08,
+       "flops": 372047872,
+       "tflops": 4.651
+      },
+      "G = dY B": {
+       "ms": 0.027,
+       "flops": 106299392,
+       "tflops": 3.937
+      },
+      "dB = dY^T P": {
+       "ms": 0.038,
+       "flops": 106299392,
+       "tflops": 2.797
+      },
+      "dA = G^T x_d": {
+       "ms": 0.063,
+       "flops": 372047872,
+       "tflops": 5.906
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0187,
+      "down kernel": 0.049
+     }
+    },
+    "1024->4096": {
+     "peft": {
+      "fwd_ms": 1.633,
+      "fwd_bwd_ms": 3.335,
+      "rounds": {
+       "fwd": [
+        1.643,
+        1.61,
+        1.633,
+        1.634,
+        1.613
+       ],
+       "fwd_bwd": [
+        3.326,
+        3.331,
+        3.346,
+        3.347,
+        3.335
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 1.382,
+      "fwd_bwd_ms": 2.819,
+      "rounds": {
+       "fwd": [
+        1.353,
+        1.353,
+        1.382,
+        1.387,
+        1.383
+       ],
+       "fwd_bwd": [
+        2.801,
+        2.805,
+        2.831,
+        2.819,
+        2.83
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 1.164,
+      "fwd_bwd_ms": 2.378,
+      "rounds": {
+       "fwd": [
+        1.148,
+        1.152,
+        1.165,
+        1.164,
+        1.167
+       ],
+       "fwd_bwd": [
+        2.365,
+        2.364,
+        2.387,
+        2.378,
+        2.401
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.469,
+     "fused_adapter_fwd_ms": 0.218,
+     "peft_adapter_fwd_bwd_ms": 0.957,
+     "fused_adapter_fwd_bwd_ms": 0.441,
+     "adapter_speedup_fwd_bwd": 2.17,
+     "adapter_speedup_fwd": 2.151,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.022,
+      "up kernel (R + s P B^T)": 0.098,
+      "down kernel (M (G A) / (1 - p))": 0.043
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.033,
+       "flops": 106299392,
+       "tflops": 3.221
+      },
+      "G = dY B": {
+       "ms": 0.089,
+       "flops": 425197568,
+       "tflops": 4.778
+      },
+      "dB = dY^T P": {
+       "ms": 0.06,
+       "flops": 425197568,
+       "tflops": 7.087
+      },
+      "dA = G^T x_d": {
+       "ms": 0.038,
+       "flops": 106299392,
+       "tflops": 2.797
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0746,
+      "down kernel": 0.014
+     }
+    },
+    "1024->512": {
+     "peft": {
+      "fwd_ms": 0.451,
+      "fwd_bwd_ms": 0.73,
+      "rounds": {
+       "fwd": [
+        0.368,
+        0.451,
+        0.458,
+        0.434,
+        0.454
+       ],
+       "fwd_bwd": [
+        0.706,
+        0.73,
+        0.738,
+        0.71,
+        0.732
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 0.323,
+      "fwd_bwd_ms": 0.581,
+      "rounds": {
+       "fwd": [
+        0.323,
+        0.335,
+        0.318,
+        0.311,
+        0.341
+       ],
+       "fwd_bwd": [
+        0.592,
+        0.592,
+        0.581,
+        0.572,
+        0.572
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 0.202,
+      "fwd_bwd_ms": 0.378,
+      "rounds": {
+       "fwd": [
+        0.202,
+        0.209,
+        0.195,
+        0.208,
+        0.201
+       ],
+       "fwd_bwd": [
+        0.378,
+        0.385,
+        0.359,
+        0.385,
+        0.378
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.249,
+     "fused_adapter_fwd_ms": 0.121,
+     "peft_adapter_fwd_bwd_ms": 0.352,
+     "fused_adapter_fwd_bwd_ms": 0.203,
+     "adapter_speedup_fwd_bwd": 1.734,
+     "adapter_speedup_fwd": 2.058,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.025,
+      "up kernel (R + s P B^T)": 0.051,
+      "down kernel (M (G A) / (1 - p))": 0.06
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.061,
+       "flops": 106299392,
+       "tflops": 1.743
+      },
+      "G = dY B": {
+       "ms": 0.037,
+       "flops": 53149696,
+       "tflops": 1.436
+      },
+      "dB = dY^T P": {
+       "ms": 0.068,
+       "flops": 53149696,
+       "tflops": 0.782
+      },
+      "dA = G^T x_d": {
+       "ms": 0.056,
+       "flops": 106299392,
+       "tflops": 1.898
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0093,
+      "down kernel": 0.014
+     }
+    }
+   },
+   "per_micro_batch": {
+    "peft_adapter_fwd_bwd_ms": 124.85,
+    "fused_adapter_fwd_bwd_ms": 59.36,
+    "peft_adapter_fwd_ms": 61.58,
+    "fused_adapter_fwd_ms": 31.26,
+    "peft_fwd_bwd_ms": 410.57,
+    "fused_fwd_bwd_ms": 345.08,
+    "base_fwd_bwd_ms": 285.73,
+    "adapter_speedup_fwd_bwd": 2.103,
+    "adapter_speedup_fwd": 1.97
+   }
+  },
+  "9b": {
+   "micro_batch": "1x768",
+   "projections": [
+    {
+     "projection": "lin.in_proj_qkv",
+     "d_in": 4096,
+     "d_out": 8192,
+     "calls": 24,
+     "shape": "4096->8192",
+     "peft_adapter_fwd_bwd_ms": 0.64,
+     "fused_adapter_fwd_bwd_ms": 0.827,
+     "peft_adapter_fwd_ms": 0.611,
+     "fused_adapter_fwd_ms": 0.93,
+     "adapter_speedup_fwd_bwd": 0.774
+    },
+    {
+     "projection": "lin.in_proj_z",
+     "d_in": 4096,
+     "d_out": 4096,
+     "calls": 24,
+     "shape": "4096->4096",
+     "peft_adapter_fwd_bwd_ms": 0.932,
+     "fused_adapter_fwd_bwd_ms": 0.471,
+     "peft_adapter_fwd_ms": 0.639,
+     "fused_adapter_fwd_ms": 0.355,
+     "adapter_speedup_fwd_bwd": 1.979
+    },
+    {
+     "projection": "lin.out_proj",
+     "d_in": 4096,
+     "d_out": 4096,
+     "calls": 24,
+     "shape": "4096->4096",
+     "peft_adapter_fwd_bwd_ms": 0.932,
+     "fused_adapter_fwd_bwd_ms": 0.471,
+     "peft_adapter_fwd_ms": 0.639,
+     "fused_adapter_fwd_ms": 0.355,
+     "adapter_speedup_fwd_bwd": 1.979
+    },
+    {
+     "projection": "lin.gate_proj",
+     "d_in": 4096,
+     "d_out": 12288,
+     "calls": 24,
+     "shape": "4096->12288",
+     "peft_adapter_fwd_bwd_ms": 1.457,
+     "fused_adapter_fwd_bwd_ms": 0.696,
+     "peft_adapter_fwd_ms": 0.772,
+     "fused_adapter_fwd_ms": 0.427,
+     "adapter_speedup_fwd_bwd": 2.093
+    },
+    {
+     "projection": "lin.up_proj",
+     "d_in": 4096,
+     "d_out": 12288,
+     "calls": 24,
+     "shape": "4096->12288",
+     "peft_adapter_fwd_bwd_ms": 1.457,
+     "fused_adapter_fwd_bwd_ms": 0.696,
+     "peft_adapter_fwd_ms": 0.772,
+     "fused_adapter_fwd_ms": 0.427,
+     "adapter_speedup_fwd_bwd": 2.093
+    },
+    {
+     "projection": "lin.down_proj",
+     "d_in": 12288,
+     "d_out": 4096,
+     "calls": 24,
+     "shape": "12288->4096",
+     "peft_adapter_fwd_bwd_ms": 1.464,
+     "fused_adapter_fwd_bwd_ms": 0.506,
+     "peft_adapter_fwd_ms": 0.703,
+     "fused_adapter_fwd_ms": 0.234,
+     "adapter_speedup_fwd_bwd": 2.893
+    },
+    {
+     "projection": "full.q_proj",
+     "d_in": 4096,
+     "d_out": 8192,
+     "calls": 8,
+     "shape": "4096->8192",
+     "peft_adapter_fwd_bwd_ms": 0.64,
+     "fused_adapter_fwd_bwd_ms": 0.827,
+     "peft_adapter_fwd_ms": 0.611,
+     "fused_adapter_fwd_ms": 0.93,
+     "adapter_speedup_fwd_bwd": 0.774
+    },
+    {
+     "projection": "full.k_proj",
+     "d_in": 4096,
+     "d_out": 1024,
+     "calls": 8,
+     "shape": "4096->1024",
+     "peft_adapter_fwd_bwd_ms": 0.564,
+     "fused_adapter_fwd_bwd_ms": 0.272,
+     "peft_adapter_fwd_ms": 0.29,
+     "fused_adapter_fwd_ms": 0.18,
+     "adapter_speedup_fwd_bwd": 2.074
+    },
+    {
+     "projection": "full.v_proj",
+     "d_in": 4096,
+     "d_out": 1024,
+     "calls": 8,
+     "shape": "4096->1024",
+     "peft_adapter_fwd_bwd_ms": 0.564,
+     "fused_adapter_fwd_bwd_ms": 0.272,
+     "peft_adapter_fwd_ms": 0.29,
+     "fused_adapter_fwd_ms": 0.18,
+     "adapter_speedup_fwd_bwd": 2.074
+    },
+    {
+     "projection": "full.o_proj",
+     "d_in": 4096,
+     "d_out": 4096,
+     "calls": 8,
+     "shape": "4096->4096",
+     "peft_adapter_fwd_bwd_ms": 0.932,
+     "fused_adapter_fwd_bwd_ms": 0.471,
+     "peft_adapter_fwd_ms": 0.639,
+     "fused_adapter_fwd_ms": 0.355,
+     "adapter_speedup_fwd_bwd": 1.979
+    },
+    {
+     "projection": "full.gate_proj",
+     "d_in": 4096,
+     "d_out": 12288,
+     "calls": 8,
+     "shape": "4096->12288",
+     "peft_adapter_fwd_bwd_ms": 1.457,
+     "fused_adapter_fwd_bwd_ms": 0.696,
+     "peft_adapter_fwd_ms": 0.772,
+     "fused_adapter_fwd_ms": 0.427,
+     "adapter_speedup_fwd_bwd": 2.093
+    },
+    {
+     "projection": "full.up_proj",
+     "d_in": 4096,
+     "d_out": 12288,
+     "calls": 8,
+     "shape": "4096->12288",
+     "peft_adapter_fwd_bwd_ms": 1.457,
+     "fused_adapter_fwd_bwd_ms": 0.696,
+     "peft_adapter_fwd_ms": 0.772,
+     "fused_adapter_fwd_ms": 0.427,
+     "adapter_speedup_fwd_bwd": 2.093
+    },
+    {
+     "projection": "full.down_proj",
+     "d_in": 12288,
+     "d_out": 4096,
+     "calls": 8,
+     "shape": "12288->4096",
+     "peft_adapter_fwd_bwd_ms": 1.464,
+     "fused_adapter_fwd_bwd_ms": 0.506,
+     "peft_adapter_fwd_ms": 0.703,
+     "fused_adapter_fwd_ms": 0.234,
+     "adapter_speedup_fwd_bwd": 2.893
+    }
+   ],
+   "shapes": {
+    "4096->8192": {
+     "peft": {
+      "fwd_ms": 4.927,
+      "fwd_bwd_ms": 9.55,
+      "rounds": {
+       "fwd": [
+        4.832,
+        4.936,
+        4.927,
+        5.376,
+        4.795
+       ],
+       "fwd_bwd": [
+        9.55,
+        10.178,
+        10.199,
+        9.467,
+        9.45
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 5.246,
+      "fwd_bwd_ms": 9.737,
+      "rounds": {
+       "fwd": [
+        4.614,
+        5.246,
+        5.251,
+        5.335,
+        4.466
+       ],
+       "fwd_bwd": [
+        9.571,
+        9.796,
+        9.737,
+        9.76,
+        8.867
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 4.316,
+      "fwd_bwd_ms": 8.91,
+      "rounds": {
+       "fwd": [
+        4.316,
+        4.352,
+        4.314,
+        4.317,
+        4.186
+       ],
+       "fwd_bwd": [
+        8.967,
+        8.91,
+        9.011,
+        8.873,
+        8.333
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.611,
+     "fused_adapter_fwd_ms": 0.93,
+     "peft_adapter_fwd_bwd_ms": 0.64,
+     "fused_adapter_fwd_bwd_ms": 0.827,
+     "adapter_speedup_fwd_bwd": 0.774,
+     "adapter_speedup_fwd": 0.657,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.033,
+      "up kernel (R + s P B^T)": 0.085,
+      "down kernel (M (G A) / (1 - p))": 0.056
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.062,
+       "flops": 201326592,
+       "tflops": 3.247
+      },
+      "G = dY B": {
+       "ms": 0.099,
+       "flops": 402653184,
+       "tflops": 4.067
+      },
+      "dB = dY^T P": {
+       "ms": 0.053,
+       "flops": 402653184,
+       "tflops": 7.597
+      },
+      "dA = G^T x_d": {
+       "ms": 0.032,
+       "flops": 201326592,
+       "tflops": 6.291
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0707,
+      "down kernel": 0.0265
+     }
+    },
+    "4096->4096": {
+     "peft": {
+      "fwd_ms": 2.91,
+      "fwd_bwd_ms": 5.445,
+      "rounds": {
+       "fwd": [
+        2.639,
+        3.133,
+        2.891,
+        2.91,
+        3.073
+       ],
+       "fwd_bwd": [
+        5.139,
+        5.568,
+        5.862,
+        5.395,
+        5.445
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 2.626,
+      "fwd_bwd_ms": 4.984,
+      "rounds": {
+       "fwd": [
+        2.427,
+        2.465,
+        3.044,
+        2.626,
+        2.879
+       ],
+       "fwd_bwd": [
+        4.745,
+        4.878,
+        5.466,
+        5.31,
+        4.984
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 2.271,
+      "fwd_bwd_ms": 4.513,
+      "rounds": {
+       "fwd": [
+        2.206,
+        2.201,
+        2.284,
+        2.271,
+        2.283
+       ],
+       "fwd_bwd": [
+        4.326,
+        4.339,
+        4.668,
+        4.61,
+        4.513
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.639,
+     "fused_adapter_fwd_ms": 0.355,
+     "peft_adapter_fwd_bwd_ms": 0.932,
+     "fused_adapter_fwd_bwd_ms": 0.471,
+     "adapter_speedup_fwd_bwd": 1.979,
+     "adapter_speedup_fwd": 1.8,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.039,
+      "up kernel (R + s P B^T)": 0.076,
+      "down kernel (M (G A) / (1 - p))": 0.075
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.079,
+       "flops": 201326592,
+       "tflops": 2.548
+      },
+      "G = dY B": {
+       "ms": 0.072,
+       "flops": 201326592,
+       "tflops": 2.796
+      },
+      "dB = dY^T P": {
+       "ms": 0.049,
+       "flops": 201326592,
+       "tflops": 4.109
+      },
+      "dA = G^T x_d": {
+       "ms": 0.051,
+       "flops": 201326592,
+       "tflops": 3.948
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0353,
+      "down kernel": 0.0265
+     }
+    },
+    "4096->12288": {
+     "peft": {
+      "fwd_ms": 6.941,
+      "fwd_bwd_ms": 13.872,
+      "rounds": {
+       "fwd": [
+        6.947,
+        6.904,
+        6.91,
+        6.941,
+        6.984
+       ],
+       "fwd_bwd": [
+        13.878,
+        13.836,
+        13.872,
+        13.852,
+        13.904
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 6.596,
+      "fwd_bwd_ms": 13.111,
+      "rounds": {
+       "fwd": [
+        6.596,
+        6.598,
+        6.531,
+        6.554,
+        6.618
+       ],
+       "fwd_bwd": [
+        13.066,
+        13.116,
+        13.029,
+        13.21,
+        13.111
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 6.169,
+      "fwd_bwd_ms": 12.415,
+      "rounds": {
+       "fwd": [
+        6.166,
+        6.17,
+        6.174,
+        6.169,
+        6.168
+       ],
+       "fwd_bwd": [
+        12.415,
+        12.453,
+        12.376,
+        12.492,
+        12.385
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.772,
+     "fused_adapter_fwd_ms": 0.427,
+     "peft_adapter_fwd_bwd_ms": 1.457,
+     "fused_adapter_fwd_bwd_ms": 0.696,
+     "adapter_speedup_fwd_bwd": 2.093,
+     "adapter_speedup_fwd": 1.808,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.033,
+      "up kernel (R + s P B^T)": 0.121,
+      "down kernel (M (G A) / (1 - p))": 0.057
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.061,
+       "flops": 201326592,
+       "tflops": 3.3
+      },
+      "G = dY B": {
+       "ms": 0.129,
+       "flops": 603979776,
+       "tflops": 4.682
+      },
+      "dB = dY^T P": {
+       "ms": 0.07,
+       "flops": 603979776,
+       "tflops": 8.628
+      },
+      "dA = G^T x_d": {
+       "ms": 0.032,
+       "flops": 201326592,
+       "tflops": 6.291
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.106,
+      "down kernel": 0.0265
+     }
+    },
+    "12288->4096": {
+     "peft": {
+      "fwd_ms": 7.474,
+      "fwd_bwd_ms": 14.356,
+      "rounds": {
+       "fwd": [
+        7.409,
+        7.411,
+        7.474,
+        7.557,
+        7.642
+       ],
+       "fwd_bwd": [
+        14.267,
+        14.356,
+        14.294,
+        14.565,
+        14.657
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 7.005,
+      "fwd_bwd_ms": 13.398,
+      "rounds": {
+       "fwd": [
+        7.005,
+        6.893,
+        6.932,
+        7.105,
+        7.157
+       ],
+       "fwd_bwd": [
+        13.265,
+        13.177,
+        13.398,
+        13.573,
+        13.96
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 6.771,
+      "fwd_bwd_ms": 12.892,
+      "rounds": {
+       "fwd": [
+        6.533,
+        6.523,
+        6.774,
+        6.771,
+        7.012
+       ],
+       "fwd_bwd": [
+        12.455,
+        12.386,
+        12.905,
+        12.892,
+        13.258
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.703,
+     "fused_adapter_fwd_ms": 0.234,
+     "peft_adapter_fwd_bwd_ms": 1.464,
+     "fused_adapter_fwd_bwd_ms": 0.506,
+     "adapter_speedup_fwd_bwd": 2.893,
+     "adapter_speedup_fwd": 3.004,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.077,
+      "up kernel (R + s P B^T)": 0.057,
+      "down kernel (M (G A) / (1 - p))": 0.116
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.138,
+       "flops": 603979776,
+       "tflops": 4.377
+      },
+      "G = dY B": {
+       "ms": 0.056,
+       "flops": 201326592,
+       "tflops": 3.595
+      },
+      "dB = dY^T P": {
+       "ms": 0.032,
+       "flops": 201326592,
+       "tflops": 6.291
+      },
+      "dA = G^T x_d": {
+       "ms": 0.075,
+       "flops": 603979776,
+       "tflops": 8.053
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0353,
+      "down kernel": 0.0795
+     }
+    },
+    "4096->1024": {
+     "peft": {
+      "fwd_ms": 0.895,
+      "fwd_bwd_ms": 1.726,
+      "rounds": {
+       "fwd": [
+        0.954,
+        0.879,
+        0.895,
+        0.88,
+        0.903
+       ],
+       "fwd_bwd": [
+        1.846,
+        1.718,
+        1.702,
+        1.726,
+        1.726
+       ]
+      }
+     },
+     "fused": {
+      "fwd_ms": 0.785,
+      "fwd_bwd_ms": 1.434,
+      "rounds": {
+       "fwd": [
+        0.82,
+        0.787,
+        0.779,
+        0.782,
+        0.785
+       ],
+       "fwd_bwd": [
+        1.43,
+        1.433,
+        1.447,
+        1.434,
+        1.452
+       ]
+      }
+     },
+     "base": {
+      "fwd_ms": 0.605,
+      "fwd_bwd_ms": 1.162,
+      "rounds": {
+       "fwd": [
+        0.603,
+        0.606,
+        0.605,
+        0.605,
+        0.604
+       ],
+       "fwd_bwd": [
+        1.162,
+        1.165,
+        1.173,
+        1.162,
+        1.156
+       ]
+      }
+     },
+     "peft_adapter_fwd_ms": 0.29,
+     "fused_adapter_fwd_ms": 0.18,
+     "peft_adapter_fwd_bwd_ms": 0.564,
+     "fused_adapter_fwd_bwd_ms": 0.272,
+     "adapter_speedup_fwd_bwd": 2.074,
+     "adapter_speedup_fwd": 1.611,
+     "parts_ms": {
+      "dropout (torch.native_dropout)": 0.032,
+      "up kernel (R + s P B^T)": 0.029,
+      "down kernel (M (G A) / (1 - p))": 0.057
+     },
+     "products": {
+      "P = x_d A^T": {
+       "ms": 0.06,
+       "flops": 201326592,
+       "tflops": 3.355
+      },
+      "G = dY B": {
+       "ms": 0.028,
+       "flops": 50331648,
+       "tflops": 1.798
+      },
+      "dB = dY^T P": {
+       "ms": 0.029,
+       "flops": 50331648,
+       "tflops": 1.736
+      },
+      "dA = G^T x_d": {
+       "ms": 0.031,
+       "flops": 201326592,
+       "tflops": 6.494
+      }
+     },
+     "floors_ms": {
+      "up kernel": 0.0088,
+      "down kernel": 0.0265
+     }
+    }
+   },
+   "per_micro_batch": {
+    "peft_adapter_fwd_bwd_ms": 221.79,
+    "fused_adapter_fwd_bwd_ms": 117.93,
+    "peft_adapter_fwd_ms": 131.88,
+    "fused_adapter_fwd_ms": 87.34,
+    "peft_fwd_bwd_ms": 1985.34,
+    "fused_fwd_bwd_ms": 1881.47,
+    "base_fwd_bwd_ms": 1763.54,
+    "adapter_speedup_fwd_bwd": 1.881,
+    "adapter_speedup_fwd": 1.51
+   }
+  }
+ },
+ "peft": "0.21.2",
+ "squares_start": {
+  "2048": 11.446,
+  "4096": 11.723
+ },
+ "squares_end": {
+  "2048": 11.484,
+  "4096": 10.295
+ },
+ "ended": "2026-11-03 18:16:04 PST"
+}
