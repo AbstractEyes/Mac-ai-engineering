@@ -1,0 +1,8 @@
+[guard] start 15:29:45 limit 96.0 GB, swap +1.0 GB, wall 1200 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/bench_loss_head.py
+[bench_loss_head] pid 11915
+[guard]      30 s footprint  17.57 GB (peak  17.58) swap +0.00 GB pressure 1
+[bench_loss_head] 0.8b: {"every_position": {"head": 72.742, "cast": 6.9, "ce_fwd": 17.888, "ce_fwd_bwd": 40.398, "cast_back": 6.832, "head_bwd": 71.337, "output_copy": 6.942, "whole": 200.823, "ce_bwd": 22.51, "loss_own_passes": 54.13, "head_products": 144.079, "parts_sum": 205.151}, "labelled_only": {"head": 18.376, "cast": 1.351, "ce_fwd": 3.468, "ce_fwd_bwd": 7.987, "cast_back": 1.304, "head_bwd": 13.401, "output_copy": 1.351, "whole": 43.104, "ce_bwd": 4.519, "loss_own_passes": 10.642, "head_products": 31.777, "parts_sum": 43.77}}
+[guard]      60 s footprint  24.14 GB (peak  24.14) swap +0.00 GB pressure 1
+[bench_loss_head] 9b: {"every_position": {"head": 136.849, "cast": 3.307, "ce_fwd": 8.513, "ce_fwd_bwd": 19.329, "cast_back": 3.228, "head_bwd": 132.002, "output_copy": 3.33, "whole": 297.981, "ce_bwd": 10.816, "loss_own_passes": 25.864, "head_products": 268.851, "parts_sum": 298.045}, "labelled_only": {"head": 46.372, "cast": 0.685, "ce_fwd": 1.975, "ce_fwd_bwd": 4.282, "cast_back": 0.666, "head_bwd": 31.359, "output_copy": 0.683, "whole": 83.579, "ce_bwd": 2.307, "loss_own_passes": 5.633, "head_products": 77.731, "parts_sum": 84.047}}
+[bench_loss_head] wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/layer_logs/d8_loss_head.json
+[guard] end 15:31:11 rc 0 peak footprint 24.14 GB wall 87 s
