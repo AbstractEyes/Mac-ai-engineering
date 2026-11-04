@@ -13,6 +13,12 @@ F.linear and its input gradient). The adapter path is the layer less its base: p
 back-to-back calls filling at least ~10 ms, the median of 7 (bench/profile_layer.py's timed); the reading is the median over the
 rounds. The totals weight each projection by its calls in a micro-batch (its layers).
 
+The part alone, a second reading without the subtraction (at 9B a base product's spread from round to round, ~0.5 ms of ~9 ms,
+is as large as the adapter path it would be subtracted from): PEFT's own adapter operations (its dropout, lora_A and lora_B
+modules; the input's cast, the scale, the add, the cast back) against the fused function, on the same leaves x and R (the base
+output, requiring a gradient) under bf16 autocast, in their own interleaved rounds. What it leaves out: the addition of the
+adapter's input gradient to the base's, which PEFT's layer makes and the fused one makes too (autograd's add in both).
+
 Beside them, at each shape: the fused path's own parts (torch's dropout call; the up kernel; the down kernel) and the rank-32
 products it leaves to PyTorch (P = x_d A^T, G = dY B, dB = dY^T P, dA = G^T x_d) with their rates, against the large-square
 rate measured at the start and the end of the session (the registered prediction: the rank-32 products <= 30% of it).
@@ -37,7 +43,7 @@ import profile_layer as PL  # noqa: E402
 import profile_products as PP  # noqa: E402
 from macai import lora, patch  # noqa: E402
 from macai.instruments import gpu_ms, warm_gpu  # noqa: E402
-from macai.lora import _fused, _kernels  # noqa: E402
+from macai.lora import _fused, _kernels, _peft  # noqa: E402
 
 DEV, BF = "mps", torch.bfloat16
 ROUNDS = 5
@@ -135,6 +141,28 @@ def shape_case(d_in, d_out, B, T, rounds, seed):
     r["adapter_speedup_fwd_bwd"] = round(r["peft_adapter_fwd_bwd_ms"] / r["fused_adapter_fwd_bwd_ms"], 3)
     r["adapter_speedup_fwd"] = round(r["peft_adapter_fwd_ms"] / r["fused_adapter_fwd_ms"], 3)
 
+    # the part alone (no base product to subtract, whose round-to-round spread at 9B is as large as the part itself): PEFT's
+    # own adapter operations (its dropout, lora_A and lora_B modules; the input's cast, the scale, the add, the cast back) against
+    # the fused function, on the same leaves x and R (the base output) under bf16 autocast, the gradients to x, R, A and B
+    with torch.no_grad(), torch.autocast(DEV, dtype=BF):
+        r0 = F.linear(x, w)
+    r0 = r0.detach().requires_grad_(True)
+    s = m.scaling["default"]
+
+    def peft_part():
+        with torch.autocast(DEV, dtype=BF):
+            xa = x.to(a.dtype)
+            y = r0 + m.lora_B["default"](m.lora_A["default"](m.lora_dropout["default"](xa))) * s
+            return y.to(r0.dtype)
+
+    def fused_part():
+        with torch.autocast(DEV, dtype=BF):
+            return _peft.adapter_path(x, r0, a, b, P_DROP, s, BF)
+    part = interleaved({"peft": Variant(peft_part, [x, r0, a, b], gy), "fused": Variant(fused_part, [x, r0, a, b], gy)}, rounds)
+    part["speedup_fwd_bwd"] = round(part["peft"]["fwd_bwd_ms"] / part["fused"]["fwd_bwd_ms"], 3)
+    part["speedup_fwd"] = round(part["peft"]["fwd_ms"] / part["fused"]["fwd_ms"], 3)
+    r["part_alone"] = part
+
     # the fused path's parts, and the rank-32 products it leaves to PyTorch (bf16, as under autocast)
     n = B * T
     with torch.no_grad():
@@ -200,27 +228,39 @@ def main():
                 r = done[(d_in, d_out)]
                 print(f"{model} {d_in}->{d_out}: peft {r['peft']['fwd_bwd_ms']:.3f} fused {r['fused']['fwd_bwd_ms']:.3f} base "
                       f"{r['base']['fwd_bwd_ms']:.3f} ms; adapter path {r['peft_adapter_fwd_bwd_ms']:.3f} -> "
-                      f"{r['fused_adapter_fwd_bwd_ms']:.3f} ms (x{r['adapter_speedup_fwd_bwd']}); parts {r['parts_ms']}; "
+                      f"{r['fused_adapter_fwd_bwd_ms']:.3f} ms (x{r['adapter_speedup_fwd_bwd']}); the part alone "
+                      f"{r['part_alone']['peft']['fwd_bwd_ms']:.3f} -> {r['part_alone']['fused']['fwd_bwd_ms']:.3f} ms "
+                      f"(x{r['part_alone']['speedup_fwd_bwd']}); parts {r['parts_ms']}; "
                       f"products {[v['tflops'] for v in r['products'].values()]} TFLOP/s", flush=True)
             rows.append({"projection": name, "d_in": d_in, "d_out": d_out, "calls": calls, "shape": f"{d_in}->{d_out}"})
         tot = {k: 0.0 for k in ("peft_adapter_fwd_bwd_ms", "fused_adapter_fwd_bwd_ms", "peft_adapter_fwd_ms",
-                                "fused_adapter_fwd_ms", "peft_fwd_bwd_ms", "fused_fwd_bwd_ms", "base_fwd_bwd_ms")}
+                                "fused_adapter_fwd_ms", "peft_fwd_bwd_ms", "fused_fwd_bwd_ms", "base_fwd_bwd_ms",
+                                "part_peft_fwd_bwd_ms", "part_fused_fwd_bwd_ms", "part_peft_fwd_ms", "part_fused_fwd_ms")}
         for row in rows:
             r = done[(row["d_in"], row["d_out"])]
             row.update({k: r[k] for k in ("peft_adapter_fwd_bwd_ms", "fused_adapter_fwd_bwd_ms", "peft_adapter_fwd_ms",
                                           "fused_adapter_fwd_ms", "adapter_speedup_fwd_bwd")})
+            row.update(part_peft_fwd_bwd_ms=r["part_alone"]["peft"]["fwd_bwd_ms"],
+                       part_fused_fwd_bwd_ms=r["part_alone"]["fused"]["fwd_bwd_ms"],
+                       part_speedup_fwd_bwd=r["part_alone"]["speedup_fwd_bwd"])
             for k in ("peft_adapter_fwd_bwd_ms", "fused_adapter_fwd_bwd_ms", "peft_adapter_fwd_ms", "fused_adapter_fwd_ms"):
                 tot[k] += row["calls"] * r[k]
             tot["peft_fwd_bwd_ms"] += row["calls"] * r["peft"]["fwd_bwd_ms"]
             tot["fused_fwd_bwd_ms"] += row["calls"] * r["fused"]["fwd_bwd_ms"]
             tot["base_fwd_bwd_ms"] += row["calls"] * r["base"]["fwd_bwd_ms"]
+            for v in ("peft", "fused"):
+                for k in ("fwd_bwd_ms", "fwd_ms"):
+                    tot[f"part_{v}_{k}"] += row["calls"] * r["part_alone"][v][k]
         tot = {k: round(v, 2) for k, v in tot.items()}
         tot["adapter_speedup_fwd_bwd"] = round(tot["peft_adapter_fwd_bwd_ms"] / tot["fused_adapter_fwd_bwd_ms"], 3)
         tot["adapter_speedup_fwd"] = round(tot["peft_adapter_fwd_ms"] / tot["fused_adapter_fwd_ms"], 3)
+        tot["part_speedup_fwd_bwd"] = round(tot["part_peft_fwd_bwd_ms"] / tot["part_fused_fwd_bwd_ms"], 3)
+        tot["part_speedup_fwd"] = round(tot["part_peft_fwd_ms"] / tot["part_fused_fwd_ms"], 3)
         rec["models"][model] = {"micro_batch": f"{B}x{T}", "projections": rows,
                                 "shapes": {f"{k[0]}->{k[1]}": v for k, v in done.items()}, "per_micro_batch": tot}
         print(f"{model} a micro-batch: the adapter path {tot['peft_adapter_fwd_bwd_ms']} -> {tot['fused_adapter_fwd_bwd_ms']} ms "
-              f"(x{tot['adapter_speedup_fwd_bwd']}); forward {tot['peft_adapter_fwd_ms']} -> {tot['fused_adapter_fwd_ms']} ms",
+              f"(x{tot['adapter_speedup_fwd_bwd']}); forward {tot['peft_adapter_fwd_ms']} -> {tot['fused_adapter_fwd_ms']} ms; "
+              f"the part alone {tot['part_peft_fwd_bwd_ms']} -> {tot['part_fused_fwd_bwd_ms']} ms (x{tot['part_speedup_fwd_bwd']})",
               flush=True)
     rec["squares_end"] = squares()
     print("large squares at the end", rec["squares_end"], flush=True)

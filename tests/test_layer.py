@@ -23,7 +23,7 @@ import torch
 import torch.nn.functional as F
 
 import macai.patch
-from macai import layer
+from macai import layer, lora
 from macai.layer import _conv, _gates, _qwen3_5, _swiglu
 
 mps = pytest.mark.skipif(not torch.backends.mps.is_available(), reason="needs an Apple GPU")
@@ -413,8 +413,9 @@ def test_parts_off_bit_identical_and_call_order(model):
             hooks = [m.register_forward_hook(lambda _m, i, o: drops.append(((o == 0).cpu(), (i[0] != 0).cpu())))
                      for n, m in lin.named_modules() if n.endswith("lora_dropout.default")]
             try:
+                # PEFT's own LoRA forward (macai.lora's fused path calls none of PEFT's dropout, lora_A and lora_B modules)
                 with (layer.configured(**dict.fromkeys(layer.PARTS, name == "on")), recorded_calls(lin) as calls,
-                      torch.autocast("mps", torch.bfloat16)):
+                      lora.configured(FUSED=False), torch.autocast("mps", torch.bfloat16)):
                     torch.manual_seed(1)
                     outs[name] = lin(x, position_embeddings=None).float().cpu()
                 orders[name] = list(calls)

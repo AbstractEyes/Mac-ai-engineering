@@ -25,7 +25,8 @@ LOGS = os.path.join(HERE, "layer_logs")
 BASE_08, BASE_9 = "d8d9_0.8b_2x8_100steps", "d8d9_9b_1x16_50steps"
 RUN_08, RUN_9 = "d5_0.8b_2x8_100steps", "d5_9b_1x16_25steps"
 PROFILE, PROFILE_BEFORE = "profile_d5_0.8b_2x8", "profile_d8_0.8b_2x8"
-PROBES = {"0.8b": "probe_d5_0.8b", "9b": "probe_d5_9b"}
+PROBES = {"0.8b": "probe_d5_0.8b_run2", "9b": "probe_d5_9b"}   # probe_d5_0.8b: the first run, stopped before the model's load
+BENCH, BENCH_RUN1 = "d5_adapter", "d5_adapter_run1"          # run 1: the layer less its base only (in the chain of record)
 WINDOWS = ((1, 10), (11, 25), (26, 50), (51, 75), (76, 100), (11, 100))
 BARS = {"grad_ratio": 2.0, "adapter_speedup": 1.2, "footprint_08_gb": 53.5, "footprint_9_gb": 74.6,
         "custom_product_share_pct": 5.0, "custom_product_of_mlx": 0.80}
@@ -128,11 +129,12 @@ def head_trigger(prof_before, prof_after, a):
 
 # ---- (b) the adapter path -----------------------------------------------------------------------------------------------
 
-def bench_b():
-    r = load("d5_adapter")
+def bench_b(name=BENCH):
+    r = load(name)
     if r is None:
         return None
-    out = {"started": r["started"], "rounds": r["rounds"], "squares": [r["squares_start"], r["squares_end"]], "models": {}}
+    out = {"record": name, "started": r["started"], "rounds": r["rounds"], "squares": [r["squares_start"], r["squares_end"]],
+           "models": {}}
     ref = max(list(r["squares_start"].values()) + list(r["squares_end"].values()))
     for model, res in r["models"].items():
         tot = res["per_micro_batch"]
@@ -149,7 +151,18 @@ def bench_b():
                          "speedup": s["adapter_speedup_fwd_bwd"]})
         lo, hi = DESIGN["adapter_ms"][model]
         sp = tot["adapter_speedup_fwd_bwd"]
+        part = None
+        if "part_speedup_fwd_bwd" in tot:
+            psp = tot["part_speedup_fwd_bwd"]
+            part = {"ms": [tot["part_peft_fwd_bwd_ms"], tot["part_fused_fwd_bwd_ms"]],
+                    "fwd_ms": [tot["part_peft_fwd_ms"], tot["part_fused_fwd_ms"]], "speedup": psp,
+                    "speedup_fwd": tot["part_speedup_fwd"], "bar_met": psp >= BARS["adapter_speedup"],
+                    "registered_prediction_met": psp >= REGISTERED["adapter_speedup_min"],
+                    "design_prediction_met": psp >= DESIGN["adapter_speedup_min"],
+                    "by_shape": {sh: {"ms": [s["part_alone"]["peft"]["fwd_bwd_ms"], s["part_alone"]["fused"]["fwd_bwd_ms"]],
+                                      "speedup": s["part_alone"]["speedup_fwd_bwd"]} for sh, s in res["shapes"].items()}}
         out["models"][model] = {
+            "part_alone": part,
             "micro_batch": res["micro_batch"], "adapter_ms": [tot["peft_adapter_fwd_bwd_ms"], tot["fused_adapter_fwd_bwd_ms"]],
             "adapter_fwd_ms": [tot["peft_adapter_fwd_ms"], tot["fused_adapter_fwd_ms"]],
             "speedup": sp, "speedup_fwd": tot["adapter_speedup_fwd"], "bar": BARS["adapter_speedup"],
@@ -220,7 +233,22 @@ def probe(model):
     n_mb = len(steps) * r["grad_accum"]
     last = steps[-1].get("training_counts", {})
     calls = sorted(set(by.values()))
-    return {"micro_batches": n_mb, "adapted_modules": P["adapted_modules"], "modules_fused": len(by),
+    f64 = None
+    for c in P["checks"]:
+        f = c.get("float64_model")
+        if f:
+            ratios = sorted(v["fused"] / v["peft"] for k, v in f["errors"].items() if k != "loss" and v["peft"] > 0)
+            pe = sorted(v["peft"] for k, v in f["errors"].items() if k != "loss")
+            fe = sorted(v["fused"] for k, v in f["errors"].items() if k != "loss")
+            f64 = {"gradients": len(ratios), "ratio_range": [round(ratios[0], 3), round(ratios[-1], 3)],
+                   "ratio_median": round(statistics.median(ratios), 3),
+                   "ratio_geomean": round(statistics.geometric_mean(ratios), 3),
+                   "over_1": sum(x > 1 for x in ratios), "over_1_5": sum(x > 1.5 for x in ratios), "over_2": f["over_2"],
+                   "worst": f["worst_ratio"], "worst_errors": f["errors"].get(f["worst_ratio"]["name"]),
+                   "peft_error_median": round(statistics.median(pe), 4), "fused_error_median": round(statistics.median(fe), 4),
+                   "peft_error_range": f["peft_error_range"], "loss": f["errors"]["loss"],
+                   "input_embeddings": f["errors"]["d input embeddings"], "seconds": f["seconds"]}
+    return {"micro_batches": n_mb, "adapted_modules": P["adapted_modules"], "modules_fused": len(by), "float64_model": f64,
             "calls_per_module": calls, "every_module_every_micro_batch": len(by) == P["adapted_modules"] and calls == [n_mb],
             "lora_fused_total": last.get("lora_fused"), "lora_fallbacks": last.get("lora_fallbacks"),
             "checks": P["checks"], "lora_dropout_modules": r.get("checks", {}).get("lora_dropout_modules"),
@@ -334,7 +362,8 @@ def main():
     a = products_a()
     prof, old, new = profile()
     out = {"bars": BARS, "registered": REGISTERED, "design_predictions": DESIGN, "a_products": a,
-           "c_head_trigger": head_trigger(old, new, a), "b_bench": bench_b(), "tests": tests_parity(),
+           "c_head_trigger": head_trigger(old, new, a), "b_bench": bench_b(), "b_bench_run1": bench_b(BENCH_RUN1),
+           "tests": tests_parity(),
            "probes": {m: probe(m) for m in PROBES}, "integration_0.8b": integration_08(p4), "integration_9b": integration_9(p4),
            "profile_0.8b": prof}
     print(json.dumps(out, indent=1, default=str))

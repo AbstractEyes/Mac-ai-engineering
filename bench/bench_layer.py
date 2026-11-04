@@ -220,7 +220,7 @@ def main():
     rec = {"torch": torch.__version__, "started": time.strftime("%Y-%m-%d %H:%M:%S %Z"), "rounds": a.rounds,
            "shapes": SHAPES, "step0": s0, "models": {}}
     warm_gpu(2.0)
-    patch.install()
+    patch.install(lora=False)            # PEFT's own LoRA layers (the LoRA-B layout check measured them; series design D5 fuses them)
     rec["patches"] = patch.layer_patches()
     on = {p: p in a.layer_parts.split(",") for p in layer.PARTS}
     off = dict.fromkeys(layer.PARTS, False)

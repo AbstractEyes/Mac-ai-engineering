@@ -14,8 +14,10 @@ stats() counts the fused calls and the fallbacks by reason.
 """
 import contextlib
 
-# off until the series admits it (docs/series_layer.md, D5)
-FUSED = False
+# admitted by series design D5 (parity: the forward and every gradient at or under twice PEFT's own error against float64, the
+# masks PEFT's from the same generator state; speed: the adapter path 2.1x / 1.9x its PEFT path isolated at 0.8B / 9B, 1.86x in
+# situ at 0.8B; a LoRA step -8.0% / -5.1%) and on by default since; docs/series_layer.md
+FUSED = True
 
 PARTS = ("FUSED",)
 
