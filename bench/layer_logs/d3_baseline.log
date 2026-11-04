@@ -1,0 +1,20 @@
+[guard] start 20:03:32 limit 96.0 GB, swap +1.0 GB, wall 900 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/bench_d3.py --name d3_baseline --variants base --rounds 3
+[bench_d3] pid 56017
+[bench_d3] 1 variants x 66 shapes x 3 modes x 3 rounds; commit 4272571 dirty False
+[bench_d3] round 1/3 base: 8.2 s; spent 0.1 min, left ~0.3 min
+[guard]      30 s footprint   8.19 GB (peak  11.19) swap +0.00 GB pressure 1
+[bench_d3] round 2/3 base: 8.1 s; spent 0.3 min, left ~0.1 min
+[bench_d3] round 3/3 base: 8.1 s; spent 0.4 min, left ~0.0 min
+[bench_d3] base micro-batch {"0.8b": {"fwd": 21.86, "train_fwd": 22.01, "fwd_bwd": 77.67}, "9b": {"fwd": 27.72, "train_fwd": 27.89, "fwd_bwd": 99.02}}
+[bench_d3] base 0.8b_bench fwd 3.286 train_fwd 3.045 fwd_bwd 10.686
+[bench_d3] base 9b_bench fwd 3.018 train_fwd 3.036 fwd_bwd 10.734
+[bench_d3] base long_h16_4096 fwd 4.987 train_fwd 4.999 fwd_bwd 15.904
+[bench_d3] base long_h16_8192 fwd 9.899 train_fwd 10.015 fwd_bwd 31.483
+[bench_d3] base long_h16_16384 fwd 19.681 train_fwd 19.708 fwd_bwd 62.413
+[bench_d3] base long_h16_32768 fwd 39.239 train_fwd 39.082 fwd_bwd 123.891
+[bench_d3] base long_h32_4096 fwd 6.053 train_fwd 5.852 fwd_bwd 20.562
+[bench_d3] base long_h32_8192 fwd 11.6 train_fwd 11.629 fwd_bwd 40.393
+[bench_d3] base long_h32_16384 fwd 23.288 train_fwd 23.0 fwd_bwd 80.175
+[bench_d3] base long_h32_32768 fwd 46.013 train_fwd 45.98 fwd_bwd 160.465
+[bench_d3] wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/layer_logs/d3_baseline.json
+[guard] end 20:04:20 rc 0 peak footprint 21.69 GB wall 48 s
