@@ -27,10 +27,12 @@ from macai.instruments import warm_gpu  # noqa: E402
 SHAPES = {"qwen3.5-0.8b": dict(model="Qwen/Qwen3.5-0.8B", batch=4), "qwen3.5-9b": dict(model="Qwen/Qwen3.5-9B", batch=2)}
 T, WARM, REPS = 1024, 2, 5
 # op settings: the 0.2.0 drop-in (token-at-a-time kernels, the l2 normalization as PyTorch operations); the chunked kernels
-# (D1 + D2) with the same PyTorch normalization; the chunked kernels with the fused query / key prologue
+# (D1 + D2) with the same PyTorch normalization; the chunked kernels with the fused query / key prologue. The chunked choices keep
+# Phase 3's chunking (chunk 16 forwards, no value split; series design D3's defaults are measured by bench/bench_d3.py)
+PHASE3 = dict(FWD_CHUNK=16, VALUE_SPLIT=1)
 CHOICES = {"d0": dict(KERNEL="auto", KERNEL_BWD="column", FUSED_NORM=False),
-           "chunked": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=False),
-           "chunked_fused_norm": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True)}
+           "chunked": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=False, **PHASE3),
+           "chunked_fused_norm": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True, **PHASE3)}
 # the memory designs, each on the default kernels (chunked, fused prologue)
 MEMORY = {name: dict(CHOICES["chunked_fused_norm"], SIZE_CLASSES=c, RECOMPUTE_STATES=r)
           for name, (c, r) in {"stored": (False, False), "classes": (True, False), "recompute": (False, True),

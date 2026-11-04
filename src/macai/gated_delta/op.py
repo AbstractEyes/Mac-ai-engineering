@@ -33,13 +33,14 @@ SIZE_CLASSES = False
 RECOMPUTE_STATES = True
 # the rule's chunking and tiling (series design D3, docs/series_layer.md):
 # FWD_CHUNK: the chunk length of a chunked forward that keeps no states (inference, and the training forward under
-# RECOMPUTE_STATES): 16 (Phase 3's, the backward's own) or 8. The backward recomputes at _chunked.C from the inputs either way, so
-# the gradients do not change; the forward's output rounds by its own chunking
-FWD_CHUNK = 16
+# RECOMPUTE_STATES): 8 (D3 (a1), the default: the readers' training forward 1.11x) or 16 (Phase 3's, the backward's own). The
+# backward recomputes at _chunked.C from the inputs either way, so the gradients keep their bits; the forward's output rounds by
+# its own chunking (within the harness's float64 bars, at 0.33-1.50x the chunk-16 forward's error)
+FWD_CHUNK = 8
 # VALUE_SPLIT: the threadgroups a head-row's value columns are split over in the state passes (each owns DV / VALUE_SPLIT
-# columns and stages the whole chunk's keys and queries): 1, 2, 4, 8, or "auto" (split_for: by the pass's chunk length and the
-# call's head-rows, _chunked.AUTO_SPLIT)
-VALUE_SPLIT = 1
+# columns and stages the whole chunk's keys and queries): "auto" (D3 (b), the default: split_for by the pass's chunk length and
+# the call's head-rows, _chunked.AUTO_SPLIT), or 1, 2, 4, 8 for every pass
+VALUE_SPLIT = "auto"
 # the chunked kernels' calls by what they ran: "fwd c<chunk> s<split> d<double buffering>" and "bwd s<split> d<..>" (counted
 # at every call, read by the training runner and the probes; no GPU work)
 CALLS = collections.Counter()

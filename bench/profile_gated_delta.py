@@ -209,9 +209,10 @@ def rule_through_autograd(B, T, H):
 
 
 # op settings, as in bench_gated_delta.py: the 0.2.0 drop-in; the chunked kernels; the chunked kernels with the fused prologue
+# (the chunked ones at Phase 3's chunking: chunk 16 forwards, no value split)
 PAIRINGS = {"d0_head_fwd_column_bwd": dict(KERNEL="auto", KERNEL_BWD="column", FUSED_NORM=False),
-            "chunked": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=False),
-            "chunked_fused_norm": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True)}
+            "chunked": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=False, FWD_CHUNK=16, VALUE_SPLIT=1),
+            "chunked_fused_norm": dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True, FWD_CHUNK=16, VALUE_SPLIT=1)}
 
 
 def op_counts(fn):

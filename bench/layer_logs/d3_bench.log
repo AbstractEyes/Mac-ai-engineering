@@ -1,0 +1,115 @@
+[guard] start 20:44:07 limit 96.0 GB, swap +1.0 GB, wall 1800 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/bench_d3.py --name d3_bench --variants base,fwd8,dbuf,dbuf2,split2,auto,fwd8+auto --rounds 3 --kernels --order shape --pause-s 20
+[bench_d3] pid 59379
+[bench_d3] 7 variants x 68 shapes x 3 modes x 3 rounds; commit e254e1a dirty False
+[guard]      30 s footprint   8.41 GB (peak   9.92) swap +0.00 GB pressure 1
+[guard]      60 s footprint   8.41 GB (peak   9.92) swap +0.00 GB pressure 1
+[guard]      91 s footprint  13.41 GB (peak  14.41) swap +0.00 GB pressure 1
+[guard]     121 s footprint   9.53 GB (peak  21.91) swap +0.00 GB pressure 1
+[guard]     151 s footprint  15.90 GB (peak  21.91) swap +0.00 GB pressure 1
+[bench_d3] round 1/3: 141.7 s; spent 2.4 min, left ~4.8 min
+[guard]     181 s footprint   8.06 GB (peak  21.91) swap +0.00 GB pressure 1
+[guard]     212 s footprint   8.90 GB (peak  21.91) swap +0.00 GB pressure 1
+[guard]     242 s footprint  11.91 GB (peak  21.91) swap +0.00 GB pressure 1
+[guard]     272 s footprint   9.04 GB (peak  22.40) swap +0.00 GB pressure 1
+[guard]     302 s footprint  15.90 GB (peak  22.40) swap +0.00 GB pressure 1
+[bench_d3] round 2/3: 137.9 s; spent 5.1 min, left ~2.5 min
+[guard]     333 s footprint   8.06 GB (peak  22.40) swap +0.00 GB pressure 1
+[guard]     363 s footprint   8.90 GB (peak  22.40) swap +0.00 GB pressure 1
+[guard]     393 s footprint   8.90 GB (peak  22.40) swap +0.00 GB pressure 1
+[guard]     423 s footprint  22.40 GB (peak  22.40) swap +0.00 GB pressure 1
+[guard]     453 s footprint  11.91 GB (peak  22.40) swap +0.00 GB pressure 1
+[guard]     484 s footprint  15.90 GB (peak  22.40) swap +0.00 GB pressure 1
+[bench_d3] round 3/3: 137.9 s; spent 7.7 min, left ~0.0 min
+[bench_d3] base micro-batch {"0.8b": {"fwd": 22.05, "train_fwd": 22.19, "fwd_bwd": 78.51}, "9b": {"fwd": 27.91, "train_fwd": 28.08, "fwd_bwd": 99.77}}
+[bench_d3] base 0.8b_bench fwd 3.095 train_fwd 3.093 fwd_bwd 10.616
+[bench_d3] base 9b_bench fwd 3.019 train_fwd 3.026 fwd_bwd 10.686
+[bench_d3] base long_h16_1024 fwd 1.299 train_fwd 1.305 fwd_bwd 4.232
+[bench_d3] base long_h16_4096 fwd 5.004 train_fwd 5.026 fwd_bwd 16.028
+[bench_d3] base long_h16_8192 fwd 9.943 train_fwd 9.969 fwd_bwd 31.639
+[bench_d3] base long_h16_16384 fwd 19.713 train_fwd 19.717 fwd_bwd 62.619
+[bench_d3] base long_h16_32768 fwd 39.222 train_fwd 39.222 fwd_bwd 124.888
+[bench_d3] base long_h32_1024 fwd 1.531 train_fwd 1.526 fwd_bwd 5.399
+[bench_d3] base long_h32_4096 fwd 5.896 train_fwd 5.901 fwd_bwd 20.607
+[bench_d3] base long_h32_8192 fwd 11.629 train_fwd 11.668 fwd_bwd 40.826
+[bench_d3] base long_h32_16384 fwd 23.066 train_fwd 23.001 fwd_bwd 80.666
+[bench_d3] base long_h32_32768 fwd 45.69 train_fwd 46.061 fwd_bwd 161.758
+[bench_d3] fwd8 micro-batch {"0.8b": {"fwd": 19.88, "train_fwd": 20.02, "fwd_bwd": 76.19}, "9b": {"fwd": 25.09, "train_fwd": 25.23, "fwd_bwd": 97.16}}
+[bench_d3] fwd8 0.8b_bench fwd 2.856 train_fwd 2.863 fwd_bwd 10.393
+[bench_d3] fwd8 9b_bench fwd 2.797 train_fwd 2.798 fwd_bwd 10.414
+[bench_d3] fwd8 long_h16_1024 fwd 1.147 train_fwd 1.148 fwd_bwd 4.096
+[bench_d3] fwd8 long_h16_4096 fwd 4.567 train_fwd 4.596 fwd_bwd 15.546
+[bench_d3] fwd8 long_h16_8192 fwd 9.057 train_fwd 9.067 fwd_bwd 30.567
+[bench_d3] fwd8 long_h16_16384 fwd 17.999 train_fwd 18.008 fwd_bwd 60.996
+[bench_d3] fwd8 long_h16_32768 fwd 35.78 train_fwd 35.805 fwd_bwd 122.079
+[bench_d3] fwd8 long_h32_1024 fwd 1.385 train_fwd 1.39 fwd_bwd 5.279
+[bench_d3] fwd8 long_h32_4096 fwd 5.434 train_fwd 5.427 fwd_bwd 20.071
+[bench_d3] fwd8 long_h32_8192 fwd 10.74 train_fwd 10.77 fwd_bwd 39.773
+[bench_d3] fwd8 long_h32_16384 fwd 21.289 train_fwd 21.256 fwd_bwd 78.973
+[bench_d3] fwd8 long_h32_32768 fwd 42.033 train_fwd 42.016 fwd_bwd 157.904
+[bench_d3] dbuf micro-batch {"0.8b": {"fwd": 25.05, "train_fwd": 25.1, "fwd_bwd": 87.79}, "9b": {"fwd": 31.61, "train_fwd": 31.79, "fwd_bwd": 111.39}}
+[bench_d3] dbuf 0.8b_bench fwd 3.581 train_fwd 3.561 fwd_bwd 11.979
+[bench_d3] dbuf 9b_bench fwd 3.47 train_fwd 3.514 fwd_bwd 12.063
+[bench_d3] dbuf long_h16_1024 fwd 1.442 train_fwd 1.46 fwd_bwd 4.69
+[bench_d3] dbuf long_h16_4096 fwd 5.598 train_fwd 5.582 fwd_bwd 17.747
+[bench_d3] dbuf long_h16_8192 fwd 11.086 train_fwd 11.111 fwd_bwd 35.169
+[bench_d3] dbuf long_h16_16384 fwd 21.975 train_fwd 22.192 fwd_bwd 69.796
+[bench_d3] dbuf long_h16_32768 fwd 43.878 train_fwd 44.059 fwd_bwd 138.796
+[bench_d3] dbuf long_h32_1024 fwd 1.75 train_fwd 1.727 fwd_bwd 6.038
+[bench_d3] dbuf long_h32_4096 fwd 6.591 train_fwd 6.629 fwd_bwd 22.96
+[bench_d3] dbuf long_h32_8192 fwd 13.124 train_fwd 13.134 fwd_bwd 45.393
+[bench_d3] dbuf long_h32_16384 fwd 26.114 train_fwd 26.149 fwd_bwd 90.276
+[bench_d3] dbuf long_h32_32768 fwd 52.213 train_fwd 51.955 fwd_bwd 181.45
+[bench_d3] dbuf2 micro-batch {"0.8b": {"fwd": 24.86, "train_fwd": 25.09, "fwd_bwd": 86.8}, "9b": {"fwd": 31.39, "train_fwd": 31.58, "fwd_bwd": 110.47}}
+[bench_d3] dbuf2 0.8b_bench fwd 3.506 train_fwd 3.52 fwd_bwd 11.863
+[bench_d3] dbuf2 9b_bench fwd 3.447 train_fwd 3.483 fwd_bwd 11.867
+[bench_d3] dbuf2 long_h16_1024 fwd 1.458 train_fwd 1.462 fwd_bwd 4.678
+[bench_d3] dbuf2 long_h16_4096 fwd 5.621 train_fwd 5.626 fwd_bwd 17.643
+[bench_d3] dbuf2 long_h16_8192 fwd 11.222 train_fwd 11.117 fwd_bwd 35.018
+[bench_d3] dbuf2 long_h16_16384 fwd 22.138 train_fwd 22.248 fwd_bwd 69.514
+[bench_d3] dbuf2 long_h16_32768 fwd 44.133 train_fwd 44.062 fwd_bwd 137.981
+[bench_d3] dbuf2 long_h32_1024 fwd 1.684 train_fwd 1.734 fwd_bwd 5.954
+[bench_d3] dbuf2 long_h32_4096 fwd 6.564 train_fwd 6.601 fwd_bwd 22.775
+[bench_d3] dbuf2 long_h32_8192 fwd 13.039 train_fwd 13.051 fwd_bwd 44.711
+[bench_d3] dbuf2 long_h32_16384 fwd 25.893 train_fwd 25.949 fwd_bwd 89.243
+[bench_d3] dbuf2 long_h32_32768 fwd 52.634 train_fwd 52.46 fwd_bwd 179.366
+[bench_d3] split2 micro-batch {"0.8b": {"fwd": 22.02, "train_fwd": 22.13, "fwd_bwd": 78.01}, "9b": {"fwd": 27.83, "train_fwd": 28.01, "fwd_bwd": 99.13}}
+[bench_d3] split2 0.8b_bench fwd 3.248 train_fwd 3.261 fwd_bwd 11.019
+[bench_d3] split2 9b_bench fwd 3.169 train_fwd 3.195 fwd_bwd 10.952
+[bench_d3] split2 long_h16_1024 fwd 1.143 train_fwd 1.149 fwd_bwd 3.766
+[bench_d3] split2 long_h16_4096 fwd 4.423 train_fwd 4.493 fwd_bwd 14.266
+[bench_d3] split2 long_h16_8192 fwd 9.069 train_fwd 8.921 fwd_bwd 28.29
+[bench_d3] split2 long_h16_16384 fwd 17.513 train_fwd 17.895 fwd_bwd 56.226
+[bench_d3] split2 long_h16_32768 fwd 36.019 train_fwd 35.782 fwd_bwd 112.469
+[bench_d3] split2 long_h32_1024 fwd 1.516 train_fwd 1.507 fwd_bwd 5.391
+[bench_d3] split2 long_h32_4096 fwd 5.899 train_fwd 5.91 fwd_bwd 20.574
+[bench_d3] split2 long_h32_8192 fwd 11.9 train_fwd 11.929 fwd_bwd 40.96
+[bench_d3] split2 long_h32_16384 fwd 23.941 train_fwd 23.954 fwd_bwd 81.709
+[bench_d3] split2 long_h32_32768 fwd 48.289 train_fwd 47.899 fwd_bwd 165.409
+[bench_d3] auto micro-batch {"0.8b": {"fwd": 22.07, "train_fwd": 22.21, "fwd_bwd": 78.33}, "9b": {"fwd": 27.96, "train_fwd": 28.05, "fwd_bwd": 99.71}}
+[bench_d3] auto 0.8b_bench fwd 3.103 train_fwd 3.1 fwd_bwd 10.601
+[bench_d3] auto 9b_bench fwd 3.015 train_fwd 3.024 fwd_bwd 10.606
+[bench_d3] auto long_h16_1024 fwd 1.139 train_fwd 1.145 fwd_bwd 3.766
+[bench_d3] auto long_h16_4096 fwd 4.502 train_fwd 4.498 fwd_bwd 14.307
+[bench_d3] auto long_h16_8192 fwd 8.755 train_fwd 8.942 fwd_bwd 28.438
+[bench_d3] auto long_h16_16384 fwd 18.002 train_fwd 17.701 fwd_bwd 56.177
+[bench_d3] auto long_h16_32768 fwd 36.201 train_fwd 36.134 fwd_bwd 112.482
+[bench_d3] auto long_h32_1024 fwd 1.522 train_fwd 1.534 fwd_bwd 5.446
+[bench_d3] auto long_h32_4096 fwd 5.841 train_fwd 5.845 fwd_bwd 20.473
+[bench_d3] auto long_h32_8192 fwd 11.611 train_fwd 11.569 fwd_bwd 40.625
+[bench_d3] auto long_h32_16384 fwd 23.059 train_fwd 23.174 fwd_bwd 80.542
+[bench_d3] auto long_h32_32768 fwd 46.041 train_fwd 46.129 fwd_bwd 161.596
+[bench_d3] fwd8+auto micro-batch {"0.8b": {"fwd": 18.2, "train_fwd": 18.3, "fwd_bwd": 74.57}, "9b": {"fwd": 23.0, "train_fwd": 23.14, "fwd_bwd": 94.98}}
+[bench_d3] fwd8+auto 0.8b_bench fwd 2.726 train_fwd 2.734 fwd_bwd 10.21
+[bench_d3] fwd8+auto 9b_bench fwd 2.688 train_fwd 2.682 fwd_bwd 10.252
+[bench_d3] fwd8+auto long_h16_1024 fwd 0.971 train_fwd 0.967 fwd_bwd 3.623
+[bench_d3] fwd8+auto long_h16_4096 fwd 4.0 train_fwd 4.017 fwd_bwd 13.765
+[bench_d3] fwd8+auto long_h16_8192 fwd 8.044 train_fwd 8.03 fwd_bwd 27.291
+[bench_d3] fwd8+auto long_h16_16384 fwd 15.976 train_fwd 16.126 fwd_bwd 54.428
+[bench_d3] fwd8+auto long_h16_32768 fwd 31.799 train_fwd 31.874 fwd_bwd 108.362
+[bench_d3] fwd8+auto long_h32_1024 fwd 1.252 train_fwd 1.261 fwd_bwd 5.125
+[bench_d3] fwd8+auto long_h32_4096 fwd 5.045 train_fwd 5.02 fwd_bwd 19.627
+[bench_d3] fwd8+auto long_h32_8192 fwd 9.882 train_fwd 9.902 fwd_bwd 38.806
+[bench_d3] fwd8+auto long_h32_16384 fwd 19.578 train_fwd 19.56 fwd_bwd 77.315
+[bench_d3] fwd8+auto long_h32_32768 fwd 38.852 train_fwd 38.957 fwd_bwd 155.678
+[bench_d3] wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/layer_logs/d3_bench.json
+[guard] end 20:52:13 rc 0 peak footprint 22.40 GB wall 486 s
