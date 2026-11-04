@@ -41,8 +41,9 @@ REPS = 7
 
 
 def text_config(model_id):
+    """The model's text config, read from the Hub cache in HF_HOME (never online: the bench's models are already there)."""
     from huggingface_hub import hf_hub_download
-    cfg = json.load(open(hf_hub_download(model_id, "config.json")))
+    cfg = json.load(open(hf_hub_download(model_id, "config.json", local_files_only=True)))
     return cfg.get("text_config", cfg)
 
 

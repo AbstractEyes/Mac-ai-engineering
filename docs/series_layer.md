@@ -1251,6 +1251,15 @@ new; D8's cases in `d8d9_parity.jsonl` beside D4's). `bench/d8d9_report.py` -> `
 offline mode itself (a reading of the step profile run by hand without it had let huggingface_hub look up a model's
 configuration online).
 
+### 16. 17:0x-17:2x: a review
+The test suite run again on the same commit (505 passed, 137 s, peak footprint 27.0 GB). Every figure above recomputed from the
+raw records by separate code: the head's parity rows and the probes' checks, steps 1-2, each window's step time, D9's gain by
+both readings (against D8 alone over the later epochs: 0.840; the registered reading against D4: 0.881), the loss readings,
+the footprints, the cache's counts, sizes and lookup, the profile's head and loss rows; all agree to rounding. One change:
+`bench/profile_products.py`'s `text_config` reads the Hub cache only (`local_files_only=True`), so no reading of the step
+profile can look a model up online, whatever the environment (without the cache it fails locally); `d8d9_results.json`
+regenerated from the same records is unchanged.
+
 ### Next
 D8 and D9 are done and on by default. D8b (a fused cross-entropy) was triggered and is proposed above for its own entry, with
 its expected gain (~2% of a 0.8B step, ~0.3% at 9B). Then D5 (the products and the adapters' path: in the profile with D8 the
