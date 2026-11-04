@@ -1251,7 +1251,7 @@ new; D8's cases in `d8d9_parity.jsonl` beside D4's). `bench/d8d9_report.py` -> `
 offline mode itself (a reading of the step profile run by hand without it had let huggingface_hub look up a model's
 configuration online).
 
-### 16. 17:0x-17:2x: a review
+### 16. 17:0x-17:1x: a review
 The test suite run again on the same commit (505 passed, 137 s, peak footprint 27.0 GB). Every figure above recomputed from the
 raw records by separate code: the head's parity rows and the probes' checks, steps 1-2, each window's step time, D9's gain by
 both readings (against D8 alone over the later epochs: 0.840; the registered reading against D4: 0.881), the loss readings,
