@@ -1,0 +1,53 @@
+[guard] start 18:12:29 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/lora_probe.py --name probe_d5_0.8b_run2 --logdir bench/layer_logs --model 0.8b --arm kernels --memory recompute --layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --lora-fused --epochs 1 --batch 2 --accum 2 --n-items 12 --empty-cache --float64-model
+[probe] runner pid 26083
+[probe] runner pid 26083
+[phase4] runner pid 26083
+W1103 18:12:31.458000 26083 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+[phase4] macai {"version": "0.2.0", "KERNEL": "chunked", "KERNEL_BWD": "chunked", "FUSED_NORM": true, "chunk": 16, "SIZE_CLASSES": false, "RECOMPUTE_STATES": true, "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU", "layer": {"RMSNORM": true, "CONV": true, "GATED_NORM": true, "GATES": true, "SWIGLU": true}, "layer_patches": ["rmsnorm", "gated_norm", "mlp", "gated_delta_net"], "training": {"HEAD_AT_LABELS": true, "VISION_CACHE": true}, "training_patches": ["head_conditional", "head_causal_lm", "vision_cache"], "lora": {"FUSED": true}, "lora_patches": ["linear"]}
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+train 20261104_021232_probe_d5_0.8b_run2: 12 items (12 with a picture), 24 examples by form {'short': 12, 'full': 12}; images fetched in 0 s
+Loading weights:   0%|          | 0/473 [00:00<?, ?it/s]Loading weights:  27%|██▋       | 130/473 [00:00<00:00, 1182.73it/s]Loading weights:  57%|█████▋    | 268/473 [00:00<00:00, 1168.82it/s]Loading weights: 100%|██████████| 473/473 [00:00<00:00, 2042.82it/s]
+LoRA modules by name: {'out_proj': 18, 'in_proj_qkv': 18, 'in_proj_z': 18, 'gate_proj': 24, 'up_proj': 24, 'down_proj': 24, 'q_proj': 6, 'k_proj': 6, 'v_proj': 6, 'o_proj': 6}
+trainable params: 20,447,232 || all params: 873,433,152 || trainable%: 2.3410
+  6 steps of 2 x 2 sequences; 1.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "torch_empty_cache_steps": 1, "linear_attention_layers": 18, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "layer_methods_at_train_begin": {"Qwen3_5RMSNorm": "macai.layer._qwen3_5", "Qwen3_5RMSNormGated": "macai.layer._qwen3_5", "Qwen3_5MLP": "macai.layer._qwen3_5", "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"}, "training_methods_at_train_begin": {"Qwen3_5ForConditionalGeneration": "macai.training._qwen3_5", "Qwen3_5Model": "macai.training._qwen3_5"}, "lora_linear_forward_at_train_begin": "macai.lora._peft", "lora_dropout_modules": ["Dropout"], "trainable_parameters": 20447232, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 92589.7578125, "lora_A_first_values": [0.021362, -0.014771, 0.001999, -0.002518], "PYTHONHASHSEED": null}
+  0%|          | 0/6 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[transformers] `causal_conv1d_fn` is falling back to its reference PyTorch implementation because `causal_conv1d` is not installed. This is correct but much slower; install `causal_conv1d` for the optimized kernel.
+[transformers] `chunk_gated_delta_rule` is falling back to its reference PyTorch implementation because `flash-linear-attention` is not installed. This is correct but much slower; install `flash-linear-attention` for the optimized kernel.
+[probe] lora {"positions": 892, "dropout_on": {"masks_peft": 150, "masks_fused": 150, "masks_same": 150, "loss_peft": 5.690039157867432, "loss_fused": 5.71303129196167, "loss_rel": 0.004040769045050913, "d_input_embeddings_rel": 0.4478021978021978, "d_final_hidden_rel": 0.3511674021946565, "lora_grads": 300, "lora_grad_rel_worst": ["model.language_model.layers.6.mlp.up_proj.lora_B.default.weight", 1.0439189189189189], "lora_grad_rel_median": 0.3235294117647059, "lora_grads_same_bits": 0}, "float64_model": {"seconds": 21.2, "gradients": 301, "errors": {"loss": {"peft": 0.001269052277477601, "fused": 0.002169767056864882}, "d input embeddings": {"peft": 1.015070220834655, "fused": 0.3613699723065613}, "d model.language_model.layers.0.linear_attn.out_proj.lora_A": {"peft": 0.42151548138986783, "fused": 0.3444408574657501}, "d model.language_model.layers.0.linear_attn.out_proj.lora_B": {"peft": 0.42586994146394186, "fused": 0.3453889627246373}, "d model.language_model.layers.0.linear_attn.in_proj_qkv.lora_A": {"peft": 0.25321661749803986, "fused": 0.2947599642091268}, "d model.language_model.layers.0.linear_attn.in_proj_qkv.lora_B": {"peft": 0.34750861669656286, "fused": 0.582291791548367}, "d model.language_model.layers.0.linear_attn.in_proj_z.lora_A": {"peft": 0.4612879827569494, "fused": 0.4179531482918167}, "d model.language_model.layers.0.linear_attn.in_proj_z.lora_B": {"peft": 0.33703462912734916, "fused": 0.1878456168733874}, "d model.language_model.layers.0.mlp.gate_proj.lora_A": {"peft": 0.3903810017511573, "fused": 0.45180123968833297}, "d model.language_model.layers.0.mlp.gate_proj.lora_B": {"peft": 0.4417493792508294, "fused": 0.337509345567259}, "d model.language_model.layers.0.mlp.up_proj.lora_A": {"peft": 0.44756609057618746, "fused": 0.3807487080224364}, "d model.language_model.layers.0.mlp.up_proj.lora_B": {"peft": 0.4426874807529134, "fused": 0.41431142660618003}, "d model.language_model.layers.0.mlp.down_proj.lora_A": {"peft": 0.274421253505946, "fused": 0.24788432658307197}, "d model.language_model.layers.0.mlp.down_proj.lora_B": {"peft": 0.3891588758324847, "fused": 0.34978340811629577}, "d model.language_model.layers.1.linear_attn.out_proj.lora_A": {"peft": 0.5056925052030704, "fused": 0.4716904820780161}, "d model.language_model.layers.1.linear_attn.out_proj.lora_B": {"peft": 0.43162019562589227, "fused": 0.31423444305059406}, "d model.language_model.layers.1.linear_attn.in_proj_qkv.lora_A": {"peft": 0.2123525518196973, "fused": 0.29324669769626105}, "d model.language_model.layers.1.linear_attn.in_proj_qkv.lora_B": {"peft": 0.4346174495005385, "fused": 0.37408741165353565}, "d model.language_model.layers.1.linear_attn.in_proj_z.lora_A": {"peft": 0.4791879057405761, "fused": 0.42908150045464405}, "d model.language_model.layers.1.linear_attn.in_proj_z.lora_B": {"peft": 0.2896713910698414, "fused": 0.556441156919691}, "d model.language_model.layers.1.mlp.gate_proj.lora_A": {"peft": 0.4192676528638485, "fused": 0.39777860201648785}, "d model.la
+ 17%|█▋        | 1/6 [00:25<02:05, 25.11s/it]  step 1/6: loss 3.1748, 25 s spent, 126 s left, 25.13 s/step
+                                             {'loss': '3.175', 'grad_norm': '23.25', 'learning_rate': '0', 'epoch': '0.1667'}
+ 17%|█▋        | 1/6 [00:25<02:05, 25.11s/it] 33%|███▎      | 2/6 [00:26<00:43, 10.98s/it]  step 2/6: loss 3.1011, 26 s spent, 52 s left, 13.11 s/step
+                                             {'loss': '3.101', 'grad_norm': '29.91', 'learning_rate': '0.0002', 'epoch': '0.3333'}
+ 33%|███▎      | 2/6 [00:26<00:43, 10.98s/it][guard]      30 s footprint   7.89 GB (peak  25.94) swap +0.00 GB pressure 1
+ 50%|█████     | 3/6 [00:27<00:19,  6.43s/it]  step 3/6: loss 2.6650, 27 s spent, 27 s left, 9.08 s/step
+                                             {'loss': '2.665', 'grad_norm': '9.689', 'learning_rate': '0.0001809', 'epoch': '0.5'}
+ 50%|█████     | 3/6 [00:27<00:19,  6.43s/it] 67%|██████▋   | 4/6 [00:28<00:08,  4.26s/it]  step 4/6: loss 1.7184, 28 s spent, 14 s left, 7.04 s/step
+                                             {'loss': '1.718', 'grad_norm': '10.5', 'learning_rate': '0.0001309', 'epoch': '0.6667'}
+ 67%|██████▋   | 4/6 [00:28<00:08,  4.26s/it] 83%|████████▎ | 5/6 [00:29<00:03,  3.06s/it]  step 5/6: loss 2.2077, 29 s spent, 6 s left, 5.82 s/step
+                                             {'loss': '2.208', 'grad_norm': '5.704', 'learning_rate': '6.91e-05', 'epoch': '0.8333'}
+ 83%|████████▎ | 5/6 [00:29<00:03,  3.06s/it]100%|██████████| 6/6 [00:29<00:00,  2.31s/it]  step 6/6: loss 1.7260, 30 s spent, 0 s left, 4.99 s/step
+                                             {'loss': '1.726', 'grad_norm': '5.001', 'learning_rate': '1.91e-05', 'epoch': '1'}
+100%|██████████| 6/6 [00:29<00:00,  2.31s/it]  step 6/6: loss nan, 30 s spent, 0 s left, 4.99 s/step
+                                             {'train_runtime': '29.95', 'train_samples_per_second': '0.801', 'train_steps_per_second': '0.2', 'train_loss': '2.432', 'epoch': '1'}
+100%|██████████| 6/6 [00:29<00:00,  2.31s/it]100%|██████████| 6/6 [00:29<00:00,  4.99s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-0.8B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 24 collated (the longest 615 tokens)
+
+trained in 0.5 min: 6 steps, loss 2.4322, 5.16 s/step
+[phase4] probe_d5_0.8b_run2: 6 steps, final loss 1.7259950637817383, steady None s a step (trainer clock, steps 11-6)
+[phase4] wrote bench/layer_logs/probe_d5_0.8b_run2.json
+[guard] end 18:13:04 rc 0 peak footprint 25.94 GB wall 34 s

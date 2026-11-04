@@ -50,7 +50,7 @@ def group_of(comp: str) -> str:
     if scope in ("lin", "full"):
         if part.endswith(".base"):
             return "frozen_products"
-        if any(part.endswith(s) for s in (".lora_dropout", ".lora_A", ".lora_B", ".lora_rest")):
+        if any(part.endswith(s) for s in (".lora_dropout", ".lora_A", ".lora_B", ".lora_rest", ".lora_fused")):
             return "lora_extra"
         if part == "rule":
             return "rule"

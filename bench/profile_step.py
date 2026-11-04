@@ -119,6 +119,8 @@ def build_instrument(inst: Instrument, model, M, detail: set):
 
     inst.replace(af, "get_interface", get_interface)
 
+    fused_names = {}            # the A weight of each adapted projection -> its name (the fused adapter path, series design D5)
+
     def lora(mod, name):
         if hasattr(mod, "base_layer") and hasattr(mod, "lora_A"):
             inst.module(mod, f"{name}.lora_rest")
@@ -126,6 +128,7 @@ def build_instrument(inst: Instrument, model, M, detail: set):
             inst.module(mod.lora_dropout["default"], f"{name}.lora_dropout")
             inst.module(mod.lora_A["default"], f"{name}.lora_A")
             inst.module(mod.lora_B["default"], f"{name}.lora_B")
+            fused_names[id(mod.lora_A["default"].weight)] = name
         else:
             inst.module(mod, f"{name}.base")
 
@@ -153,6 +156,15 @@ def build_instrument(inst: Instrument, model, M, detail: set):
                 lora(getattr(a, n), f"full.{n}")
             inst.module(a.q_norm, "full.q_norm")
             inst.module(a.k_norm, "full.k_norm")
+    # the fused adapter path (macai.lora, series design D5), when on: PEFT's dropout, lora_A and lora_B modules are not called;
+    # its one call (forward, and its backward through the marks) is the projection's '<name>.lora_fused'
+    try:
+        from macai.lora import _peft as lora_peft
+    except ImportError:
+        lora_peft = None
+    if lora_peft is not None:
+        inst.function(lora_peft, "adapter_path",
+                      lambda args, kwargs: fused_names.get(id(args[2]), "lin.unnamed") + ".lora_fused")
     return {"layers": len(lm.layers), "detailed": sorted(detail),
             "layer_types": ["lin" if l.block_type == "linear_attention" else "full" for l in lm.layers]}
 
