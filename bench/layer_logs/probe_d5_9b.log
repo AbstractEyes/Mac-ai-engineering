@@ -1,0 +1,47 @@
+[guard] start 18:14:01 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/lora_probe.py --name probe_d5_9b --logdir bench/layer_logs --model 9b --arm kernels --memory recompute --layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --lora-fused --epochs 1 --batch 1 --accum 4 --n-items 8 --empty-cache
+[probe] runner pid 26552
+[probe] runner pid 26552
+[phase4] runner pid 26552
+W1103 18:14:03.554000 26552 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+[phase4] macai {"version": "0.2.0", "KERNEL": "chunked", "KERNEL_BWD": "chunked", "FUSED_NORM": true, "chunk": 16, "SIZE_CLASSES": false, "RECOMPUTE_STATES": true, "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU", "layer": {"RMSNORM": true, "CONV": true, "GATED_NORM": true, "GATES": true, "SWIGLU": true}, "layer_patches": ["rmsnorm", "gated_norm", "mlp", "gated_delta_net"], "training": {"HEAD_AT_LABELS": true, "VISION_CACHE": true}, "training_patches": ["head_conditional", "head_causal_lm", "vision_cache"], "lora": {"FUSED": true}, "lora_patches": ["linear"]}
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+train 20261104_021404_probe_d5_9b: 8 items (8 with a picture), 16 examples by form {'short': 8, 'full': 8}; images fetched in 0 s
+Loading weights:   0%|          | 0/760 [00:00<?, ?it/s]Loading weights:  15%|█▌        | 117/760 [00:00<00:00, 1018.54it/s]Loading weights:  29%|██▉       | 219/760 [00:00<00:01, 480.39it/s] Loading weights:  37%|███▋      | 281/760 [00:00<00:01, 382.59it/s]Loading weights:  43%|████▎     | 327/760 [00:00<00:01, 362.17it/s]Loading weights:  49%|████▉     | 375/760 [00:00<00:01, 348.44it/s]Loading weights:  54%|█████▍    | 413/760 [00:01<00:01, 285.74it/s]Loading weights: 100%|██████████| 760/760 [00:01<00:00, 655.28it/s]
+LoRA modules by name: {'out_proj': 24, 'in_proj_qkv': 24, 'in_proj_z': 24, 'gate_proj': 32, 'up_proj': 32, 'down_proj': 32, 'q_proj': 8, 'k_proj': 8, 'v_proj': 8, 'o_proj': 8}
+trainable params: 80,216,064 || all params: 9,490,029,808 || trainable%: 0.8453
+  4 steps of 1 x 4 sequences; 1.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "torch_empty_cache_steps": 1, "linear_attention_layers": 24, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "layer_methods_at_train_begin": {"Qwen3_5RMSNorm": "macai.layer._qwen3_5", "Qwen3_5RMSNormGated": "macai.layer._qwen3_5", "Qwen3_5MLP": "macai.layer._qwen3_5", "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"}, "training_methods_at_train_begin": {"Qwen3_5ForConditionalGeneration": "macai.training._qwen3_5", "Qwen3_5Model": "macai.training._qwen3_5"}, "lora_linear_forward_at_train_begin": "macai.lora._peft", "lora_dropout_modules": ["Dropout"], "trainable_parameters": 80216064, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 228784.375, "lora_A_first_values": [-0.007782, -0.007568, 0.005981, -0.014099], "PYTHONHASHSEED": null}
+  0%|          | 0/4 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[probe] lora {"positions": 536, "dropout_on": {"masks_peft": 200, "masks_fused": 200, "masks_same": 200, "loss_peft": 2.6644725799560547, "loss_fused": 2.663435220718384, "loss_rel": 0.00038933004808328997, "d_input_embeddings_rel": 0.10833333333333334, "d_final_hidden_rel": 0.03680981595092025, "lora_grads": 400, "lora_grad_rel_worst": ["model.language_model.layers.6.mlp.gate_proj.lora_B.default.weight", 0.9451219512195121], "lora_grad_rel_median": 0.04895104895104895, "lora_grads_same_bits": 0}, "bar_met": true, "step": 1, "index": 0, "seconds": 6.1}
+ 25%|██▌       | 1/4 [00:12<00:36, 12.28s/it]  step 1/4: loss 2.5501, 12 s spent, 37 s left, 12.35 s/step
+                                             {'loss': '2.55', 'grad_norm': '7.508', 'learning_rate': '0', 'epoch': '0.25'}
+ 25%|██▌       | 1/4 [00:12<00:36, 12.28s/it] 50%|█████     | 2/4 [00:17<00:16,  8.34s/it]  step 2/4: loss 2.5711, 18 s spent, 18 s left, 8.95 s/step
+                                             {'loss': '2.571', 'grad_norm': '5.332', 'learning_rate': '0.0002', 'epoch': '0.5'}
+ 50%|█████     | 2/4 [00:17<00:16,  8.34s/it] 75%|███████▌  | 3/4 [00:22<00:06,  6.56s/it]  step 3/4: loss 2.2355, 22 s spent, 7 s left, 7.45 s/step
+                                             {'loss': '2.235', 'grad_norm': '2.767', 'learning_rate': '0.00015', 'epoch': '0.75'}
+ 75%|███████▌  | 3/4 [00:22<00:06,  6.56s/it][guard]      30 s footprint  27.30 GB (peak  27.38) swap +0.00 GB pressure 1
+100%|██████████| 4/4 [00:26<00:00,  5.65s/it]  step 4/4: loss 1.8294, 27 s spent, 0 s left, 6.65 s/step
+                                             {'loss': '1.829', 'grad_norm': '2.762', 'learning_rate': '5e-05', 'epoch': '1'}
+100%|██████████| 4/4 [00:26<00:00,  5.65s/it]  step 4/4: loss nan, 27 s spent, 0 s left, 6.65 s/step
+                                             {'train_runtime': '26.61', 'train_samples_per_second': '0.601', 'train_steps_per_second': '0.15', 'train_loss': '2.297', 'epoch': '1'}
+100%|██████████| 4/4 [00:26<00:00,  5.65s/it]100%|██████████| 4/4 [00:26<00:00,  6.65s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-9B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 16 collated (the longest 536 tokens)
+
+trained in 0.5 min: 4 steps, loss 2.2965, 7.42 s/step
+[phase4] probe_d5_9b: 4 steps, final loss 1.8294298648834229, steady None s a step (trainer clock, steps 11-4)
+[phase4] wrote bench/layer_logs/probe_d5_9b.json
+[guard] end 18:14:36 rc 0 peak footprint 28.66 GB wall 34 s

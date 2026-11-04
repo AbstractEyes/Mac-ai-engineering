@@ -36,6 +36,7 @@ that id only (the record is still written).
 """
 import argparse
 import ctypes
+import faulthandler
 import importlib
 import json
 import os
@@ -174,6 +175,9 @@ def main(argv=None, customize=None) -> int:
     Trainer subclass is built, returns the Trainer class to train with (bench/profile_step.py adds its profiler this way);
     None keeps the runner as it is."""
     print(f"[phase4] runner pid {os.getpid()}", flush=True)
+    # a run that stops before its Trainer is built (one probe stopped before the model's load, answering no SIGINT) leaves
+    # every thread's stack in its log after 5 minutes; cancelled once the Trainer is built
+    faulthandler.dump_traceback_later(300, repeat=False, file=sys.stdout)
     ap = argparse.ArgumentParser()
     ap.add_argument("--name", required=True)
     ap.add_argument("--model", choices=sorted(MODELS), required=True)
@@ -372,6 +376,7 @@ def main(argv=None, customize=None) -> int:
             def __init__(self, *x, **kw):
                 kw["callbacks"] = list(kw.get("callbacks") or []) + [recorder]
                 super().__init__(*x, **kw)
+                faulthandler.cancel_dump_traceback_later()
                 n = len(kw["train_dataset"])
                 rec["examples"] = n
                 rec["accelerator"] = {"mixed_precision": str(self.accelerator.mixed_precision),
