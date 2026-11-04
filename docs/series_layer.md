@@ -1210,6 +1210,330 @@ The rank-32 products' registered prediction (<= 30% of the large-product rate) c
 the micro-batch shapes they ran at 15-67% of the 11.5 TFLOP/s large-square rate (median 36% at 0.8B, 45% at 9B; at the bench
 shapes 29-77%, medians 49% / 48%); this entry's bench grades it again.
 
+## D5 (a): the products, read again at the shapes D8 left (`products_head_rows_torch.json`, `products_head_rows_mlx.json`, 17:38-17:41 PST)
+
+Step 0's products reading decided (a) before this entry: PyTorch's frozen products run at the rate and tie MLX's. Its registered
+predictions, graded from step 0's records (`products_torch.json`, `products_mlx.json`; every frozen projection but the 16-32-wide
+in_proj_a / in_proj_b; the rate: PyTorch's F.linear large squares in the same session, 11.5 TFLOP/s):
+
+| shape | of the large-square rate (predicted >= 85% at the bench's, >= 70% at the micro-batch's) | PyTorch's rate over MLX's (predicted within 10%) |
+|---|---|---|
+| 0.8B 4 x 1,024 (bench) | 0.77-1.12, median 1.05: MISSED by o_proj's forward (0.77) | 0.88-1.01: missed by the narrow k / v forward (0.88) |
+| 0.8B 2 x 903 (micro-batch) | 0.82-1.01, median 0.98: met | 0.84-0.99: missed by seven narrow products (out_proj, k / v, o_proj, down, 0.84-0.90) |
+| 9B 2 x 1,024 (bench) | 0.99-1.12, median 1.08: met | 0.90-1.03: missed by k / v's backward (0.90) |
+| 9B 1 x 859 (micro-batch) | 0.87-1.11, median 1.01: met | 0.83-1.06: missed by k / v's forward (0.83) |
+
+Every product outside 10% of MLX is one where PyTorch is the slower, all on narrow projections, none carrying 5% of the step:
+the rule (c) builds nothing for the frozen projections.
+
+The LM head at the row counts D8 leaves it (the labelled positions flattened to [rows, hidden], against 248,320 words; PyTorch by
+Metal events, MLX by the wall clock, each in its own process, the large squares as the control: PyTorch 11.1-12.0, MLX 11.4-12.9
+TFLOP/s):
+
+| rows | 0.8B forward Z = E W^T: PyTorch / MLX TFLOP/s | its gradient dE = dZ W | 9B rows | 9B forward | its gradient |
+|---|---|---|---|---|---|
+| 128 | 6.45 / 12.62 (0.51) | 12.37 / 8.57 (1.43) | 64 | 4.68 / 11.89 (0.39) | 12.21 / 7.66 (1.62) |
+| 256 | 8.95 / 12.29 (0.72) | 12.46 / 10.33 (1.20) | 128 | 6.71 / 11.49 (0.58) | 12.45 / 8.60 (1.44) |
+| **312** (the profile's average) | **8.70 / 11.87 (0.73)** | **12.07 / 9.90 (1.21)** | **163** | **7.25 / 9.77 (0.74)** | **10.61 / 9.20 (1.15)** |
+| 512 | 10.42 / 11.75 (0.88) | 12.53 / 9.96 (1.24) | 256 | 9.10 / 11.45 (0.79) | 12.72 / 10.36 (1.19) |
+| 1,024 | 11.09 / 11.69 (0.94) | 12.46 / 10.67 (1.15) | 512 | 10.77 / 11.53 (0.93) | 12.12 / 10.79 (1.13) |
+| 1,622 (every position) | 11.45 / 11.33 (1.02) | 11.56 / 10.30 (1.15) | 768 | 11.44 / 11.67 (0.98) | 11.86 / 10.73 (1.10) |
+
+As a chain: the head's forward is F.linear's X W^T form with a few hundred rows against a quarter-million outputs -> PyTorch's
+product runs at 7-9 TFLOP/s there, MLX's at 10-12 -> at the labelled rows the forward is under 80% of MLX (0.73 / 0.74); its
+gradient, the X W form on the same sizes, runs faster than MLX's (1.21 / 1.15) -> both products together are 0.94 / 0.91 of MLX.
+(c)'s rule asks for a shape at >= 5% of the step under 80% of MLX: the forward carries 18.8 ms of a micro-batch, 2.2% with D4 +
+D8 and 2.5% with D5 (the step profiles), both products 3.9% / 4.3% -> (c) is not triggered; no custom product is built. The
+reading for a later entry: the slow part is the forward's form at narrow row counts, not the products' rate.
+
+## D5 (b): as built (`macai.lora`, [lora.md](lora.md))
+
+| piece | what runs |
+|---|---|
+| the replacement | PEFT 0.21.2's `lora.Linear.forward`, replaced while its source hashes as written against (`macai.lora._peft.SOURCES`); the setting `macai.lora.FUSED`, read at every call; for vanilla LoRA in the form the kernels take, the base layer's own module call (`self.base_layer(x)`, as PEFT calls it), then `adapter_path` (looked up at every call: the step profiler wraps it); anything else runs PEFT's own forward, counted by reason |
+| the mask | `torch.native_dropout(x, p, True)`, the call nn.Dropout makes on the Apple GPU: with float32 adapters and x in the compute dtype (bf16 under the readers' autocast) on x itself, otherwise on x cast to the adapters' dtype, as PEFT runs it |
+| forward | P = x_d A^T by `torch.mm` ([N, 32]); Y = R + s P B^T by the up kernel (a new tensor: R is not changed in place, so a hook that returns the base output as a view stays valid) |
+| backward | G = dY B and dB = dY^T P by `torch.mm`, the scale s applied to the [N, 32] and [d_out, 32] results; dA = G^T x_d by `torch.mm`; the adapter's input gradient M (G A) / (1 - p) by the down kernel; dR = dY; autograd adds the input gradient to the base's |
+| the kernels | one source, two epilogues, instantiated for every pair of output dtype and compute dtype (float32 / bfloat16 / float16) and every rank that is a multiple of 8 up to 64: 4 simdgroups a threadgroup own 64 columns and walk a range of rows 32 at a time, the right operand's 8 x 8 fragments for their columns in registers, the left operand's rows staged in threadgroup memory as float32, the accumulator tile through threadgroup memory to an epilogue of two 8-element vectors a thread; float32 outputs take four fma chains over the rank summed as a tree (one chain in rank order, which the simdgroup products give, measured 2.7x the platform product's float32 error at 14 rows: entry 18) |
+| saved for the backward | the dropped input (bf16), the bool mask, P, the bf16 casts of A and B: the tensors PEFT's chain keeps; the float32 copies are gone |
+
+What PEFT's forward reads beside its source (the active adapters, disabled, merged, the input cast) lives in PEFT's base tuner
+layer; the replacement reads them through PEFT's own attributes and the tests hold the fused path to PEFT's own forward, without a
+source hash of that file.
+
+## D5 (b): parity (`tests/test_lora.py`; the test run of record `bench/layer_logs/d5_tests.log`, every case's errors in `d5_parity.jsonl`)
+
+Error = the largest absolute difference over the reference's largest magnitude, each tensor apart; the bar: the fused path's error
+at most twice PEFT's own on the same case. The float64 reference applies the mask the fused path drew (checked equal to PEFT's
+draw from the same generator state).
+
+| configuration (cases; tensors) | PEFT's own errors against float64 | the fused path's error over PEFT's: worst (median); tensors at or under 1 | verdict |
+|---|---|---|---|
+| bf16 x under bf16 autocast, the base weight drawn (16; 64) | 3.2e-3 to 7.1e-3 | 1.39, the output on one row (1.00); 61 of 64 | MET |
+| the same, the base weight zero: the adapter term alone, every width of both models (24; 96) | 2.9e-3 to 6.5e-3 | 1.00 (1.00); 96 of 96 | MET |
+| fp16 x under fp16 autocast, the base drawn / zero (16 / 24; 64 / 96) | 3.3e-4 to 7.6e-4 | 1.03 / 1.07 (1.00); 63 / 94 | MET |
+| fp32 x without autocast, drawn / zero (16 / 24; 64 / 96) | 8.9e-8 to 4.6e-6 | 1.04 / 1.27 (1.00); 61 / 86 | MET |
+| bf16 x without autocast (the adapters' float32 as the compute dtype), drawn / zero (16 / 24; 64 / 96) | 9.6e-8 to 6.0e-3 | 1.00 / 1.00; 64 / 96 | MET |
+| no mask (an Identity dropout; nn.Dropout in evaluation), every configuration (8; 32) | 2.9e-7 to 4.2e-3 | 1.02 (1.00); 30 of 32 | MET |
+| whole decoder layers with LoRA and dropout on, both kinds, both sizes at the bench shapes (4; 60) | 5.3e-3 to 2.3e-2 | 1.29, a LoRA weight's gradient (1.00); 32 of 60 | MET |
+
+The widths: the drawn-base cases at four of the adapted widths (1,024 -> 6,144, 1,024 -> 2,048, 3,584 -> 1,024, 12,288 -> 4,096) and
+every row shape (1, 1), (2, 7), (3, 33), (2, 129); the base-zero cases at every adapted width of both models, rows (2, 7) and (3,
+33). 172 cases, 680 tensors, none over the bar; the test run of record: 606 passed (the 505 before and 101 new).
+
+Beside them:
+- the masks: the same generator state gives the fused path and PEFT the same mask, in one layer and in a stack of three where the
+  stream moves between draws (3 of 3), and in whole decoder layers (6 / 7 of 6 / 7); the dropout on x in its own dtype gives PEFT's
+  dropped values bit for bit (bf16 and fp16, p = 0.05, 0.1, 0.5, three shapes);
+- the weight gradients of a layer under the readers' bf16 autocast: the same bits as PEFT's (dA and dB at every width and shape);
+- every fallback condition (a LoRA variant, a LoRA bias, a rank of 12, adapters disabled, merged, another dropout module,
+  adapter_names, two active adapters, the CPU) runs PEFT's forward, counted by its reason, with PEFT's bits; an Identity dropout
+  and evaluation mode take the fused path; an input without a gradient and a frozen adapter weight give the gradients PEFT gives;
+  a source that differs from 0.21.2 leaves PEFT's method with a warning.
+
+As chains:
+- The output: PEFT rounds the B product, the scaled copy and the sum (three bf16 roundings under autocast); the up kernel adds
+  R + s P B^T in float32 and rounds once -> with the base weight zero the output is the same bits (the add of zero is exact) or
+  closer; with a drawn base weight the base product's own rounding dominates both paths' errors (ratio 1.00 median, 1.39 at worst
+  on a single row).
+- The input gradient: PEFT rounds the product G A to bf16, converts to float32 for dropout's backward and rounds again; the down
+  kernel applies the mask and the scale to the float32 accumulator and rounds once -> at or under PEFT's error.
+- The weight gradients: G and dB are the products PEFT runs on the same bits (the scale 2 commutes with them exactly: probed),
+  dA reads PEFT's dropped values bit for bit -> the same bits.
+
+In real training runs (`bench/lora_probe.py`, records `probe_d5_0.8b_run2.json`, `probe_d5_9b.json`):
+
+| check | 0.8B (2 x 2, 12 items, 1 epoch) | 9B (1 x 4, 8 items, 1 epoch) |
+|---|---|---|
+| adapted projections that took the fused path, calls each | 150 of 150, at every one of 12 micro-batches (1,800 calls) | 200 of 200, at every one of 16 (3,200) |
+| PEFT's own forward | 2 calls, both the trainer's own check on the CPU before training | the same |
+| dropout on, the same generator state (the adapters' B drawn for the check): masks the same | 150 of 150 | 200 of 200 |
+| the loss, fused against PEFT | 5.713 / 5.690 (0.40%) | 2.6634 / 2.6645 (0.039%) |
+| the LoRA weights' gradients against each other: median / worst relative difference | 32% / 104% | 4.9% / 95% |
+| every dropout an identity, both paths against the whole model in float64 on the CPU (301 gradients) | the fused path's error over PEFT's 0.36-2.38, median 0.89, geometric mean 0.91; over 1.5: 12, over 2: 1; the errors' medians 0.214 (fused) / 0.238 (PEFT) | (no float64 model: 75 GB) |
+
+The whole-model reading is noisier than any check above, and in both directions: through 24 bf16 layers a rounding that differs
+in each adapted projection propagates, so each gradient's error against float64 moves with it (PEFT's own errors run from 0.13%
+(the loss) to 100% of a gradient's largest value; the input embeddings' gradient is noise-dominated: PEFT 1.02, the fused path 0.36). The
+fused path's errors are lower in the median (0.214 against 0.238) and its ratio spreads around 1 (geometric mean 0.91); one
+gradient of 301 sits over 2 (layer 8's in_proj_z LoRA B: 0.137 / 0.326). The registered bar is read at the harness's shapes and in
+whole decoder layers (above), where it is met.
+
+## D5 (b): speed
+
+### The adapter path in isolation (`bench/bench_lora.py`; `d5_adapter_run1.json` 18:15, `d5_adapter.json` 18:47 (the record))
+
+Every adapted projection's shape at the readers' in-situ token counts (0.8B 2 x 811 = 1,622 positions, 9B 1 x 768), PEFT's LoRA
+layer with the fused path off and on, bf16 autocast, dropout on, the gradients to x, A and B; Metal events, back-to-back calls,
+the variants interleaved in 5 rounds; each projection weighted by its calls in a micro-batch. Two readings: the layer less its base
+product (the base timed in the same rounds) and the part alone (PEFT's own adapter operations against the fused function on the
+same leaves, no subtraction).
+
+Forward + backward a call, ms (the projections and their calls a micro-batch in brackets):
+
+| 0.8B, 2 x 811 | the layer less its base (run 2, the record) | the part alone (run 2) | the layer less its base (run 1) |
+|---|---|---|---|
+| 1,024 -> 6,144 (in_proj_qkv 18) | 1.191 -> 0.515 (2.31x) | 1.214 -> 0.521 (2.33x) | 1.189 -> 0.592 (2.01x) |
+| 1,024 -> 2,048 (in_proj_z 18) | 0.541 -> 0.281 (1.93x) | 0.533 -> 0.322 (1.66x) | 0.564 -> 0.282 (2.00x) |
+| 2,048 -> 1,024 (out_proj 18, o_proj 6) | 0.681 -> 0.313 (2.18x) | 0.621 -> 0.349 (1.78x) | 0.666 -> 0.313 (2.13x) |
+| 1,024 -> 3,584 (gate / up 24 each) | 0.863 -> 0.414 (2.08x) | 0.858 -> 0.442 (1.94x) | 0.865 -> 0.401 (2.16x) |
+| 3,584 -> 1,024 (down 24) | 1.072 -> 0.491 (2.18x) | 1.021 -> 0.483 (2.11x) | 1.076 -> 0.491 (2.19x) |
+| 1,024 -> 4,096 (q_proj 6) | 0.994 -> 0.451 (2.20x) | 0.964 -> 0.471 (2.05x) | 0.957 -> 0.441 (2.17x) |
+| 1,024 -> 512 (k_proj / v_proj 6 each) | 0.363 -> 0.210 (1.73x) | 1.224 -> 0.721 (1.70x; every variant read slow at that point) | 0.352 -> 0.203 (1.73x) |
+| **a micro-batch, forward + backward** | **124.99 -> 58.72 (2.13x)** | **132.51 -> 67.84 (1.95x)** | 124.85 -> 59.36 (2.10x) |
+| a micro-batch, forward alone | 60.31 -> 29.12 (2.07x) | 67.58 -> 27.46 (2.46x) | 61.58 -> 31.26 (1.97x) |
+
+| 9B, 1 x 768 | the layer less its base (run 2) | the part alone (run 2) | the layer less its base (run 1) |
+|---|---|---|---|
+| 4,096 -> 8,192 (in_proj_qkv 24, q_proj 8) | 1.125 -> 0.543 (2.07x) | 1.111 -> 0.499 (2.23x) | 0.640 -> 0.827 (0.77x: the base product read 8.33-9.01 ms over the rounds) |
+| 4,096 -> 4,096 (in_proj_z, out_proj 24 each; o_proj 8) | 0.807 -> 0.417 (1.94x) | 0.743 -> 0.388 (1.92x) | 0.932 -> 0.471 (1.98x) |
+| 4,096 -> 12,288 (gate / up 32 each) | 1.331 -> 0.583 (2.28x) | 1.332 -> 0.585 (2.28x) | 1.457 -> 0.696 (2.09x) |
+| 12,288 -> 4,096 (down 32) | 1.748 -> 0.700 (2.50x) | 1.712 -> 0.682 (2.51x) | 1.464 -> 0.506 (2.89x) |
+| 4,096 -> 1,024 (k_proj / v_proj 8 each) | 0.553 -> 0.277 (2.00x) | 0.490 -> 0.317 (1.55x) | 0.564 -> 0.272 (2.07x) |
+| **a micro-batch, forward + backward** | **231.16 -> 104.87 (2.20x)** | **225.03 -> 102.03 (2.21x)** | 221.79 -> 117.93 (1.88x) |
+| a micro-batch, forward alone | 127.34 -> 57.29 (2.22x) | 120.20 -> 58.30 (2.06x) | 131.88 -> 87.34 (1.51x) |
+
+Why two readings, as a chain: at 9B the base product of the widest projections takes ~9-13 ms and moves by ~0.5 ms from round to
+round (the chip's state; the large squares fell from 11.7 to 10.3 TFLOP/s over run 1) -> subtracted from the layer, it can swallow
+an adapter path of ~0.6 ms (run 1's 4,096 -> 8,192: 0.77x) -> the part alone, timed on the same leaves without a base, reads the
+same shape at 2.23x, and the two readings of run 2 agree within 1% at 9B (2.20x / 2.21x) and within 9% at 0.8B (2.13x / 1.95x;
+the gap is the 1,024 -> 512 shape, read slow in every variant there).
+
+The kernels against their least traffic (the up kernel reads R and writes Y; the down kernel writes dx and reads the mask; at 356
+GB/s), and torch's dropout call, ms:
+
+| shape | up kernel (its floor) | down kernel (its floor) | torch's dropout call |
+|---|---|---|---|
+| 0.8B 1,024 -> 6,144 | 0.135 (0.112) | 0.049 (0.014) | 0.024 |
+| 0.8B 1,024 -> 3,584 | 0.098 (0.065) | 0.057 (0.014) | 0.024 |
+| 0.8B 3,584 -> 1,024 | 0.050 (0.019) | 0.090 (0.049) | 0.050 |
+| 0.8B 2,048 -> 1,024 | 0.050 (0.019) | 0.066 (0.028) | 0.033 |
+| 9B 4,096 -> 12,288 | 0.135 (0.106) | 0.073 (0.027) | 0.034 |
+| 9B 4,096 -> 8,192 | 0.096 (0.071) | 0.069 (0.027) | 0.033 |
+| 9B 12,288 -> 4,096 | 0.074 (0.035) | 0.137 (0.080) | 0.075 |
+| 9B 4,096 -> 1,024 | 0.036 (0.009) | 0.065 (0.027) | 0.034 |
+
+As a chain: at the widest outputs the up kernel runs at 1.2-1.4x its traffic (R read and Y written once); the narrow outputs and
+the down kernels take 0.04-0.07 ms whatever their bytes (a launch and each threadgroup's setup: the right operand's fragments and
+the first rows staged), so they sit at 2-7x a floor of a few microseconds; torch's dropout call on bf16 costs 0.02-0.08 ms where
+PEFT's float32 copy and dropout cost 0.08-0.51 ms (probe 2, entry 17).
+
+The rank-32 products the fused path leaves to PyTorch (P = x_d A^T, G = dY B, dB = dY^T P, dA = G^T x_d) at the in-situ shapes,
+against the session's large-square rate (11.7 TFLOP/s), the median and the range: run 2 (the record) 0.8B 26% (3-65%), 9B 30%
+(10-72%); run 1 26% / 35%; step 0's reading of PEFT's rank-32 products at its micro-batch shapes (1,806 / 859 positions) 36% /
+45%. The registered prediction (<= 30%) is met by the record at both sizes, at its edge at 9B, and missed by run 1 at 9B and by
+step 0's reading: the rank-32 products run at about a third of the rate, a little faster than predicted.
+
+### In situ: the step profile (`profile_d5_0.8b_2x8.json` against `profile_d8_0.8b_2x8.json`; at 9B `profile_d5_9b_1x16.json` against `profile_d8_9b_1x16.json`, both run for this entry)
+
+The same profiler and steps as before (0.8B steps 3, 5, 7 of 8; 9B steps 2 and 4 of 5, as step 0's 9B run), D4 + D8 on, D9 off
+(the profiler replays each micro-batch), with and without the fused path; the fused call is marked per projection
+(`<name>.lora_fused`), what is left in PEFT's layer's own time (the replaced forward's Python, the base call's marks, the
+backward's add of the input gradients) stays `lora_rest`. Valid as before: the profiled pass against its unprofiled replay 1.006 /
+0.998 (0.8B / 9B; one of 24 0.8B micro-batches over 1.10), the components against the wall clock 0.9994 / 0.9998.
+
+| group, ms a micro-batch (share) | 0.8B D4 + D8 | 0.8B with D5 | 9B D4 + D8 | 9B with D5 |
+|---|---|---|---|---|
+| the LoRA adapters' extra work | 154.8 (18.4%) | 83.3 (10.9%): fused 72.7, the layer's own 10.6 | 256.5 (9.0%) | 128.7 (4.8%): fused 108.6, the layer's own 20.1 |
+| the layers' frozen products | 281.4 (33.5%) | 281.3 (36.9%) | 1,884.8 (66.3%) | 1,868.6 (69.0%) |
+| the vision tower | 132.8 (15.8%) | 131.9 (17.3%) | 311.4 (11.0%) | 312.3 (11.5%) |
+| the rule | 75.6 (9.0%) | 75.8 (9.9%) | 99.9 (3.5%) | 99.2 (3.7%) |
+| the full-attention layers' attention | 58.0 (6.9%) | 58.0 (7.6%) | 68.7 (2.4%) | 68.6 (2.5%) |
+| the LM head and the loss | 53.6 (6.4%) | 52.2 (6.8%) | 111.5 (3.9%) | 117.0 (4.3%) |
+| data, optimizer and the Trainer | 39.9 (4.7%) | 35.4 (4.7%) | 34.2 (1.2%) | 35.1 (1.3%) |
+| the surroundings | 33.4 (4.0%) | 34.3 (4.5%) | 47.9 (1.7%) | 48.0 (1.8%) |
+| (beside) a new input shape, A - B | 10.1 | 20.0 | -5.0 | -14.7 |
+| the micro-batch | 839.4 | 761.9 (-9.2%) | 2,841.3 | 2,706.9 (-4.7%) |
+
+The adapter path in situ, 1.86x at 0.8B and 1.99x at 9B (the bar 1.2x), by projection (ms a micro-batch, PEFT's layer's whole
+LoRA time against the fused call and the layer's own time):
+
+| projection | 0.8B before -> D5 | 9B before -> D5 |
+|---|---|---|
+| lin.in_proj_qkv | 24.4 -> 12.1 (2.01x) | 26.6 -> 13.9 (1.91x) |
+| lin.down_proj | 22.8 -> 9.4 (2.43x) | 45.1 -> 19.6 (2.30x) |
+| lin.gate_proj / lin.up_proj | 16.2 / 16.2 -> 7.5 / 7.5 (2.16x) | 34.9 / 33.6 -> 16.6 / 15.0 (2.17x) |
+| full.down_proj | 14.5 -> 9.1 (1.60x) | 23.7 -> 14.0 (1.69x) |
+| lin.out_proj | 12.6 -> 6.4 (1.96x) | 21.1 -> 14.3 (1.48x) |
+| lin.in_proj_z | 12.1 -> 7.2 (1.68x) | 19.8 -> 10.3 (1.93x) |
+| full.up_proj / full.gate_proj | 11.3 / 5.3 -> 6.7 / 2.5 (1.69x / 2.12x) | 12.6 / 11.9 -> 5.8 / 5.0 (2.17x / 2.38x) |
+| full.q_proj | 7.9 -> 8.1 (0.97x) | 9.5 -> 5.3 (1.78x) |
+| full.o_proj | 5.8 -> 2.7 (2.16x) | 6.8 -> 3.3 (2.07x) |
+| full.k_proj / full.v_proj | 2.7 / 3.0 -> 1.6 / 2.6 | 5.2 / 5.5 -> 2.8 / 2.8 |
+
+By kind before D5 (0.8B / 9B): the rest of PEFT's forward 57.2 / 104.1, lora_A 39.8 / 64.8, lora_B 38.0 / 51.4, dropout 19.8 /
+36.3. The per-projection rows move with where the backward's adds of shared inputs land (the input of q, k and v, or of gate and
+up, is one tensor whose gradients autograd adds in whichever segment comes last): 0.8B's full.q_proj reads 0.97x in situ against
+2.20x isolated, while the group's total falls 46%.
+
+## D5: admission
+
+| part | parity bar | speed bar (>= 1.2x on the adapter path, forward + backward, both sizes) | verdict |
+|---|---|---|---|
+| (b) the LoRA adapter path fused (`macai.lora.FUSED`) | MET (172 cases, the worst ratio 1.39; whole decoder layers 1.29; the masks PEFT's) | isolated 2.13x / 2.20x (the part alone 1.95x / 2.21x; run 1 2.10x / 1.88x); in situ 1.86x / 1.99x | ADMITTED |
+| (c) a custom product for the head | | not triggered (the head's forward 2.2-2.5% of a micro-batch, under 5%) | not built |
+
+The fused path is now macai's default (`macai.lora.FUSED = True`), selectable off; `bench/phase4_train.py` keeps it off unless
+`--lora-fused` is given, so the runs before reproduce.
+
+## D5: integration (`bench/layer_logs/d5_0.8b_2x8_100steps.json`, `d5_9b_1x16_25steps.json`; `bench/d5_report.py` -> `d5_results.json`)
+
+Every admitted entry on (`--layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --lora-fused`), at commit
+7e0ef7a with the tracked tree clean, one job at a time under the guard; every training forward took the fused path at every
+adapted projection (0.8B 120,000 calls = 800 micro-batches x 150; 9B 80,000 = 400 x 200), PEFT's own forward only for the
+trainer's two CPU checks before training.
+
+### Qwen3.5-0.8B, 2 x 8, the cache emptied each micro-batch, 4 epochs (100 steps), 18:16-18:26 PST
+
+| measure | bar / prediction | D5 | D8 + D9 (run of record) | verdict |
+|---|---|---|---|---|
+| the guard's peak footprint | <= 53.5 GB | 31.27 GB | 29.20 GB | MET (the prediction "unchanged or lower" missed: +2.07 GB) |
+| the steady step (steps 11-100) | predicted 5.8-6.0 s | 6.000 s (-8.0%) | 6.522 s | prediction met (at its edge) |
+| steps 1-10 / 11-25 / 26-50 / 51-75 / 76-100, s a step | | 6.80 / 7.20 / 5.92 / 5.68 / 5.68 | 7.60 / 7.67 / 6.32 / 6.28 / 6.28 | |
+| the later epochs (steps 26-100) | predicted ~5.6 s | 5.76 s (-8.5%) | 6.29 s | missed (slower) by 0.16 s |
+| steps 1-2 (the adapters' B is zero: the same weights) | | 2.5624918937683105 / 2.426778793334961 | the same bits | |
+| the loss: the largest gap from the reference pair's mean | <= .0159 | .0103 (step 22) | .0100 | met |
+| the final loss within 1% of the pair's mean (0.1967) | <= 1% | 0.1978 (0.60%) | 0.1975 (0.44%) | met |
+| root mean square of the step-loss difference against A / B / C (the references among themselves .0034) | | .0037 / .0038 / .0036 | .0034 / .0042 / .0037 | |
+| its gap over spread (0.87 expected of a run drawn like the reference) | | 0.98 | 1.01 | |
+| mean loss (the pair's 0.5776) | | 0.5763 | 0.5760 | |
+| the live tensors at a forward's end (peak) / the driver's pool (peak) | | 9.09 GiB / 26.59 GB | 9.14 GiB / 25.15 GB | |
+
+### Qwen3.5-9B, 1 x 16, the cache emptied, 1 epoch (25 steps), 18:26-18:43 PST
+
+| measure | bar / prediction | D5 | D8 + D9 (the 50-step run's same steps) | verdict |
+|---|---|---|---|---|
+| the guard's peak footprint | <= 74.6 GB | 49.33 GB | 50.77 GB (through step 25) | MET |
+| steps 11-25 | predicted 40.7-41.4 s | 40.93 s (-5.1%) | 43.13 s | prediction met |
+| steps 1-10 | | 41.5 s (-3.0%) | 42.8 s | |
+| the vision cache's served micro-batches through step 25 | | 18 | 18 | |
+| steps 1-2 (the same weights) | | 2.2223093509674072 / 2.0706000328063965 | the same bits | |
+| the loss over steps 1-25 against Phase 4's 9B reference (the same schedule), root mean square of the difference | | .0015 | (D8 alone .0012, D4 .0013) | |
+| step 25 | | 0.5425 | (the reference 0.5452) | |
+| the live tensors at a forward's end / the driver's pool (peaks through step 25) | | 15.33 GiB / 44.82 GB | 15.31 GiB / 46.13 GB | |
+
+As chains:
+- The step, 0.8B: the adapter path 154.8 -> 83.3 ms a micro-batch (the profile) -> ~-0.57 s a step of 8 micro-batches -> 6.52 ->
+  6.00 s measured (-0.52 s); the later epochs 6.29 -> 5.76 s.
+- The step, 9B: the adapter path 256.5 -> 128.7 ms a micro-batch (the step profile) -> ~-2.0 s a step of 16 micro-batches ->
+  43.13 -> 40.93 s measured (-2.2 s).
+- Memory: the same tensors are kept for the backward (live tensors at a forward's end 9.09 against 9.14 GiB at 0.8B, 15.33 against
+  15.31 at 9B) -> the driver's pool grew 1.4 GB at 0.8B and shrank 1.3 GB at 9B -> the footprint +2.07 GB / -1.44 GB; not traced
+  (the pool's response to the changed set of buffer sizes, as D4's first chain).
+- The loss: the forward rounds the adapter term once where PEFT rounds it three times, the masks are PEFT's, the weight gradients
+  of a layer the same products -> the curve stays within the references' spread by Phase 4's readings; steps 1-2 the same bits
+  (B is zero, so the adapter path adds an exact zero).
+
+## D5's verdicts in short
+
+| registered (series journal) or the design's own (written before any code) | measured | verdict |
+|---|---|---|
+| (a) the big projections >= 85% of the large-product rate at the bench's token counts, >= 70% at the micro-batch's (step 0's records) | bench 0.77-1.12 (0.8B, o_proj's forward under) / 0.99-1.12; micro-batch 0.82-1.01 / 0.87-1.11 | met but for 0.8B o_proj's forward at the bench shape |
+| (a) MLX within 10% of PyTorch there | PyTorch at 0.83-1.06 of MLX's rate; every product outside 10% a narrow one where PyTorch is slower | missed (narrow projections); no shape at 5% of the step under 80% |
+| (c) a custom product at >= 5% of the step and under 80% of MLX | the head's forward at the labelled rows 0.73 / 0.74 of MLX, at 2.2-2.5% of a micro-batch (both products 3.4-4.3%, 0.94 / 0.91 of MLX) | not triggered: nothing built |
+| (b) parity as D4, both paths against float64 | 172 cases: the worst ratio 1.39 (bf16, one row), 1.27 (fp32), 1.07 (fp16), 1.00 (bf16 without autocast); whole decoder layers 1.29 | MET |
+| (b) the same generator state gives the same masks; outputs to rounding | the same masks in every check (one layer, a stack, whole decoder layers, 150 / 200 projections of real training steps); the dropped values PEFT's bits; dA and dB PEFT's bits | MET |
+| (b) speed: >= 1.2x on the adapter path at both sizes | isolated 2.13x / 2.20x (part alone 1.95x / 2.21x); in situ 1.86x / 1.99x | MET: ADMITTED, the default |
+| registered prediction: the fused adapter path >= 1.5x its PyTorch path | 1.86-2.21x (every reading at both sizes; run 1 at 9B 1.88x) | met |
+| registered prediction: the rank-32 products <= 30% of the large-product rate in PyTorch | medians 26% / 30% (the record), 26% / 35% (run 1); step 0's reading 36% / 45% | met by the record (9B at the edge); missed by run 1 and step 0's reading at 9B |
+| design prediction: the adapter path in situ 0.8B 60-85 ms, 9B 105-150 ms a micro-batch | 83.3 ms / 128.7 ms | met / met |
+| design prediction: isolated >= 1.8x | 1.95-2.20x (run 2), 1.88-2.10x (run 1) | met |
+| design prediction: the steady step at 0.8B 5.8-6.0 s; the later epochs ~5.6 s | 6.000 s; 5.76 s | met (at its edge); missed (slower) by 0.16 s |
+| design prediction: 9B steps 11-25 40.7-41.4 s | 40.93 s | met |
+| design prediction: memory unchanged or lower | live tensors 9.09 against 9.14 GiB / 15.33 against 15.31; footprint +2.07 GB at 0.8B, -1.44 GB at 9B | missed at 0.8B (the allocator's pool) |
+| integration 0.8B: footprint <= 53.5 GB; the loss as Phase 4 read it | 31.27 GB; the largest gap .0103 against .0159, the final loss 0.60% | MET; like the reference |
+| integration 9B: footprint <= 74.6 GB | 49.33 GB | MET |
+
+In plain words: PEFT's LoRA layers now run their adapter path as two Metal kernels around PyTorch's small products, with the
+masks PEFT itself would draw: the passes around the rank-32 products (the float32 copies, dropout in float32, the casts, the
+scaled copy and the add) are gone, the products' results round once, and the weight gradients are PEFT's own bits. The adapter
+path is about twice as fast (2.1x at 0.8B and 1.9x at 9B on its own; 154.8 -> 83.3 ms of a 0.8B micro-batch in training), a 0.8B
+LoRA step of the readers' recipe falls from 6.52 s to 6.00 s (-8.0%) and a 9B step from 43.1 s to 40.9 s (-5.1%), with the loss
+of the reference. The head's product at the labelled rows runs under MLX's rate in its forward, but at 2.5% of a micro-batch it
+is under the share that would justify a custom product.
+
+## D5: not done, and what is uncertain
+
+- The reductions (x_d A^T, dY B, dY^T P, G^T x_d) stay PyTorch's products at 7-74% of the large-square rate; reading dY once for G
+  and dB, or applying the mask as x is loaded for P and dA (the prior art's full design), would remove a pass over dY and the
+  dropped input's write and read: not built.
+- The bf16 casts of A and B are made at every call (PEFT's autocast makes them too); kept per optimizer step they would save two
+  launches a projection on 7 of every 8 micro-batches: not built.
+- The adapter's input gradient is still added to the base's by autograd (one pass over x a projection), as in PEFT; folding it into
+  the down kernel needs the base product's backward inside the fused function, which moves the base's backward out of its own
+  marks in the profile: not built.
+- The whole-model float64 reading at 0.8B scatters around 1 (0.36-2.38, one gradient of 301 over 2); the bar is met at the
+  harness's shapes and in whole decoder layers, where it is registered.
+- At 9B the isolated reading by subtraction depends on the base product's spread for the widest projections (run 1's 4,096 ->
+  8,192 read 0.77x; run 2 2.07x by subtraction and 2.23x as the part alone); the in-situ readings are one profile of three (0.8B)
+  or two (9B) steps each way.
+- The footprint at 0.8B rose 2.07 GB with the same live tensors; the allocator pool's response is not traced.
+- A new input shape costs more with the fused path in the profile (A - B 10.1 -> 20.0 ms a 0.8B micro-batch): not traced.
+- The first probe run stopped before the model's load and answered no SIGINT (entry 19); the same command in the foreground with
+  stdin from /dev/null ran; the cause is not traced (no stack: the runner now leaves one after 5 minutes).
+- Qwen3.5 is where it was measured; the replacement applies to every model PEFT adapts with vanilla LoRA (bias-free, rank a
+  multiple of 8 up to 64), untimed elsewhere.
+
 ## The log
 
 ### 1. 2026-11-03 11:4x-11:5x PST: the instrument and its check (commit 8fb6609)
@@ -1316,8 +1640,54 @@ the footprints, the cache's counts, sizes and lookup, the profile's head and los
 profile can look a model up online, whatever the environment (without the cache it fails locally); `d8d9_results.json`
 regenerated from the same records is unchanged.
 
+### 17. 2026-11-03 17:2x-17:4x PST: the design and its predictions; two probes of the dropout; (a) (commits 05bb222, a9f0c98)
+The design and its predicted times written into this log before any code (05bb222). Two probes of torch's dropout on the Apple
+GPU first: `native_dropout` has a kernel there (nn.Dropout's call: `NativeDropoutBackward0`); from the same generator state the
+mask is the same whatever the input's dtype, values or layout (float32, bf16, fp16, ones, an expanded view, even `bernoulli_` on
+a bool tensor: 75,776 of 75,776 the same), so it depends on the shape alone; on bf16 / fp16 x the dropped values are PEFT's
+dropped float32 copy after autocast's cast bit for bit (0 of 5.4 M differ, three shapes); a kept element is x times float32(1 /
+(1 - p)); the products on the Apple GPU are deterministic, give the same bits on a transposed view, and commute with a scale of 2
+exactly; PEFT's float32 copy and dropout cost 0.08-0.51 ms at the in-situ shapes against 0.02-0.08 ms for the call on bf16 x.
+(a): the head's products at the labelled rows, PyTorch then MLX (17:38-17:41, a9f0c98).
+
+### 18. 17:44-17:56: the code, a smoke run, the tests (commit 75e99a2)
+`macai.lora` (the kernels, the autograd function, the replacement of PEFT's method with its source hash, the settings), the patch,
+the tests, the bench. The smoke run: the kernels against float64 at every dtype pair and rank; one PEFT layer off and on from the
+same seed: the masks the same, dA and dB the same bits, the output within rounding; a first timing (wall clock) 1.15x on the whole
+0.8B in_proj_qkv layer, its base product included. The first full test run: one case over the bar, the float32 output at 14 rows
+(2.74x PEFT's error, 3.5e-7 against 1.3e-7). Its cause, as a chain: P is the same bits on both paths (probed: F.linear and
+torch.mm agree) -> the expanding product alone, from an exact P, read 2.1e-7 against MPS's 1.2e-7 at 14 rows -> a scalar fma chain
+in rank order gave the identical error to the simdgroup products (they accumulate in rank order) -> float32 outputs now take four
+fma chains over the rank summed as a tree (that case 1.27x; 16-bit outputs keep the simdgroup products, whose last float32 bits
+their rounding removes). One fault in a test (adapter_names passed to the wrapper module, not the LoRA layer). 101 passed.
+
+### 19. 17:59-18:14: the probes; a first probe run stopped (commits ea87479, 7e0ef7a)
+The first 0.8B probe run (launched in the background, 17:59) stopped after the trainer's line for the sample, before the model's
+load: its own resource use showed no CPU time over 5 s, 0.56 GB, no GPU memory; two SIGINTs to its process id (18:04, 18:08) were
+not answered (blocked outside the interpreter). While it sat idle, three diagnostics with every thread's stack dumped on a timer
+and a self-exit (the runner's early steps with the fused path installed and the processor's load: 2.2 s; Metal from a new
+process: 0.07 s; the model's load as the trainer makes it: 0.45 s) all ran; the same probe in the foreground with stdin from
+/dev/null ran (probe_d5_0.8b_run2), as did every run after (the chains take stdin from /dev/null). The cause is not traced; the
+runner now leaves every thread's stack in its log when its Trainer is not built within 5 minutes. The stopped process ends at the
+guard's wall stop (20:59 PST); its log up to 19:12 is kept (`probe_d5_0.8b_stopped.log`); it wrote no record. The 9B probe (18:13-18:14).
+
+### 20. 18:15-18:45: the chain of record (commit 7e0ef7a, the tracked tree clean)
+The bench (run 1) 18:15-18:16, 0.8B 100 steps 18:16-18:26, 9B 25 steps 18:26-18:43, the 0.8B profile 18:43-18:45. All under the
+guard, all rc 0, one job at a time (the stopped probe process idle beside them). The records committed (b91c4fe); the
+bench's record renamed run 1 when the part alone was added.
+
+### 21. 18:4x-19:04: admission and the defaults; chain 2 (commit f2a7b55, the tracked tree clean)
+D5 admitted and made macai's default (f2a7b55: `macai.lora.FUSED = True`; the runner keeps it off unless `--lora-fused`; the
+earlier benches pinned to PEFT's own layers; the call-order test of D4 pinned to PEFT's forward). Chain 2: the bench with the
+part alone 18:46-18:47 (the record), the test run of record 18:47-18:50 (606 passed, 177 s, peak footprint 26.8 GB), the 9B
+profiles without and with D5 18:51-19:04. All under the guard, rc 0, one job at a time.
+
+### 22. 19:0x: the report
+`bench/d5_report.py` -> `d5_results.json` (offline by itself): every figure of this entry from the records.
+
 ### Next
-D8 and D9 are done and on by default. D8b (a fused cross-entropy) was triggered and is proposed above for its own entry, with
-its expected gain (~2% of a 0.8B step, ~0.3% at 9B). Then D5 (the products and the adapters' path: in the profile with D8 the
-frozen products are 33.5% of a 0.8B micro-batch, the LoRA adapters' extra work 18.4%, the head's products at small row counts
-3.9%), then D3.
+D5 is done and on by default: the adapters' extra work is 10.9% / 4.8% of a micro-batch (0.8B / 9B) after it, the frozen products
+36.9% / 69.0% at the platform's rate. Then D3 (the rule's chunking: 9.9% / 3.7%). D8b (a fused cross-entropy, ~2% of a 0.8B
+step) and the vision cache's trim stay proposed for their own entries; so do the adapter path's next steps (dY read once for G and
+dB; the mask applied as x is loaded; the weights' bf16 casts kept per optimizer step) and the head's forward in another form at
+the labelled row counts.

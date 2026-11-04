@@ -56,4 +56,18 @@ PEFT's bits; whole decoder layers of both kinds with LoRA and dropout on, both p
 masks. `bench/lora_probe.py` repeats the checks inside a real training run of each model.
 
 ## Measured
-See [series_layer.md](series_layer.md), D5.
+On by default since series design D5 admitted it ([series_layer.md](series_layer.md), D5). On an M3 Max (PyTorch 2.15,
+transformers 5.22.1, PEFT 0.21.2), LoRA training of the Qwen3.5 picture readers (rank 32, alpha 64, dropout 0.05, the adapters in
+float32, bf16 autocast) with the rest of macai on:
+
+| | Qwen3.5-0.8B, 2 x 8 sequences | Qwen3.5-9B, 1 x 16 |
+|---|---|---|
+| the adapter path alone, every adapted projection at the micro-batch's token count, forward + backward a micro-batch | 125.0 -> 58.7 ms (2.13x) | 231.2 -> 104.9 ms (2.20x) |
+| the adapter path in a training step (the step profile) | 154.8 -> 83.3 ms a micro-batch (1.86x) | 256.5 -> 128.7 ms (1.99x) |
+| the step, against the same configuration without it | 6.52 -> 6.00 s (-8.0%) | 43.1 -> 40.9 s (-5.1%) |
+| the process's peak footprint | 29.2 -> 31.3 GB | 50.8 -> 49.3 GB (25 steps) |
+| the loss | like the reference by Phase 4's readings (100 steps); steps 1-2 the same bits | steps 1-2 the same bits; over 25 steps .0015 from the reference run |
+
+The kernels: the up kernel at its widest outputs within 1.2-1.4x its memory traffic; the narrow outputs and the down kernel take
+0.04-0.07 ms a call, bound by the launch and the per-threadgroup setup. The reductions left to PyTorch's products run at about a
+third of the large-product rate at these shapes.

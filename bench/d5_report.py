@@ -8,8 +8,8 @@ Reads: step 0's products (products_torch.json, products_mlx.json) and the LM hea
 (products_head_rows_torch.json, _mlx.json); the adapter path's bench (d5_adapter.json, bench/bench_lora.py); the test run's parity
 log (d5_parity.jsonl, tests/test_lora.py with MACAI_PARITY_LOG); the probes in real training runs (probe_d5_0.8b / _9b.json,
 bench/lora_probe.py); the runs (bench/layer_logs/<run>.json with the guard's <run>.log) against D8 and D9's runs of record (the
-same batches: the data order is seeded) and Phase 4's reference runs (bench/phase4_logs); the step profiles with D4 + D8 and with
-D5 on (bench/profile_report.py's reading). Step times are on the trainer's clock (whole seconds), as D4's and D8 / D9's windows.
+same batches: the data order is seeded) and Phase 4's reference runs (bench/phase4_logs); the step profiles of both models with D4
++ D8 and with D5 on as well (bench/profile_report.py's reading). Step times are on the trainer's clock (whole seconds), as D4's and D8 / D9's windows.
 """
 import json
 import os
@@ -24,7 +24,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LOGS = os.path.join(HERE, "layer_logs")
 BASE_08, BASE_9 = "d8d9_0.8b_2x8_100steps", "d8d9_9b_1x16_50steps"
 RUN_08, RUN_9 = "d5_0.8b_2x8_100steps", "d5_9b_1x16_25steps"
-PROFILE, PROFILE_BEFORE = "profile_d5_0.8b_2x8", "profile_d8_0.8b_2x8"
+# the step profiles, D4 + D8 (before) and D4 + D8 + D5, by model; with the D2m run whose steps they are compared with
+PROFILES = {"0.8b": ("profile_d8_0.8b_2x8", "profile_d5_0.8b_2x8", "confirm_recompute_0.8b_2x8_100steps.json"),
+            "9b": ("profile_d8_9b_1x16", "profile_d5_9b_1x16", "confirm_recompute_9b_1x16_100steps.json")}
 PROBES = {"0.8b": "probe_d5_0.8b_run2", "9b": "probe_d5_9b"}   # probe_d5_0.8b: the first run, stopped before the model's load
 BENCH, BENCH_RUN1 = "d5_adapter", "d5_adapter_run1"          # run 1: the layer less its base only (in the chain of record)
 WINDOWS = ((1, 10), (11, 25), (26, 50), (51, 75), (76, 100), (11, 100))
@@ -101,7 +103,7 @@ def products_a():
     return out
 
 
-def head_trigger(prof_before, prof_after, a):
+def head_trigger(prof_before, prof_after, a, model="0.8b"):
     """(c)'s rule at the head's products: their share of the micro-batch (in situ, the step profiles) and PyTorch over MLX at
     the labelled rows."""
     out = {}
@@ -115,13 +117,14 @@ def head_trigger(prof_before, prof_after, a):
                     "head_fwd_share_pct": round(100 * h["fwd_ms"] / mb, 2), "head_share_pct": round(100 * h["ms"] / mb, 2)}
     rows = a["head_rows"]
     out["rule"] = {}
-    for model, n in HEAD_ROWS.items():
-        f, b = rows[model][f"{n} forward Z = E W^T"], rows[model][f"{n} backward dE = dZ W"]
+    for m, n in HEAD_ROWS.items():
+        f, b = rows[m][f"{n} forward Z = E W^T"], rows[m][f"{n} backward dE = dZ W"]
         both = round((f["mlx_ms"] + b["mlx_ms"]) / (f["pytorch_ms"] + b["pytorch_ms"]), 3)
-        out["rule"][model] = {"rows": n, "forward_pytorch_over_mlx": f["pytorch_over_mlx"],
+        out["rule"][m] = {"rows": n, "forward_pytorch_over_mlx": f["pytorch_over_mlx"],
                               "backward_pytorch_over_mlx": b["pytorch_over_mlx"], "both_pytorch_over_mlx": both}
     share = out.get("d5", out.get("d4_d8", {})).get("head_fwd_share_pct")
-    fwd_ratio = out["rule"]["0.8b"]["forward_pytorch_over_mlx"]
+    fwd_ratio = out["rule"][model]["forward_pytorch_over_mlx"]
+    out["model"] = model
     out["triggered"] = bool(share is not None and share >= BARS["custom_product_share_pct"]
                             and fwd_ratio < BARS["custom_product_of_mlx"])
     return out
@@ -319,11 +322,14 @@ def integration_9(p4):
             "wall_s": r["wall_s"]}
 
 
-def profile():
-    path, before = os.path.join(LOGS, PROFILE + ".json"), os.path.join(LOGS, PROFILE_BEFORE + ".json")
-    d2m = os.path.join(HERE, "memory_logs", "confirm_recompute_0.8b_2x8_100steps.json")
-    old = PR.report("0.8b", before, d2m)
-    new = PR.report("0.8b", path, d2m) if os.path.exists(path) else None
+def profile(model):
+    b_name, a_name, d2m_name = PROFILES[model]
+    path, before = os.path.join(LOGS, a_name + ".json"), os.path.join(LOGS, b_name + ".json")
+    if not os.path.exists(before):
+        return None, None, None
+    d2m = os.path.join(HERE, "memory_logs", d2m_name)
+    old = PR.report(model, before, d2m)
+    new = PR.report(model, path, d2m) if os.path.exists(path) else None
 
     def lora_rows(rep):
         kinds, projs = {}, {}
@@ -334,7 +340,7 @@ def profile():
             kinds[kind] = round(kinds.get(kind, 0) + c["ms"], 2)
             projs[proj] = round(projs.get(proj, 0) + c["ms"], 2)
         return kinds, projs
-    out = {"before": {"micro_batch_ms": old["per_micro_batch_ms_total"],
+    out = {"records": [b_name, a_name], "before": {"micro_batch_ms": old["per_micro_batch_ms_total"],
                       "lora_ms": old["groups"]["lora_extra"]["ms_per_micro_batch"],
                       "lora_share_pct": old["groups"]["lora_extra"]["share_pct"]}}
     out["before"]["lora_by_kind"], out["before"]["lora_by_projection"] = lora_rows(old)
@@ -344,11 +350,12 @@ def profile():
             a, b = old["groups"].get(g, {}), new["groups"].get(g, {})
             groups[g] = {"before_ms": a.get("ms_per_micro_batch"), "d5_ms": b.get("ms_per_micro_batch"),
                          "before_share_pct": a.get("share_pct"), "d5_share_pct": b.get("share_pct")}
-        lo, hi = DESIGN["adapter_ms"]["0.8b"]
+        lo, hi = DESIGN["adapter_ms"][model]
         lora_ms = new["groups"]["lora_extra"]["ms_per_micro_batch"]
         out["d5"] = {"micro_batch_ms": new["per_micro_batch_ms_total"], "lora_ms": lora_ms,
                      "lora_share_pct": new["groups"]["lora_extra"]["share_pct"],
                      "validity": new["validity"]["c_over_b_per_micro_batch"], "events_span": new["validity"]["events_span_over_c_wall"],
+                     "before_validity": old["validity"]["c_over_b_per_micro_batch"],
                      "groups": groups, "in_situ_speedup": round(out["before"]["lora_ms"] / lora_ms, 3),
                      "in_situ_bar_met": out["before"]["lora_ms"] / lora_ms >= BARS["adapter_speedup"],
                      "design_prediction_ms": [lo, hi], "design_prediction_grade": grade(lora_ms, lo, hi),
@@ -360,12 +367,13 @@ def profile():
 def main():
     p4 = {k: MR.read(MR.P4, v) for k, v in MR.PHASE4.items()}
     a = products_a()
-    prof, old, new = profile()
+    prof, old, new = profile("0.8b")
+    prof9, old9, new9 = profile("9b")
     out = {"bars": BARS, "registered": REGISTERED, "design_predictions": DESIGN, "a_products": a,
-           "c_head_trigger": head_trigger(old, new, a), "b_bench": bench_b(), "b_bench_run1": bench_b(BENCH_RUN1),
-           "tests": tests_parity(),
+           "c_head_trigger": head_trigger(old, new, a), "c_head_trigger_9b_in_situ": head_trigger(old9, new9, a, "9b"),
+           "b_bench": bench_b(), "b_bench_run1": bench_b(BENCH_RUN1), "tests": tests_parity(),
            "probes": {m: probe(m) for m in PROBES}, "integration_0.8b": integration_08(p4), "integration_9b": integration_9(p4),
-           "profile_0.8b": prof}
+           "profile_0.8b": prof, "profile_9b": prof9}
     print(json.dumps(out, indent=1, default=str))
     with open(os.path.join(LOGS, "d5_results.json"), "w", encoding="utf-8") as fh:
         json.dump(out, fh, indent=1, default=str)

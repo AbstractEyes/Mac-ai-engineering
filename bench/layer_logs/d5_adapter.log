@@ -1,0 +1,23 @@
+[guard] start 18:46:51 limit 96.0 GB, swap +1.0 GB, wall 1200 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/bench_lora.py
+[bench_lora] pid 37629
+W1103 18:46:52.787000 37629 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+large squares (F.linear) TFLOP/s {'2048': 11.679, '4096': 11.722}
+0.8b 1024->6144: peft 4.717 fused 4.041 base 3.526 ms; adapter path 1.191 -> 0.515 ms (x2.313); the part alone 1.214 -> 0.521 ms (x2.33); parts {'dropout (torch.native_dropout)': 0.024, 'up kernel (R + s P B^T)': 0.135, 'down kernel (M (G A) / (1 - p))': 0.049}; products [2.797, 5.644, 7.593, 2.169] TFLOP/s
+0.8b 1024->2048: peft 1.787 fused 1.527 base 1.246 ms; adapter path 0.541 -> 0.281 ms (x1.925); the part alone 0.533 -> 0.322 ms (x1.655); parts {'dropout (torch.native_dropout)': 0.024, 'up kernel (R + s P B^T)': 0.064, 'down kernel (M (G A) / (1 - p))': 0.049}; products [2.953, 4.724, 4.832, 2.416] TFLOP/s
+0.8b 2048->1024: peft 1.926 fused 1.558 base 1.245 ms; adapter path 0.681 -> 0.313 ms (x2.176); the part alone 0.621 -> 0.349 ms (x1.779); parts {'dropout (torch.native_dropout)': 0.033, 'up kernel (R + s P B^T)': 0.05, 'down kernel (M (G A) / (1 - p))': 0.066}; products [4.252, 3.322, 2.169, 3.865] TFLOP/s
+0.8b 1024->3584: peft 2.951 fused 2.502 base 2.088 ms; adapter path 0.863 -> 0.414 ms (x2.085); the part alone 0.858 -> 0.442 ms (x1.941); parts {'dropout (torch.native_dropout)': 0.024, 'up kernel (R + s P B^T)': 0.098, 'down kernel (M (G A) / (1 - p))': 0.057}; products [2.593, 4.483, 6.644, 2.044] TFLOP/s
+0.8b 3584->1024: peft 3.167 fused 2.586 base 2.095 ms; adapter path 1.072 -> 0.491 ms (x2.183); the part alone 1.021 -> 0.483 ms (x2.114); parts {'dropout (torch.native_dropout)': 0.05, 'up kernel (R + s P B^T)': 0.05, 'down kernel (M (G A) / (1 - p))': 0.09}; products [4.483, 3.126, 1.687, 5.471] TFLOP/s
+0.8b 1024->4096: peft 3.362 fused 2.819 base 2.368 ms; adapter path 0.994 -> 0.451 ms (x2.204); the part alone 0.964 -> 0.471 ms (x2.047); parts {'dropout (torch.native_dropout)': 0.024, 'up kernel (R + s P B^T)': 0.109, 'down kernel (M (G A) / (1 - p))': 0.056}; products [2.531, 4.429, 6.442, 2.006] TFLOP/s
+0.8b 1024->512: peft 0.739 fused 0.586 base 0.376 ms; adapter path 0.363 -> 0.210 ms (x1.729); the part alone 1.224 -> 0.721 ms (x1.698); parts {'dropout (torch.native_dropout)': 0.072, 'up kernel (R + s P B^T)': 0.088, 'down kernel (M (G A) / (1 - p))': 0.123}; products [1.063, 0.793, 0.336, 0.686] TFLOP/s
+0.8b a micro-batch: the adapter path 124.99 -> 58.72 ms (x2.129); forward 60.31 -> 29.12 ms; the part alone 132.51 -> 67.84 ms (x1.953)
+[guard]      30 s footprint   1.75 GB (peak   1.75) swap +0.00 GB pressure 1
+9b 4096->8192: peft 9.479 fused 8.897 base 8.354 ms; adapter path 1.125 -> 0.543 ms (x2.072); the part alone 1.111 -> 0.499 ms (x2.226); parts {'dropout (torch.native_dropout)': 0.033, 'up kernel (R + s P B^T)': 0.096, 'down kernel (M (G A) / (1 - p))': 0.069}; products [2.649, 3.412, 6.825, 4.109] TFLOP/s
+9b 4096->4096: peft 5.125 fused 4.735 base 4.318 ms; adapter path 0.807 -> 0.417 ms (x1.935); the part alone 0.743 -> 0.388 ms (x1.915); parts {'dropout (torch.native_dropout)': 0.03, 'up kernel (R + s P B^T)': 0.065, 'down kernel (M (G A) / (1 - p))': 0.066}; products [2.796, 2.961, 4.576, 5.033] TFLOP/s
+9b 4096->12288: peft 13.826 fused 13.078 base 12.495 ms; adapter path 1.331 -> 0.583 ms (x2.283); the part alone 1.332 -> 0.585 ms (x2.277); parts {'dropout (torch.native_dropout)': 0.034, 'up kernel (R + s P B^T)': 0.135, 'down kernel (M (G A) / (1 - p))': 0.073}; products [2.721, 4.224, 8.389, 3.948] TFLOP/s
+9b 12288->4096: peft 14.279 fused 13.231 base 12.531 ms; adapter path 1.748 -> 0.700 ms (x2.497); the part alone 1.712 -> 0.682 ms (x2.51); parts {'dropout (torch.native_dropout)': 0.075, 'up kernel (R + s P B^T)': 0.074, 'down kernel (M (G A) / (1 - p))': 0.137}; products [3.532, 2.397, 3.412, 7.457] TFLOP/s
+9b 4096->1024: peft 1.718 fused 1.442 base 1.165 ms; adapter path 0.553 -> 0.277 ms (x1.996); the part alone 0.490 -> 0.317 ms (x1.546); parts {'dropout (torch.native_dropout)': 0.034, 'up kernel (R + s P B^T)': 0.036, 'down kernel (M (G A) / (1 - p))': 0.065}; products [2.961, 1.325, 1.198, 5.033] TFLOP/s
+9b a micro-batch: the adapter path 231.16 -> 104.87 ms (x2.204); forward 127.34 -> 57.29 ms; the part alone 225.03 -> 102.03 ms (x2.206)
+[guard]      60 s footprint   2.01 GB (peak   2.01) swap +0.00 GB pressure 1
+large squares at the end {'2048': 11.105, '4096': 11.735}
+wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/layer_logs/d5_adapter.json
+[guard] end 18:47:53 rc 0 peak footprint 2.01 GB wall 62 s

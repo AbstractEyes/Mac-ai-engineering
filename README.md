@@ -14,8 +14,10 @@ Qwen3.5 10.98 -> 9.18 s at 0.8B and 51.1 -> 46.2 s at 9B against the kernels bef
 reference's loss ([docs/series_layer.md](docs/series_layer.md)). The training path around the layers is lighter too, on by
 default (`macai.training`): the LM head and the loss run only at the positions that carry a label, and a frozen vision tower's
 output is kept per picture after the first epoch: a step 9.18 -> 7.51 s at 0.8B (46.2 -> 42.9 s at 9B), and 6.29 s (37.5 s) from
-the second epoch on, the same loss within float32 rounding. The rest of the design series (the products and the adapters' path,
-the rule's chunking) is not done. Treat the numbers below as measurements of a prototype.
+the second epoch on, the same loss within float32 rounding. PEFT's LoRA layers run their adapter path fused, on by default
+(`macai.lora`): the dropout drawn by torch's own call (PEFT's masks), the passes around the rank-32 products folded into two Metal
+kernels: the adapter path about twice as fast, a step 6.52 -> 6.00 s at 0.8B (43.1 -> 40.9 s at 9B) with the reference's loss.
+The rest of the design series (the rule's chunking) is not done. Treat the numbers below as measurements of a prototype.
 
 ## What is here
 - `macai.gated_delta`: the gated delta rule (the linear attention in three of every four layers of Qwen3.5 / Qwen3-Next) as
@@ -37,9 +39,15 @@ the rule's chunking) is not done. Treat the numbers below as measurements of a p
   picture's tower output is kept in CPU memory, keyed by the exact bytes of its pixels, and served from the second epoch on
   through the model's own precomputed-encoder input (the same bits as a recompute). Each is a setting. Design and measurements:
   [docs/training.md](docs/training.md), [docs/series_layer.md](docs/series_layer.md).
-- `macai.patch`: installs the rule, the layer parts and the training path into transformers' Qwen3.5-family modeling code (each
-  replaced method only while its source matches the transformers version it was written against), so existing training code
-  runs them.
+- `macai.lora`: PEFT's vanilla LoRA layer with its adapter path fused (series design D5): the mask from torch's own dropout call
+  (the same masks as PEFT's from the same generator state), PyTorch's products for the rank-32 reductions, two Metal kernels for
+  the expanding products with the base output's add (forward) and the mask and the dropout scale (backward) as they write; the
+  forward and every gradient at or under twice PEFT's own error against float64, the weight gradients PEFT's bits under bf16
+  autocast; the adapter path 2.1x (0.8B) / 2.2x (9B) faster. A setting; anything but vanilla LoRA runs PEFT's own forward. Design
+  and measurements: [docs/lora.md](docs/lora.md), [docs/series_layer.md](docs/series_layer.md).
+- `macai.patch`: installs the rule, the layer parts and the training path into transformers' Qwen3.5-family modeling code, and
+  the fused adapter path into PEFT (each replaced method only while its source matches the version it was written against), so
+  existing training code runs them.
 - `macai.configure`: the settings measured for long PyTorch training on the Apple GPU (allocator watermarks, thread counts).
 
 ## Install

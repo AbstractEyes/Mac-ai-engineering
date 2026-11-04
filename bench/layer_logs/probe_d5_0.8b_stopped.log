@@ -1,0 +1,163 @@
+[guard] start 17:59:29 limit 96.0 GB, swap +1.0 GB, wall 10800 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/lora_probe.py --name probe_d5_0.8b --logdir bench/layer_logs --model 0.8b --arm kernels --memory recompute --layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --lora-fused --epochs 1 --batch 2 --accum 2 --n-items 12 --empty-cache --float64-model
+[probe] runner pid 23212
+[probe] runner pid 23212
+[phase4] runner pid 23212
+W1103 17:59:30.979000 23212 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+[phase4] macai {"version": "0.2.0", "KERNEL": "chunked", "KERNEL_BWD": "chunked", "FUSED_NORM": true, "chunk": 16, "SIZE_CLASSES": false, "RECOMPUTE_STATES": true, "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU", "layer": {"RMSNORM": true, "CONV": true, "GATED_NORM": true, "GATES": true, "SWIGLU": true}, "layer_patches": ["rmsnorm", "gated_norm", "mlp", "gated_delta_net"], "training": {"HEAD_AT_LABELS": true, "VISION_CACHE": true}, "training_patches": ["head_conditional", "head_causal_lm", "vision_cache"], "lora": {"FUSED": true}, "lora_patches": ["linear"]}
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+train 20261104_015931_probe_d5_0.8b: 12 items (12 with a picture), 24 examples by form {'short': 12, 'full': 12}; images fetched in 0 s
+[guard]      30 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]      61 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]      91 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     122 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     152 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     182 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     213 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     243 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     274 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     304 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     334 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     365 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     395 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     426 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     456 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     486 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     517 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     547 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     577 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     608 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     638 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     669 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     699 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     729 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     760 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     790 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     820 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     851 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     881 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     911 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     942 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]     972 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1002 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1032 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1063 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1093 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1123 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1153 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1183 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1214 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1244 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1274 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1304 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1334 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1365 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1395 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1425 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1455 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1486 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1516 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1546 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1576 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1606 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1637 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1667 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1697 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1727 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1758 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1788 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1818 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1848 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1879 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1909 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1939 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1969 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    1999 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2030 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2060 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2090 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2120 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2151 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2181 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2211 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2241 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2272 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2302 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2332 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2362 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2393 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2423 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2453 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2483 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2514 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2544 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2574 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2604 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2635 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2665 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2695 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2725 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2755 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2786 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2816 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2847 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2877 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2907 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2937 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2967 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    2998 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3028 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3058 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3088 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3118 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3149 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3179 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3209 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3239 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3270 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3300 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3330 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3360 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3391 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3421 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3451 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3481 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3511 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3542 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3572 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3602 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3632 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3663 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3693 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3723 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3753 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3783 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3814 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3844 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3874 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3905 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3935 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3965 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    3996 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4026 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4056 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4087 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4117 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4148 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4178 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4208 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4239 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4269 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4300 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4330 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
+[guard]    4360 s footprint   0.56 GB (peak   0.56) swap +0.00 GB pressure 1
