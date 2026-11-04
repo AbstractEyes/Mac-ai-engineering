@@ -81,9 +81,34 @@ backward; spread over the Metal allocator's shared 1 GiB heaps, those buffers ke
 forward and the backward, and the process held 17-19% more than with the reference implementation although its live tensors
 were fewer.
 
+## The chunking and tiling (series design D3: now the default)
+Three settings choose how the chunked kernels cut the work; every one gives outputs within the correctness harness's float64 bars,
+and the gradients keep their bits under each (`tests/test_chunking.py`). Design, every variant tried and the measurements:
+[series_layer.md](series_layer.md), D3.
+
+| setting | default | what it does | measured (M3 Max) |
+|---|---|---|---|
+| `op.FWD_CHUNK` | 8 | a forward that keeps no states (a prefill, and the training forward under `RECOMPUTE_STATES`) runs at chunks of 8 tokens; the backward recomputes the chunk states at 16 from the inputs, so the gradients are unchanged bit for bit; a forward that stores states for a backward stays at 16 | the training forward 1.11x at the readers' micro-batches (Qwen3.5 0.8B 2 x 474-1,090 tokens x 16 heads, 9B 1 x 211-1,257 x 32), 1.08x at 4 / 2 x 1,024; the forward's output within 0.33-1.50x the chunk-16 forward's float32 error |
+| `op.VALUE_SPLIT` | "auto" | the state passes split a head-row's 128 value columns over 2 threadgroups (each stages the whole chunk's keys and queries) where the head-rows leave cores idle: a chunk-16 pass at up to 16 head-rows (B x H), the chunk-8 forward at up to 64 (`_chunked.AUTO_SPLIT`); an int (1, 2, 4, 8) splits every pass | with chunk 8, the forward of 1 row x 16 heads x 4,096-32,768 tokens 1.13-1.14x and training 1.12-1.13x over chunk 8 alone; at the readers' micro-batches the forward 1.09x more; 4 or 8 threadgroups a head-row measured slower than 2 (`d3_bench_run2.json`) |
+| `_chunked.DBUF` | 0 | 1 / 2: the state passes read the next chunk's inputs ahead into registers (two staging buffers and one barrier a chunk / one buffer) | 12-18% slower on the state passes at every shape: not adopted |
+
+The rule with both defaults against the chunking before (`bench/bench_d3.py`, `bench/layer_logs/d3_bench.json`; Metal events; the
+layer's inputs: q, k bf16, v, g, beta float32, the l2 normalization in the call):
+
+| | before | now |
+|---|---|---|
+| a 0.8B micro-batch's 18 calls: the training forward / forward + backward | 22.19 / 78.51 ms | 18.30 / 74.57 ms (1.21x / 1.05x) |
+| a 9B micro-batch's 24 calls | 28.08 / 99.77 ms | 23.14 / 94.98 ms (1.21x / 1.05x) |
+| 1 row x 16 heads, the forward without gradients at 4,096 / 32,768 tokens | 5.00 / 39.22 ms | 4.00 / 31.80 ms (1.25x / 1.23x) |
+| 1 row x 32 heads, the same | 5.90 / 45.69 ms | 5.05 / 38.85 ms (1.17x / 1.18x) |
+| 1 row x 16 heads, forward + backward at 4,096 / 32,768 tokens | 16.03 / 124.89 ms | 13.77 / 108.36 ms (1.16x / 1.15x) |
+
 ## Next
-- The per-chunk backward is bandwidth-bound on the chunk states (now recomputed in the backward), and double-buffered staging
-  in the state passes: series_phase3.md, "Next".
+- The per-chunk backward is bandwidth-bound on the chunk states (now recomputed in the backward): states every 32 tokens with the
+  chunk-16 algebra (series_phase3.md, "Next" item 1) are designed but not built (series_layer.md, D3: about 1.03-1.13x on the
+  backward).
+- A chunk of the state passes costs ~16 us at chunk 16, ~4 us of it the products and ~12 us work that every threadgroup repeats
+  (staging, per-lane loads, barriers, dependent chains), not the loads' latency (reading them a chunk ahead did not help): not traced.
 - The layer's other parts: the norms, the short convolution, beta and g, the gated norm and SwiGLU are now Metal kernels too
   (`macai.layer`, [layer.md](layer.md), series design D4); the products and the LoRA adapters' path are the series' next entry
   (D5).

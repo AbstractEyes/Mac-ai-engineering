@@ -1,0 +1,5920 @@
+{
+ "name": "d3_0.8b_2x8_100steps",
+ "pid": 60199,
+ "model_id": "Qwen/Qwen3.5-0.8B",
+ "arm": "kernels",
+ "memory": "recompute",
+ "epochs": 4.0,
+ "batch": 2,
+ "grad_accum": 8,
+ "sequences_a_step": 16,
+ "n_items": null,
+ "recipe": {
+  "rank": 32,
+  "alpha": 64,
+  "dropout": 0.05,
+  "lr": 0.0002,
+  "max_len": 2048,
+  "seed": 20261030,
+  "do_ship": false
+ },
+ "warmup_steps_excluded": 10,
+ "started": "2026-11-03 20:54:12 PST",
+ "repo_commit": "2b50b9d",
+ "repo_dirty": false,
+ "env": {
+  "PYTORCH_MPS_HIGH_WATERMARK_RATIO": "0.75",
+  "PYTORCH_MPS_LOW_WATERMARK_RATIO": "0.55",
+  "PYTORCH_ENABLE_MPS_FALLBACK": "1",
+  "HF_HUB_OFFLINE": "1",
+  "OMP_NUM_THREADS": "8"
+ },
+ "runner_patches": [
+  "load_vlm device_map cuda -> mps",
+  "model.gradient_checkpointing_enable -> no-op",
+  "TrainingArguments gradient_checkpointing -> False",
+  "TrainingArguments logging_steps 10 -> 1",
+  "fetch_images -> the fetched pictures folder",
+  "TrainingArguments torch_empty_cache_steps None -> 1"
+ ],
+ "empty_cache_each_micro_batch": true,
+ "steps": [
+  {
+   "step": 1,
+   "t_s": 6.393,
+   "loss": 2.562711238861084,
+   "grad_norm": 8.999358177185059,
+   "learning_rate": 0.0,
+   "epoch": 0.04,
+   "mps_alloc_gb": 0.41,
+   "mps_driver_gb": 12.338,
+   "footprint_gb": 14.531,
+   "footprint_peak_in_step_gb": 14.531,
+   "live_at_forward_end_gb": 8.257,
+   "driver_at_forward_end_gb": 12.299,
+   "training_counts": {
+    "head_taken": 8,
+    "head_fallback": 0,
+    "head_positions": 12716,
+    "head_labelled": 2092,
+    "fallbacks": {},
+    "lora_fused": 1200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 144,
+     "bwd s1 d0": 144
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 8,
+     "served_calls": 0,
+     "computed_calls": 8,
+     "pictures_served": 0,
+     "pictures_new": 16,
+     "pictures_again": 0,
+     "stored": 14,
+     "not_stored": 0,
+     "bytes_stored": 55795712,
+     "bytes_merged": 13948928,
+     "emptied": 0,
+     "wait_s": 0.0003,
+     "key_s": 0.0398,
+     "serve_s": 0.0,
+     "store_s": 0.0129,
+     "entries": 14,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 2,
+   "t_s": 13.17,
+   "loss": 2.4253618717193604,
+   "grad_norm": 7.885451316833496,
+   "learning_rate": 6.666666666666667e-05,
+   "epoch": 0.08,
+   "mps_alloc_gb": 0.429,
+   "mps_driver_gb": 14.015,
+   "footprint_gb": 16.357,
+   "footprint_peak_in_step_gb": 16.691,
+   "live_at_forward_end_gb": 8.553,
+   "driver_at_forward_end_gb": 14.427,
+   "training_counts": {
+    "head_taken": 16,
+    "head_fallback": 0,
+    "head_positions": 27004,
+    "head_labelled": 4545,
+    "fallbacks": {},
+    "lora_fused": 2400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 288,
+     "bwd s1 d0": 288
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 16,
+     "served_calls": 0,
+     "computed_calls": 16,
+     "pictures_served": 0,
+     "pictures_new": 31,
+     "pictures_again": 1,
+     "stored": 29,
+     "not_stored": 0,
+     "bytes_stored": 122273792,
+     "bytes_merged": 30568448,
+     "emptied": 0,
+     "wait_s": 0.0003,
+     "key_s": 0.0779,
+     "serve_s": 0.0,
+     "store_s": 0.0276,
+     "entries": 29,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 3,
+   "t_s": 18.548,
+   "loss": 2.030198335647583,
+   "grad_norm": 4.410128593444824,
+   "learning_rate": 0.00013333333333333334,
+   "epoch": 0.12,
+   "mps_alloc_gb": 0.383,
+   "mps_driver_gb": 14.644,
+   "footprint_gb": 16.967,
+   "footprint_peak_in_step_gb": 17.212,
+   "live_at_forward_end_gb": 7.168,
+   "driver_at_forward_end_gb": 14.957,
+   "training_counts": {
+    "head_taken": 24,
+    "head_fallback": 0,
+    "head_positions": 37548,
+    "head_labelled": 6696,
+    "fallbacks": {},
+    "lora_fused": 3600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 432,
+     "bwd s1 d0": 432
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 24,
+     "served_calls": 0,
+     "computed_calls": 24,
+     "pictures_served": 0,
+     "pictures_new": 47,
+     "pictures_again": 1,
+     "stored": 45,
+     "not_stored": 0,
+     "bytes_stored": 177782784,
+     "bytes_merged": 44445696,
+     "emptied": 0,
+     "wait_s": 0.0003,
+     "key_s": 0.1092,
+     "serve_s": 0.0,
+     "store_s": 0.0419,
+     "entries": 45,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 4,
+   "t_s": 26.043,
+   "loss": 1.87082040309906,
+   "grad_norm": 3.969573736190796,
+   "learning_rate": 0.0002,
+   "epoch": 0.16,
+   "mps_alloc_gb": 0.441,
+   "mps_driver_gb": 16.576,
+   "footprint_gb": 18.958,
+   "footprint_peak_in_step_gb": 19.852,
+   "live_at_forward_end_gb": 7.812,
+   "driver_at_forward_end_gb": 17.47,
+   "training_counts": {
+    "head_taken": 32,
+    "head_fallback": 0,
+    "head_positions": 53646,
+    "head_labelled": 9460,
+    "fallbacks": {},
+    "lora_fused": 4800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 576,
+     "bwd s1 d0": 576
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 32,
+     "served_calls": 0,
+     "computed_calls": 32,
+     "pictures_served": 0,
+     "pictures_new": 61,
+     "pictures_again": 2,
+     "stored": 59,
+     "not_stored": 0,
+     "bytes_stored": 246013952,
+     "bytes_merged": 61503488,
+     "emptied": 0,
+     "wait_s": 0.0004,
+     "key_s": 0.1482,
+     "serve_s": 0.0,
+     "store_s": 0.0559,
+     "entries": 59,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 5,
+   "t_s": 33.116,
+   "loss": 1.3870725631713867,
+   "grad_norm": 3.5753207206726074,
+   "learning_rate": 0.00019994755690455152,
+   "epoch": 0.2,
+   "mps_alloc_gb": 0.462,
+   "mps_driver_gb": 18.377,
+   "footprint_gb": 20.781,
+   "footprint_peak_in_step_gb": 20.781,
+   "live_at_forward_end_gb": 7.556,
+   "driver_at_forward_end_gb": 17.377,
+   "training_counts": {
+    "head_taken": 40,
+    "head_fallback": 0,
+    "head_positions": 68554,
+    "head_labelled": 12005,
+    "fallbacks": {},
+    "lora_fused": 6000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 720,
+     "bwd s1 d0": 720
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 40,
+     "served_calls": 0,
+     "computed_calls": 40,
+     "pictures_served": 0,
+     "pictures_new": 77,
+     "pictures_again": 2,
+     "stored": 75,
+     "not_stored": 0,
+     "bytes_stored": 318775296,
+     "bytes_merged": 79693824,
+     "emptied": 0,
+     "wait_s": 0.0004,
+     "key_s": 0.1877,
+     "serve_s": 0.0,
+     "store_s": 0.0686,
+     "entries": 75,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 6,
+   "t_s": 40.266,
+   "loss": 1.198000431060791,
+   "grad_norm": 3.042135238647461,
+   "learning_rate": 0.00019979028262377118,
+   "epoch": 0.24,
+   "mps_alloc_gb": 0.444,
+   "mps_driver_gb": 18.314,
+   "footprint_gb": 20.746,
+   "footprint_peak_in_step_gb": 20.808,
+   "live_at_forward_end_gb": 7.525,
+   "driver_at_forward_end_gb": 18.377,
+   "training_counts": {
+    "head_taken": 48,
+    "head_fallback": 0,
+    "head_positions": 84012,
+    "head_labelled": 14329,
+    "fallbacks": {},
+    "lora_fused": 7200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 864,
+     "bwd s1 d0": 864
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 48,
+     "served_calls": 0,
+     "computed_calls": 48,
+     "pictures_served": 0,
+     "pictures_new": 93,
+     "pictures_again": 2,
+     "stored": 91,
+     "not_stored": 0,
+     "bytes_stored": 395231232,
+     "bytes_merged": 98807808,
+     "emptied": 0,
+     "wait_s": 0.0004,
+     "key_s": 0.2332,
+     "serve_s": 0.0,
+     "store_s": 0.0845,
+     "entries": 91,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 7,
+   "t_s": 46.754,
+   "loss": 1.2412190437316895,
+   "grad_norm": 2.418102979660034,
+   "learning_rate": 0.0001995283421166614,
+   "epoch": 0.28,
+   "mps_alloc_gb": 0.396,
+   "mps_driver_gb": 18.158,
+   "footprint_gb": 20.625,
+   "footprint_peak_in_step_gb": 23.698,
+   "live_at_forward_end_gb": 7.382,
+   "driver_at_forward_end_gb": 21.213,
+   "training_counts": {
+    "head_taken": 56,
+    "head_fallback": 0,
+    "head_positions": 97482,
+    "head_labelled": 17115,
+    "fallbacks": {},
+    "lora_fused": 8400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 1008,
+     "bwd s1 d0": 1008
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 56,
+     "served_calls": 0,
+     "computed_calls": 56,
+     "pictures_served": 0,
+     "pictures_new": 107,
+     "pictures_again": 3,
+     "stored": 105,
+     "not_stored": 0,
+     "bytes_stored": 450674688,
+     "bytes_merged": 112668672,
+     "emptied": 0,
+     "wait_s": 0.0004,
+     "key_s": 0.2672,
+     "serve_s": 0.0,
+     "store_s": 0.0969,
+     "entries": 105,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 8,
+   "t_s": 53.896,
+   "loss": 1.138351321220398,
+   "grad_norm": 2.4274983406066895,
+   "learning_rate": 0.00019916201012264254,
+   "epoch": 0.32,
+   "mps_alloc_gb": 0.45,
+   "mps_driver_gb": 19.136,
+   "footprint_gb": 21.614,
+   "footprint_peak_in_step_gb": 21.635,
+   "live_at_forward_end_gb": 7.742,
+   "driver_at_forward_end_gb": 19.15,
+   "training_counts": {
+    "head_taken": 64,
+    "head_fallback": 0,
+    "head_positions": 112330,
+    "head_labelled": 19740,
+    "fallbacks": {},
+    "lora_fused": 9600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 1152,
+     "bwd s1 d0": 1152
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 64,
+     "served_calls": 0,
+     "computed_calls": 64,
+     "pictures_served": 0,
+     "pictures_new": 122,
+     "pictures_again": 4,
+     "stored": 120,
+     "not_stored": 0,
+     "bytes_stored": 521650176,
+     "bytes_merged": 130412544,
+     "emptied": 0,
+     "wait_s": 0.0005,
+     "key_s": 0.3117,
+     "serve_s": 0.0,
+     "store_s": 0.1111,
+     "entries": 120,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 9,
+   "t_s": 60.795,
+   "loss": 1.119328498840332,
+   "grad_norm": 2.076997756958008,
+   "learning_rate": 0.00019869167087338907,
+   "epoch": 0.36,
+   "mps_alloc_gb": 0.424,
+   "mps_driver_gb": 20.17,
+   "footprint_gb": 22.676,
+   "footprint_peak_in_step_gb": 22.676,
+   "live_at_forward_end_gb": 8.408,
+   "driver_at_forward_end_gb": 19.793,
+   "training_counts": {
+    "head_taken": 72,
+    "head_fallback": 0,
+    "head_positions": 127100,
+    "head_labelled": 22677,
+    "fallbacks": {},
+    "lora_fused": 10800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 1296,
+     "bwd s1 d0": 1296
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 72,
+     "served_calls": 0,
+     "computed_calls": 72,
+     "pictures_served": 0,
+     "pictures_new": 136,
+     "pictures_again": 5,
+     "stored": 134,
+     "not_stored": 0,
+     "bytes_stored": 578772992,
+     "bytes_merged": 144693248,
+     "emptied": 0,
+     "wait_s": 0.0005,
+     "key_s": 0.3526,
+     "serve_s": 0.0,
+     "store_s": 0.1254,
+     "entries": 134,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 10,
+   "t_s": 68.41,
+   "loss": 0.9879754781723022,
+   "grad_norm": 1.9225207567214966,
+   "learning_rate": 0.0001981178176898239,
+   "epoch": 0.4,
+   "mps_alloc_gb": 0.475,
+   "mps_driver_gb": 19.164,
+   "footprint_gb": 21.695,
+   "footprint_peak_in_step_gb": 22.732,
+   "live_at_forward_end_gb": 7.881,
+   "driver_at_forward_end_gb": 20.201,
+   "training_counts": {
+    "head_taken": 80,
+    "head_fallback": 0,
+    "head_positions": 142932,
+    "head_labelled": 25280,
+    "fallbacks": {},
+    "lora_fused": 12000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 1440,
+     "bwd s1 d0": 1440
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 80,
+     "served_calls": 0,
+     "computed_calls": 80,
+     "pictures_served": 0,
+     "pictures_new": 152,
+     "pictures_again": 5,
+     "stored": 150,
+     "not_stored": 0,
+     "bytes_stored": 664346624,
+     "bytes_merged": 166086656,
+     "emptied": 0,
+     "wait_s": 0.0005,
+     "key_s": 0.3974,
+     "serve_s": 0.0,
+     "store_s": 0.1407,
+     "entries": 150,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 11,
+   "t_s": 74.6,
+   "loss": 1.0811182260513306,
+   "grad_norm": 2.7762463092803955,
+   "learning_rate": 0.00019744105246469263,
+   "epoch": 0.44,
+   "mps_alloc_gb": 0.401,
+   "mps_driver_gb": 20.172,
+   "footprint_gb": 22.73,
+   "footprint_peak_in_step_gb": 22.73,
+   "live_at_forward_end_gb": 7.609,
+   "driver_at_forward_end_gb": 20.179,
+   "training_counts": {
+    "head_taken": 88,
+    "head_fallback": 0,
+    "head_positions": 155966,
+    "head_labelled": 27499,
+    "fallbacks": {},
+    "lora_fused": 13200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 1584,
+     "bwd s1 d0": 1584
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 88,
+     "served_calls": 0,
+     "computed_calls": 88,
+     "pictures_served": 0,
+     "pictures_new": 167,
+     "pictures_again": 6,
+     "stored": 165,
+     "not_stored": 0,
+     "bytes_stored": 725311488,
+     "bytes_merged": 181327872,
+     "emptied": 0,
+     "wait_s": 0.0005,
+     "key_s": 0.4329,
+     "serve_s": 0.0,
+     "store_s": 0.1542,
+     "entries": 165,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 12,
+   "t_s": 81.246,
+   "loss": 0.9884229898452759,
+   "grad_norm": 1.6487624645233154,
+   "learning_rate": 0.00019666208503126112,
+   "epoch": 0.48,
+   "mps_alloc_gb": 0.401,
+   "mps_driver_gb": 20.211,
+   "footprint_gb": 22.789,
+   "footprint_peak_in_step_gb": 25.227,
+   "live_at_forward_end_gb": 7.429,
+   "driver_at_forward_end_gb": 22.648,
+   "training_counts": {
+    "head_taken": 96,
+    "head_fallback": 0,
+    "head_positions": 170004,
+    "head_labelled": 30553,
+    "fallbacks": {},
+    "lora_fused": 14400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 1728,
+     "bwd s1 d0": 1728
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 96,
+     "served_calls": 0,
+     "computed_calls": 96,
+     "pictures_served": 0,
+     "pictures_new": 182,
+     "pictures_again": 6,
+     "stored": 180,
+     "not_stored": 0,
+     "bytes_stored": 781795328,
+     "bytes_merged": 195448832,
+     "emptied": 0,
+     "wait_s": 0.0005,
+     "key_s": 0.4637,
+     "serve_s": 0.0,
+     "store_s": 0.1678,
+     "entries": 180,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 13,
+   "t_s": 88.202,
+   "loss": 0.8495057225227356,
+   "grad_norm": 1.6366125345230103,
+   "learning_rate": 0.00019578173241879872,
+   "epoch": 0.52,
+   "mps_alloc_gb": 0.435,
+   "mps_driver_gb": 20.191,
+   "footprint_gb": 22.759,
+   "footprint_peak_in_step_gb": 24.759,
+   "live_at_forward_end_gb": 7.717,
+   "driver_at_forward_end_gb": 22.172,
+   "training_counts": {
+    "head_taken": 104,
+    "head_fallback": 0,
+    "head_positions": 184816,
+    "head_labelled": 32972,
+    "fallbacks": {},
+    "lora_fused": 15600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 1872,
+     "bwd s1 d0": 1872
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 104,
+     "served_calls": 0,
+     "computed_calls": 104,
+     "pictures_served": 0,
+     "pictures_new": 197,
+     "pictures_again": 7,
+     "stored": 195,
+     "not_stored": 0,
+     "bytes_stored": 847233024,
+     "bytes_merged": 211808256,
+     "emptied": 0,
+     "wait_s": 0.0006,
+     "key_s": 0.5029,
+     "serve_s": 0.0,
+     "store_s": 0.1831,
+     "entries": 195,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 14,
+   "t_s": 94.92,
+   "loss": 0.9718014597892761,
+   "grad_norm": 1.664894700050354,
+   "learning_rate": 0.00019480091799562704,
+   "epoch": 0.56,
+   "mps_alloc_gb": 0.418,
+   "mps_driver_gb": 20.15,
+   "footprint_gb": 22.786,
+   "footprint_peak_in_step_gb": 24.755,
+   "live_at_forward_end_gb": 7.044,
+   "driver_at_forward_end_gb": 22.119,
+   "training_counts": {
+    "head_taken": 112,
+    "head_fallback": 0,
+    "head_positions": 199266,
+    "head_labelled": 35737,
+    "fallbacks": {},
+    "lora_fused": 16800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 2016,
+     "bwd s1 d0": 2016
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 112,
+     "served_calls": 0,
+     "computed_calls": 112,
+     "pictures_served": 0,
+     "pictures_new": 211,
+     "pictures_again": 8,
+     "stored": 209,
+     "not_stored": 0,
+     "bytes_stored": 913612800,
+     "bytes_merged": 228403200,
+     "emptied": 0,
+     "wait_s": 0.0006,
+     "key_s": 0.5334,
+     "serve_s": 0.0,
+     "store_s": 0.1952,
+     "entries": 209,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 15,
+   "t_s": 101.514,
+   "loss": 1.0702778100967407,
+   "grad_norm": 1.6773864030838013,
+   "learning_rate": 0.00019372067050063438,
+   "epoch": 0.6,
+   "mps_alloc_gb": 0.406,
+   "mps_driver_gb": 19.215,
+   "footprint_gb": 21.861,
+   "footprint_peak_in_step_gb": 25.643,
+   "live_at_forward_end_gb": 8.12,
+   "driver_at_forward_end_gb": 22.996,
+   "training_counts": {
+    "head_taken": 120,
+    "head_fallback": 0,
+    "head_positions": 213118,
+    "head_labelled": 38346,
+    "fallbacks": {},
+    "lora_fused": 18000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 2160,
+     "bwd s1 d0": 2160
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 120,
+     "served_calls": 0,
+     "computed_calls": 120,
+     "pictures_served": 0,
+     "pictures_new": 225,
+     "pictures_again": 9,
+     "stored": 223,
+     "not_stored": 0,
+     "bytes_stored": 972660736,
+     "bytes_merged": 243165184,
+     "emptied": 0,
+     "wait_s": 0.0006,
+     "key_s": 0.5676,
+     "serve_s": 0.0,
+     "store_s": 0.2068,
+     "entries": 223,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 16,
+   "t_s": 108.198,
+   "loss": 0.903797447681427,
+   "grad_norm": 1.4608967304229736,
+   "learning_rate": 0.00019254212296427044,
+   "epoch": 0.64,
+   "mps_alloc_gb": 0.423,
+   "mps_driver_gb": 18.861,
+   "footprint_gb": 21.551,
+   "footprint_peak_in_step_gb": 22.573,
+   "live_at_forward_end_gb": 7.396,
+   "driver_at_forward_end_gb": 19.879,
+   "training_counts": {
+    "head_taken": 128,
+    "head_fallback": 0,
+    "head_positions": 227106,
+    "head_labelled": 41355,
+    "fallbacks": {},
+    "lora_fused": 19200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 2304,
+     "bwd s1 d0": 2304
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 128,
+     "served_calls": 0,
+     "computed_calls": 128,
+     "pictures_served": 0,
+     "pictures_new": 240,
+     "pictures_again": 9,
+     "stored": 238,
+     "not_stored": 0,
+     "bytes_stored": 1034756096,
+     "bytes_merged": 258689024,
+     "emptied": 0,
+     "wait_s": 0.0006,
+     "key_s": 0.6033,
+     "serve_s": 0.0,
+     "store_s": 0.2213,
+     "entries": 238,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 17,
+   "t_s": 114.901,
+   "loss": 0.8423664569854736,
+   "grad_norm": 1.533856987953186,
+   "learning_rate": 0.00019126651152015403,
+   "epoch": 0.68,
+   "mps_alloc_gb": 0.434,
+   "mps_driver_gb": 19.189,
+   "footprint_gb": 21.905,
+   "footprint_peak_in_step_gb": 22.577,
+   "live_at_forward_end_gb": 8.036,
+   "driver_at_forward_end_gb": 19.861,
+   "training_counts": {
+    "head_taken": 136,
+    "head_fallback": 0,
+    "head_positions": 241216,
+    "head_labelled": 43957,
+    "fallbacks": {},
+    "lora_fused": 20400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 2448,
+     "bwd s1 d0": 2448
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 136,
+     "served_calls": 0,
+     "computed_calls": 136,
+     "pictures_served": 0,
+     "pictures_new": 255,
+     "pictures_again": 10,
+     "stored": 253,
+     "not_stored": 0,
+     "bytes_stored": 1096851456,
+     "bytes_merged": 274212864,
+     "emptied": 0,
+     "wait_s": 0.0006,
+     "key_s": 0.6394,
+     "serve_s": 0.0,
+     "store_s": 0.234,
+     "entries": 253,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 18,
+   "t_s": 121.651,
+   "loss": 0.8332352042198181,
+   "grad_norm": 1.592856764793396,
+   "learning_rate": 0.00018989517410853955,
+   "epoch": 0.72,
+   "mps_alloc_gb": 0.418,
+   "mps_driver_gb": 19.181,
+   "footprint_gb": 21.914,
+   "footprint_peak_in_step_gb": 23.914,
+   "live_at_forward_end_gb": 7.457,
+   "driver_at_forward_end_gb": 21.181,
+   "training_counts": {
+    "head_taken": 144,
+    "head_fallback": 0,
+    "head_positions": 255646,
+    "head_labelled": 46308,
+    "fallbacks": {},
+    "lora_fused": 21600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 2592,
+     "bwd s1 d0": 2592
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 144,
+     "served_calls": 0,
+     "computed_calls": 144,
+     "pictures_served": 0,
+     "pictures_new": 268,
+     "pictures_again": 13,
+     "stored": 266,
+     "not_stored": 0,
+     "bytes_stored": 1155694592,
+     "bytes_merged": 288923648,
+     "emptied": 0,
+     "wait_s": 0.0007,
+     "key_s": 0.6732,
+     "serve_s": 0.0,
+     "store_s": 0.2482,
+     "entries": 266,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 19,
+   "t_s": 129.298,
+   "loss": 0.837743878364563,
+   "grad_norm": 1.4604079723358154,
+   "learning_rate": 0.00018842954907300236,
+   "epoch": 0.76,
+   "mps_alloc_gb": 0.481,
+   "mps_driver_gb": 20.218,
+   "footprint_gb": 22.947,
+   "footprint_peak_in_step_gb": 22.947,
+   "live_at_forward_end_gb": 8.754,
+   "driver_at_forward_end_gb": 20.181,
+   "training_counts": {
+    "head_taken": 152,
+    "head_fallback": 0,
+    "head_positions": 272164,
+    "head_labelled": 48772,
+    "fallbacks": {},
+    "lora_fused": 22800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 2736,
+     "bwd s1 d0": 2736
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 152,
+     "served_calls": 0,
+     "computed_calls": 152,
+     "pictures_served": 0,
+     "pictures_new": 283,
+     "pictures_again": 14,
+     "stored": 282,
+     "not_stored": 0,
+     "bytes_stored": 1239572480,
+     "bytes_merged": 309893120,
+     "emptied": 0,
+     "wait_s": 0.0007,
+     "key_s": 0.7109,
+     "serve_s": 0.0,
+     "store_s": 0.2608,
+     "entries": 282,
+     "pending": 1,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 20,
+   "t_s": 136.302,
+   "loss": 0.8400524258613586,
+   "grad_norm": 1.855608344078064,
+   "learning_rate": 0.00018687117365181512,
+   "epoch": 0.8,
+   "mps_alloc_gb": 0.437,
+   "mps_driver_gb": 19.185,
+   "footprint_gb": 21.953,
+   "footprint_peak_in_step_gb": 23.966,
+   "live_at_forward_end_gb": 7.443,
+   "driver_at_forward_end_gb": 21.242,
+   "training_counts": {
+    "head_taken": 160,
+    "head_fallback": 0,
+    "head_positions": 287146,
+    "head_labelled": 51023,
+    "fallbacks": {},
+    "lora_fused": 24000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 2880,
+     "bwd s1 d0": 2880
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 160,
+     "served_calls": 0,
+     "computed_calls": 160,
+     "pictures_served": 0,
+     "pictures_new": 298,
+     "pictures_again": 15,
+     "stored": 296,
+     "not_stored": 0,
+     "bytes_stored": 1305395200,
+     "bytes_merged": 326348800,
+     "emptied": 0,
+     "wait_s": 0.0007,
+     "key_s": 0.747,
+     "serve_s": 0.0,
+     "store_s": 0.2724,
+     "entries": 296,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 21,
+   "t_s": 143.011,
+   "loss": 0.8886385560035706,
+   "grad_norm": 1.52363121509552,
+   "learning_rate": 0.00018522168236559695,
+   "epoch": 0.84,
+   "mps_alloc_gb": 0.412,
+   "mps_driver_gb": 19.855,
+   "footprint_gb": 22.663,
+   "footprint_peak_in_step_gb": 24.379,
+   "live_at_forward_end_gb": 8.022,
+   "driver_at_forward_end_gb": 21.591,
+   "training_counts": {
+    "head_taken": 168,
+    "head_fallback": 0,
+    "head_positions": 300928,
+    "head_labelled": 53895,
+    "fallbacks": {},
+    "lora_fused": 25200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 3024,
+     "bwd s1 d0": 3024
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 168,
+     "served_calls": 0,
+     "computed_calls": 168,
+     "pictures_served": 0,
+     "pictures_new": 313,
+     "pictures_again": 15,
+     "stored": 311,
+     "not_stored": 0,
+     "bytes_stored": 1370095616,
+     "bytes_merged": 342523904,
+     "emptied": 0,
+     "wait_s": 0.0007,
+     "key_s": 0.7826,
+     "serve_s": 0.0,
+     "store_s": 0.2884,
+     "entries": 311,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 22,
+   "t_s": 150.338,
+   "loss": 0.7736278176307678,
+   "grad_norm": 1.4130845069885254,
+   "learning_rate": 0.00018348280530292713,
+   "epoch": 0.88,
+   "mps_alloc_gb": 0.46,
+   "mps_driver_gb": 20.91,
+   "footprint_gb": 23.747,
+   "footprint_peak_in_step_gb": 24.667,
+   "live_at_forward_end_gb": 8.473,
+   "driver_at_forward_end_gb": 21.847,
+   "training_counts": {
+    "head_taken": 176,
+    "head_fallback": 0,
+    "head_positions": 316616,
+    "head_labelled": 56245,
+    "fallbacks": {},
+    "lora_fused": 26400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 3168,
+     "bwd s1 d0": 3168
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 176,
+     "served_calls": 0,
+     "computed_calls": 176,
+     "pictures_served": 0,
+     "pictures_new": 327,
+     "pictures_again": 17,
+     "stored": 325,
+     "not_stored": 0,
+     "bytes_stored": 1449230336,
+     "bytes_merged": 362307584,
+     "emptied": 0,
+     "wait_s": 0.0007,
+     "key_s": 0.8234,
+     "serve_s": 0.0,
+     "store_s": 0.3018,
+     "entries": 325,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 23,
+   "t_s": 157.924,
+   "loss": 1.042626142501831,
+   "grad_norm": 1.3765968084335327,
+   "learning_rate": 0.0001816563663057211,
+   "epoch": 0.92,
+   "mps_alloc_gb": 0.449,
+   "mps_driver_gb": 21.474,
+   "footprint_gb": 24.315,
+   "footprint_peak_in_step_gb": 25.75,
+   "live_at_forward_end_gb": 9.093,
+   "driver_at_forward_end_gb": 22.896,
+   "training_counts": {
+    "head_taken": 184,
+    "head_fallback": 0,
+    "head_positions": 332664,
+    "head_labelled": 59635,
+    "fallbacks": {},
+    "lora_fused": 27600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 3312,
+     "bwd s1 d0": 3312
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 184,
+     "served_calls": 0,
+     "computed_calls": 184,
+     "pictures_served": 0,
+     "pictures_new": 341,
+     "pictures_again": 17,
+     "stored": 339,
+     "not_stored": 0,
+     "bytes_stored": 1515741184,
+     "bytes_merged": 378935296,
+     "emptied": 0,
+     "wait_s": 0.0008,
+     "key_s": 0.8628,
+     "serve_s": 0.0,
+     "store_s": 0.3152,
+     "entries": 339,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 24,
+   "t_s": 165.128,
+   "loss": 0.6908833980560303,
+   "grad_norm": 1.5220363140106201,
+   "learning_rate": 0.00017974428105627208,
+   "epoch": 0.96,
+   "mps_alloc_gb": 0.465,
+   "mps_driver_gb": 20.857,
+   "footprint_gb": 23.719,
+   "footprint_peak_in_step_gb": 24.727,
+   "live_at_forward_end_gb": 7.564,
+   "driver_at_forward_end_gb": 21.857,
+   "training_counts": {
+    "head_taken": 192,
+    "head_fallback": 0,
+    "head_positions": 347714,
+    "head_labelled": 62135,
+    "fallbacks": {},
+    "lora_fused": 28800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 3456,
+     "bwd s1 d0": 3456
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 192,
+     "served_calls": 0,
+     "computed_calls": 192,
+     "pictures_served": 0,
+     "pictures_new": 356,
+     "pictures_again": 18,
+     "stored": 354,
+     "not_stored": 0,
+     "bytes_stored": 1596882944,
+     "bytes_merged": 399220736,
+     "emptied": 0,
+     "wait_s": 0.0008,
+     "key_s": 0.9065,
+     "serve_s": 0.0,
+     "store_s": 0.3305,
+     "entries": 354,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 25,
+   "t_s": 172.084,
+   "loss": 0.7751225829124451,
+   "grad_norm": 1.5823944807052612,
+   "learning_rate": 0.00017774855506796496,
+   "epoch": 1.0,
+   "mps_alloc_gb": 0.437,
+   "mps_driver_gb": 21.172,
+   "footprint_gb": 24.046,
+   "footprint_peak_in_step_gb": 24.064,
+   "live_at_forward_end_gb": 7.449,
+   "driver_at_forward_end_gb": 21.16,
+   "training_counts": {
+    "head_taken": 200,
+    "head_fallback": 0,
+    "head_positions": 362564,
+    "head_labelled": 64718,
+    "fallbacks": {},
+    "lora_fused": 30000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 3600,
+     "bwd s1 d0": 3600
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 200,
+     "served_calls": 0,
+     "computed_calls": 200,
+     "pictures_served": 0,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 370,
+     "not_stored": 0,
+     "bytes_stored": 1668644864,
+     "bytes_merged": 417161216,
+     "emptied": 0,
+     "wait_s": 0.0008,
+     "key_s": 0.9431,
+     "serve_s": 0.0,
+     "store_s": 0.3447,
+     "entries": 370,
+     "pending": 2,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 26,
+   "t_s": 178.033,
+   "loss": 0.5868332982063293,
+   "grad_norm": 1.2793059349060059,
+   "learning_rate": 0.00017567128158176953,
+   "epoch": 1.04,
+   "mps_alloc_gb": 0.46,
+   "mps_driver_gb": 20.154,
+   "footprint_gb": 23.112,
+   "footprint_peak_in_step_gb": 24.083,
+   "live_at_forward_end_gb": 7.843,
+   "driver_at_forward_end_gb": 21.172,
+   "training_counts": {
+    "head_taken": 208,
+    "head_fallback": 0,
+    "head_positions": 377926,
+    "head_labelled": 67134,
+    "fallbacks": {},
+    "lora_fused": 31200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 3744,
+     "bwd s1 d0": 3744
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 208,
+     "served_calls": 8,
+     "computed_calls": 200,
+     "pictures_served": 16,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.007,
+     "key_s": 0.9962,
+     "serve_s": 0.0161,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 27,
+   "t_s": 183.526,
+   "loss": 0.7674443125724792,
+   "grad_norm": 1.2834552526474,
+   "learning_rate": 0.00017351463937072004,
+   "epoch": 1.08,
+   "mps_alloc_gb": 0.398,
+   "mps_driver_gb": 20.134,
+   "footprint_gb": 23.168,
+   "footprint_peak_in_step_gb": 24.49,
+   "live_at_forward_end_gb": 7.794,
+   "driver_at_forward_end_gb": 21.826,
+   "training_counts": {
+    "head_taken": 216,
+    "head_fallback": 0,
+    "head_positions": 391602,
+    "head_labelled": 70405,
+    "fallbacks": {},
+    "lora_fused": 32400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 3888,
+     "bwd s1 d0": 3888
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 216,
+     "served_calls": 16,
+     "computed_calls": 200,
+     "pictures_served": 30,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0117,
+     "key_s": 1.0286,
+     "serve_s": 0.0278,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 28,
+   "t_s": 189.247,
+   "loss": 0.6042101383209229,
+   "grad_norm": 1.1804147958755493,
+   "learning_rate": 0.00017128089045468294,
+   "epoch": 1.12,
+   "mps_alloc_gb": 0.397,
+   "mps_driver_gb": 20.146,
+   "footprint_gb": 23.198,
+   "footprint_peak_in_step_gb": 25.163,
+   "live_at_forward_end_gb": 7.505,
+   "driver_at_forward_end_gb": 22.115,
+   "training_counts": {
+    "head_taken": 224,
+    "head_fallback": 0,
+    "head_positions": 405318,
+    "head_labelled": 73092,
+    "fallbacks": {},
+    "lora_fused": 33600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 4032,
+     "bwd s1 d0": 4032
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 224,
+     "served_calls": 24,
+     "computed_calls": 200,
+     "pictures_served": 45,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0174,
+     "key_s": 1.0603,
+     "serve_s": 0.0413,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 29,
+   "t_s": 195.879,
+   "loss": 0.4690355062484741,
+   "grad_norm": 1.2258752584457397,
+   "learning_rate": 0.00016897237772781044,
+   "epoch": 1.16,
+   "mps_alloc_gb": 0.476,
+   "mps_driver_gb": 22.131,
+   "footprint_gb": 25.242,
+   "footprint_peak_in_step_gb": 25.261,
+   "live_at_forward_end_gb": 7.769,
+   "driver_at_forward_end_gb": 22.131,
+   "training_counts": {
+    "head_taken": 232,
+    "head_fallback": 0,
+    "head_positions": 421716,
+    "head_labelled": 75613,
+    "fallbacks": {},
+    "lora_fused": 34800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 4176,
+     "bwd s1 d0": 4176
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 232,
+     "served_calls": 32,
+     "computed_calls": 200,
+     "pictures_served": 61,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0231,
+     "key_s": 1.1134,
+     "serve_s": 0.0573,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 30,
+   "t_s": 202.077,
+   "loss": 0.5705031752586365,
+   "grad_norm": 1.445826530456543,
+   "learning_rate": 0.00016659152250116812,
+   "epoch": 1.2,
+   "mps_alloc_gb": 0.416,
+   "mps_driver_gb": 22.162,
+   "footprint_gb": 25.324,
+   "footprint_peak_in_step_gb": 26.348,
+   "live_at_forward_end_gb": 8.453,
+   "driver_at_forward_end_gb": 23.216,
+   "training_counts": {
+    "head_taken": 240,
+    "head_fallback": 0,
+    "head_positions": 436722,
+    "head_labelled": 77862,
+    "fallbacks": {},
+    "lora_fused": 36000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 4320,
+     "bwd s1 d0": 4320
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 240,
+     "served_calls": 40,
+     "computed_calls": 200,
+     "pictures_served": 77,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.029,
+     "key_s": 1.152,
+     "serve_s": 0.0702,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 31,
+   "t_s": 208.957,
+   "loss": 0.6723388433456421,
+   "grad_norm": 1.372874140739441,
+   "learning_rate": 0.000164140821963114,
+   "epoch": 1.24,
+   "mps_alloc_gb": 0.433,
+   "mps_driver_gb": 23.832,
+   "footprint_gb": 27.052,
+   "footprint_peak_in_step_gb": 28.422,
+   "live_at_forward_end_gb": 8.518,
+   "driver_at_forward_end_gb": 25.207,
+   "training_counts": {
+    "head_taken": 248,
+    "head_fallback": 0,
+    "head_positions": 452974,
+    "head_labelled": 80889,
+    "fallbacks": {},
+    "lora_fused": 37200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 4464,
+     "bwd s1 d0": 4464
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 248,
+     "served_calls": 48,
+     "computed_calls": 200,
+     "pictures_served": 92,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0349,
+     "key_s": 1.1965,
+     "serve_s": 0.0851,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 32,
+   "t_s": 215.615,
+   "loss": 0.6456975936889648,
+   "grad_norm": 1.433021903038025,
+   "learning_rate": 0.00016162284656009274,
+   "epoch": 1.28,
+   "mps_alloc_gb": 0.438,
+   "mps_driver_gb": 23.783,
+   "footprint_gb": 27.061,
+   "footprint_peak_in_step_gb": 28.365,
+   "live_at_forward_end_gb": 7.449,
+   "driver_at_forward_end_gb": 25.113,
+   "training_counts": {
+    "head_taken": 256,
+    "head_fallback": 0,
+    "head_positions": 468550,
+    "head_labelled": 83873,
+    "fallbacks": {},
+    "lora_fused": 38400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 4608,
+     "bwd s1 d0": 4608
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 256,
+     "served_calls": 56,
+     "computed_calls": 200,
+     "pictures_served": 107,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0406,
+     "key_s": 1.2406,
+     "serve_s": 0.0982,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 33,
+   "t_s": 221.07,
+   "loss": 0.5264124870300293,
+   "grad_norm": 1.6362067461013794,
+   "learning_rate": 0.00015904023730059228,
+   "epoch": 1.32,
+   "mps_alloc_gb": 0.401,
+   "mps_driver_gb": 20.806,
+   "footprint_gb": 24.124,
+   "footprint_peak_in_step_gb": 27.073,
+   "live_at_forward_end_gb": 7.318,
+   "driver_at_forward_end_gb": 23.783,
+   "training_counts": {
+    "head_taken": 264,
+    "head_fallback": 0,
+    "head_positions": 481082,
+    "head_labelled": 86064,
+    "fallbacks": {},
+    "lora_fused": 39600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 4752,
+     "bwd s1 d0": 4752
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 264,
+     "served_calls": 64,
+     "computed_calls": 200,
+     "pictures_served": 123,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0447,
+     "key_s": 1.2791,
+     "serve_s": 0.1113,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 34,
+   "t_s": 227.45,
+   "loss": 0.5432770848274231,
+   "grad_norm": 1.5030677318572998,
+   "learning_rate": 0.00015639570298509064,
+   "epoch": 1.3599999999999999,
+   "mps_alloc_gb": 0.416,
+   "mps_driver_gb": 21.16,
+   "footprint_gb": 24.498,
+   "footprint_peak_in_step_gb": 24.507,
+   "live_at_forward_end_gb": 8.278,
+   "driver_at_forward_end_gb": 21.189,
+   "training_counts": {
+    "head_taken": 272,
+    "head_fallback": 0,
+    "head_positions": 495880,
+    "head_labelled": 88604,
+    "fallbacks": {},
+    "lora_fused": 40800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 4896,
+     "bwd s1 d0": 4896
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 272,
+     "served_calls": 72,
+     "computed_calls": 200,
+     "pictures_served": 139,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0509,
+     "key_s": 1.3255,
+     "serve_s": 0.1264,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 35,
+   "t_s": 233.85,
+   "loss": 0.527924120426178,
+   "grad_norm": 1.3733099699020386,
+   "learning_rate": 0.0001536920173648984,
+   "epoch": 1.4,
+   "mps_alloc_gb": 0.428,
+   "mps_driver_gb": 22.134,
+   "footprint_gb": 25.54,
+   "footprint_peak_in_step_gb": 25.54,
+   "live_at_forward_end_gb": 7.964,
+   "driver_at_forward_end_gb": 22.154,
+   "training_counts": {
+    "head_taken": 280,
+    "head_fallback": 0,
+    "head_positions": 510654,
+    "head_labelled": 91070,
+    "fallbacks": {},
+    "lora_fused": 42000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 5040,
+     "bwd s1 d0": 5040
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 280,
+     "served_calls": 80,
+     "computed_calls": 200,
+     "pictures_served": 155,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0572,
+     "key_s": 1.3759,
+     "serve_s": 0.1406,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 36,
+   "t_s": 239.493,
+   "loss": 0.5865781307220459,
+   "grad_norm": 1.50727379322052,
+   "learning_rate": 0.00015093201623287631,
+   "epoch": 1.44,
+   "mps_alloc_gb": 0.402,
+   "mps_driver_gb": 23.187,
+   "footprint_gb": 26.591,
+   "footprint_peak_in_step_gb": 26.608,
+   "live_at_forward_end_gb": 7.482,
+   "driver_at_forward_end_gb": 23.152,
+   "training_counts": {
+    "head_taken": 288,
+    "head_fallback": 0,
+    "head_positions": 523296,
+    "head_labelled": 93461,
+    "fallbacks": {},
+    "lora_fused": 43200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 5184,
+     "bwd s1 d0": 5184
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 288,
+     "served_calls": 88,
+     "computed_calls": 200,
+     "pictures_served": 171,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.065,
+     "key_s": 1.4164,
+     "serve_s": 0.1531,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 37,
+   "t_s": 245.986,
+   "loss": 0.5120658874511719,
+   "grad_norm": 1.3658461570739746,
+   "learning_rate": 0.00014811859444908052,
+   "epoch": 1.48,
+   "mps_alloc_gb": 0.435,
+   "mps_driver_gb": 22.152,
+   "footprint_gb": 25.619,
+   "footprint_peak_in_step_gb": 26.621,
+   "live_at_forward_end_gb": 8.089,
+   "driver_at_forward_end_gb": 23.187,
+   "training_counts": {
+    "head_taken": 296,
+    "head_fallback": 0,
+    "head_positions": 538326,
+    "head_labelled": 95988,
+    "fallbacks": {},
+    "lora_fused": 44400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 5328,
+     "bwd s1 d0": 5328
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 296,
+     "served_calls": 96,
+     "computed_calls": 200,
+     "pictures_served": 187,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0698,
+     "key_s": 1.4572,
+     "serve_s": 0.1662,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 38,
+   "t_s": 252.649,
+   "loss": 0.5265371203422546,
+   "grad_norm": 1.3540104627609253,
+   "learning_rate": 0.00014525470290445392,
+   "epoch": 1.52,
+   "mps_alloc_gb": 0.456,
+   "mps_driver_gb": 23.134,
+   "footprint_gb": 26.654,
+   "footprint_peak_in_step_gb": 26.654,
+   "live_at_forward_end_gb": 8.469,
+   "driver_at_forward_end_gb": 23.152,
+   "training_counts": {
+    "head_taken": 304,
+    "head_fallback": 0,
+    "head_positions": 553722,
+    "head_labelled": 98744,
+    "fallbacks": {},
+    "lora_fused": 45600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 5472,
+     "bwd s1 d0": 5472
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 304,
+     "served_calls": 104,
+     "computed_calls": 200,
+     "pictures_served": 203,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0755,
+     "key_s": 1.5091,
+     "serve_s": 0.1822,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 39,
+   "t_s": 259.292,
+   "loss": 0.6337573528289795,
+   "grad_norm": 1.2308852672576904,
+   "learning_rate": 0.00014234334542574906,
+   "epoch": 1.56,
+   "mps_alloc_gb": 0.434,
+   "mps_driver_gb": 24.134,
+   "footprint_gb": 27.707,
+   "footprint_peak_in_step_gb": 28.897,
+   "live_at_forward_end_gb": 7.512,
+   "driver_at_forward_end_gb": 25.009,
+   "training_counts": {
+    "head_taken": 312,
+    "head_fallback": 0,
+    "head_positions": 569110,
+    "head_labelled": 101658,
+    "fallbacks": {},
+    "lora_fused": 46800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 5616,
+     "bwd s1 d0": 5616
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 312,
+     "served_calls": 112,
+     "computed_calls": 200,
+     "pictures_served": 218,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0817,
+     "key_s": 1.5513,
+     "serve_s": 0.1974,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 40,
+   "t_s": 264.419,
+   "loss": 0.6065105199813843,
+   "grad_norm": 1.6365764141082764,
+   "learning_rate": 0.00013938757562492873,
+   "epoch": 1.6,
+   "mps_alloc_gb": 0.395,
+   "mps_driver_gb": 22.215,
+   "footprint_gb": 25.832,
+   "footprint_peak_in_step_gb": 27.726,
+   "live_at_forward_end_gb": 7.522,
+   "driver_at_forward_end_gb": 24.134,
+   "training_counts": {
+    "head_taken": 320,
+    "head_fallback": 0,
+    "head_positions": 580594,
+    "head_labelled": 103893,
+    "fallbacks": {},
+    "lora_fused": 48000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 5760,
+     "bwd s1 d0": 5760
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 320,
+     "served_calls": 120,
+     "computed_calls": 200,
+     "pictures_served": 234,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0883,
+     "key_s": 1.5882,
+     "serve_s": 0.2121,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 41,
+   "t_s": 270.827,
+   "loss": 0.5256584882736206,
+   "grad_norm": 1.3597567081451416,
+   "learning_rate": 0.00013639049369634876,
+   "epoch": 1.6400000000000001,
+   "mps_alloc_gb": 0.424,
+   "mps_driver_gb": 22.179,
+   "footprint_gb": 25.803,
+   "footprint_peak_in_step_gb": 25.838,
+   "live_at_forward_end_gb": 7.507,
+   "driver_at_forward_end_gb": 22.215,
+   "training_counts": {
+    "head_taken": 328,
+    "head_fallback": 0,
+    "head_positions": 595896,
+    "head_labelled": 106374,
+    "fallbacks": {},
+    "lora_fused": 49200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 5904,
+     "bwd s1 d0": 5904
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 328,
+     "served_calls": 128,
+     "computed_calls": 200,
+     "pictures_served": 250,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0938,
+     "key_s": 1.6366,
+     "serve_s": 0.2279,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 42,
+   "t_s": 276.953,
+   "loss": 0.5051742792129517,
+   "grad_norm": 1.3738373517990112,
+   "learning_rate": 0.00013335524316508208,
+   "epoch": 1.6800000000000002,
+   "mps_alloc_gb": 0.449,
+   "mps_driver_gb": 21.179,
+   "footprint_gb": 24.872,
+   "footprint_peak_in_step_gb": 25.922,
+   "live_at_forward_end_gb": 8.168,
+   "driver_at_forward_end_gb": 22.222,
+   "training_counts": {
+    "head_taken": 336,
+    "head_fallback": 0,
+    "head_positions": 610448,
+    "head_labelled": 108792,
+    "fallbacks": {},
+    "lora_fused": 50400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 6048,
+     "bwd s1 d0": 6048
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 336,
+     "served_calls": 136,
+     "computed_calls": 200,
+     "pictures_served": 266,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.0987,
+     "key_s": 1.6823,
+     "serve_s": 0.243,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 43,
+   "t_s": 283.218,
+   "loss": 0.44705837965011597,
+   "grad_norm": 1.2863008975982666,
+   "learning_rate": 0.00013028500758979506,
+   "epoch": 1.72,
+   "mps_alloc_gb": 0.43,
+   "mps_driver_gb": 23.136,
+   "footprint_gb": 26.873,
+   "footprint_peak_in_step_gb": 26.901,
+   "live_at_forward_end_gb": 8.387,
+   "driver_at_forward_end_gb": 23.183,
+   "training_counts": {
+    "head_taken": 344,
+    "head_fallback": 0,
+    "head_positions": 625518,
+    "head_labelled": 110953,
+    "fallbacks": {},
+    "lora_fused": 51600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 6192,
+     "bwd s1 d0": 6192
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 344,
+     "served_calls": 144,
+     "computed_calls": 200,
+     "pictures_served": 282,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1043,
+     "key_s": 1.7271,
+     "serve_s": 0.2568,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 44,
+   "t_s": 289.946,
+   "loss": 0.591241180896759,
+   "grad_norm": 1.290610671043396,
+   "learning_rate": 0.0001271830072236343,
+   "epoch": 1.76,
+   "mps_alloc_gb": 0.432,
+   "mps_driver_gb": 23.119,
+   "footprint_gb": 26.917,
+   "footprint_peak_in_step_gb": 29.08,
+   "live_at_forward_end_gb": 8.108,
+   "driver_at_forward_end_gb": 25.34,
+   "training_counts": {
+    "head_taken": 352,
+    "head_fallback": 0,
+    "head_positions": 641632,
+    "head_labelled": 114127,
+    "fallbacks": {},
+    "lora_fused": 52800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 6336,
+     "bwd s1 d0": 6336
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 352,
+     "served_calls": 152,
+     "computed_calls": 200,
+     "pictures_served": 297,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1109,
+     "key_s": 1.7694,
+     "serve_s": 0.2711,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 45,
+   "t_s": 295.614,
+   "loss": 0.5569962859153748,
+   "grad_norm": 1.310681700706482,
+   "learning_rate": 0.00012405249563662537,
+   "epoch": 1.8,
+   "mps_alloc_gb": 0.42,
+   "mps_driver_gb": 22.127,
+   "footprint_gb": 25.971,
+   "footprint_peak_in_step_gb": 26.922,
+   "live_at_forward_end_gb": 7.611,
+   "driver_at_forward_end_gb": 23.119,
+   "training_counts": {
+    "head_taken": 360,
+    "head_fallback": 0,
+    "head_positions": 655078,
+    "head_labelled": 116746,
+    "fallbacks": {},
+    "lora_fused": 54000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 6480,
+     "bwd s1 d0": 6480
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 360,
+     "served_calls": 160,
+     "computed_calls": 200,
+     "pictures_served": 313,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1178,
+     "key_s": 1.8087,
+     "serve_s": 0.2854,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 46,
+   "t_s": 301.954,
+   "loss": 0.6047887802124023,
+   "grad_norm": 1.4420040845870972,
+   "learning_rate": 0.00012089675630312754,
+   "epoch": 1.8399999999999999,
+   "mps_alloc_gb": 0.428,
+   "mps_driver_gb": 23.16,
+   "footprint_gb": 27.052,
+   "footprint_peak_in_step_gb": 27.052,
+   "live_at_forward_end_gb": 7.685,
+   "driver_at_forward_end_gb": 22.488,
+   "training_counts": {
+    "head_taken": 368,
+    "head_fallback": 0,
+    "head_positions": 670382,
+    "head_labelled": 119365,
+    "fallbacks": {},
+    "lora_fused": 55200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 6624,
+     "bwd s1 d0": 6624
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 368,
+     "served_calls": 168,
+     "computed_calls": 200,
+     "pictures_served": 328,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1246,
+     "key_s": 1.8555,
+     "serve_s": 0.2999,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 47,
+   "t_s": 307.804,
+   "loss": 0.4801100790500641,
+   "grad_norm": 1.3681538105010986,
+   "learning_rate": 0.0001177190991579223,
+   "epoch": 1.88,
+   "mps_alloc_gb": 0.425,
+   "mps_driver_gb": 21.226,
+   "footprint_gb": 25.148,
+   "footprint_peak_in_step_gb": 27.058,
+   "live_at_forward_end_gb": 7.548,
+   "driver_at_forward_end_gb": 23.16,
+   "training_counts": {
+    "head_taken": 376,
+    "head_fallback": 0,
+    "head_positions": 684606,
+    "head_labelled": 121875,
+    "fallbacks": {},
+    "lora_fused": 56400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 6768,
+     "bwd s1 d0": 6768
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 376,
+     "served_calls": 176,
+     "computed_calls": 200,
+     "pictures_served": 344,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1309,
+     "key_s": 1.9022,
+     "serve_s": 0.3141,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 48,
+   "t_s": 313.565,
+   "loss": 0.49638631939888,
+   "grad_norm": 1.4746471643447876,
+   "learning_rate": 0.00011452285712454904,
+   "epoch": 1.92,
+   "mps_alloc_gb": 0.423,
+   "mps_driver_gb": 20.216,
+   "footprint_gb": 24.186,
+   "footprint_peak_in_step_gb": 26.169,
+   "live_at_forward_end_gb": 8.561,
+   "driver_at_forward_end_gb": 22.224,
+   "training_counts": {
+    "head_taken": 384,
+    "head_fallback": 0,
+    "head_positions": 698588,
+    "head_labelled": 123953,
+    "fallbacks": {},
+    "lora_fused": 57600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 6912,
+     "bwd s1 d0": 6912
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 384,
+     "served_calls": 184,
+     "computed_calls": 200,
+     "pictures_served": 360,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1351,
+     "key_s": 1.9427,
+     "serve_s": 0.3289,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 49,
+   "t_s": 318.749,
+   "loss": 0.5992662906646729,
+   "grad_norm": 1.3856608867645264,
+   "learning_rate": 0.00011131138261952845,
+   "epoch": 1.96,
+   "mps_alloc_gb": 0.378,
+   "mps_driver_gb": 20.209,
+   "footprint_gb": 24.205,
+   "footprint_peak_in_step_gb": 26.168,
+   "live_at_forward_end_gb": 7.155,
+   "driver_at_forward_end_gb": 22.185,
+   "training_counts": {
+    "head_taken": 392,
+    "head_fallback": 0,
+    "head_positions": 710864,
+    "head_labelled": 126746,
+    "fallbacks": {},
+    "lora_fused": 58800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 7056,
+     "bwd s1 d0": 7056
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 392,
+     "served_calls": 192,
+     "computed_calls": 200,
+     "pictures_served": 375,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1404,
+     "key_s": 1.9737,
+     "serve_s": 0.3405,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 50,
+   "t_s": 324.298,
+   "loss": 0.5639578104019165,
+   "grad_norm": 1.356227159500122,
+   "learning_rate": 0.00010808804403614043,
+   "epoch": 2.0,
+   "mps_alloc_gb": 0.39,
+   "mps_driver_gb": 20.201,
+   "footprint_gb": 24.234,
+   "footprint_peak_in_step_gb": 25.034,
+   "live_at_forward_end_gb": 7.207,
+   "driver_at_forward_end_gb": 21.029,
+   "training_counts": {
+    "head_taken": 400,
+    "head_fallback": 0,
+    "head_positions": 724278,
+    "head_labelled": 129436,
+    "fallbacks": {},
+    "lora_fused": 60000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 7200,
+     "bwd s1 d0": 7200
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 400,
+     "served_calls": 200,
+     "computed_calls": 200,
+     "pictures_served": 390,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1463,
+     "key_s": 2.0061,
+     "serve_s": 0.3533,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 51,
+   "t_s": 330.579,
+   "loss": 0.4040624797344208,
+   "grad_norm": 1.128818392753601,
+   "learning_rate": 0.00010485622221144484,
+   "epoch": 2.04,
+   "mps_alloc_gb": 0.467,
+   "mps_driver_gb": 22.166,
+   "footprint_gb": 26.205,
+   "footprint_peak_in_step_gb": 26.21,
+   "live_at_forward_end_gb": 8.635,
+   "driver_at_forward_end_gb": 22.166,
+   "training_counts": {
+    "head_taken": 408,
+    "head_fallback": 0,
+    "head_positions": 739856,
+    "head_labelled": 132147,
+    "fallbacks": {},
+    "lora_fused": 61200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 7344,
+     "bwd s1 d0": 7344
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 408,
+     "served_calls": 208,
+     "computed_calls": 200,
+     "pictures_served": 406,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1525,
+     "key_s": 2.0612,
+     "serve_s": 0.3664,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 52,
+   "t_s": 336.329,
+   "loss": 0.3006109893321991,
+   "grad_norm": 1.0261306762695312,
+   "learning_rate": 0.00010161930688025017,
+   "epoch": 2.08,
+   "mps_alloc_gb": 0.438,
+   "mps_driver_gb": 23.168,
+   "footprint_gb": 27.195,
+   "footprint_peak_in_step_gb": 27.195,
+   "live_at_forward_end_gb": 7.84,
+   "driver_at_forward_end_gb": 23.168,
+   "training_counts": {
+    "head_taken": 416,
+    "head_fallback": 0,
+    "head_positions": 754118,
+    "head_labelled": 134653,
+    "fallbacks": {},
+    "lora_fused": 62400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 7488,
+     "bwd s1 d0": 7488
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 416,
+     "served_calls": 216,
+     "computed_calls": 200,
+     "pictures_served": 422,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1562,
+     "key_s": 2.1061,
+     "serve_s": 0.3789,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 53,
+   "t_s": 342.249,
+   "loss": 0.34819918870925903,
+   "grad_norm": 1.0928763151168823,
+   "learning_rate": 9.838069311974986e-05,
+   "epoch": 2.12,
+   "mps_alloc_gb": 0.442,
+   "mps_driver_gb": 23.187,
+   "footprint_gb": 27.195,
+   "footprint_peak_in_step_gb": 27.22,
+   "live_at_forward_end_gb": 7.664,
+   "driver_at_forward_end_gb": 23.187,
+   "training_counts": {
+    "head_taken": 424,
+    "head_fallback": 0,
+    "head_positions": 768918,
+    "head_labelled": 137340,
+    "fallbacks": {},
+    "lora_fused": 63600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 7632,
+     "bwd s1 d0": 7632
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 424,
+     "served_calls": 224,
+     "computed_calls": 200,
+     "pictures_served": 438,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1613,
+     "key_s": 2.1544,
+     "serve_s": 0.3912,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 54,
+   "t_s": 347.772,
+   "loss": 0.4439013600349426,
+   "grad_norm": 1.1515880823135376,
+   "learning_rate": 9.514377778855521e-05,
+   "epoch": 2.16,
+   "mps_alloc_gb": 0.38,
+   "mps_driver_gb": 24.199,
+   "footprint_gb": 28.226,
+   "footprint_peak_in_step_gb": 28.859,
+   "live_at_forward_end_gb": 8.312,
+   "driver_at_forward_end_gb": 24.855,
+   "training_counts": {
+    "head_taken": 432,
+    "head_fallback": 0,
+    "head_positions": 782172,
+    "head_labelled": 140112,
+    "fallbacks": {},
+    "lora_fused": 64800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 7776,
+     "bwd s1 d0": 7776
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 432,
+     "served_calls": 232,
+     "computed_calls": 200,
+     "pictures_served": 453,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1681,
+     "key_s": 2.1894,
+     "serve_s": 0.4023,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 55,
+   "t_s": 353.905,
+   "loss": 0.31746339797973633,
+   "grad_norm": 1.0925354957580566,
+   "learning_rate": 9.19119559638596e-05,
+   "epoch": 2.2,
+   "mps_alloc_gb": 0.438,
+   "mps_driver_gb": 22.187,
+   "footprint_gb": 26.214,
+   "footprint_peak_in_step_gb": 28.214,
+   "live_at_forward_end_gb": 7.697,
+   "driver_at_forward_end_gb": 24.187,
+   "training_counts": {
+    "head_taken": 440,
+    "head_fallback": 0,
+    "head_positions": 797508,
+    "head_labelled": 142709,
+    "fallbacks": {},
+    "lora_fused": 66000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 7920,
+     "bwd s1 d0": 7920
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 440,
+     "served_calls": 240,
+     "computed_calls": 200,
+     "pictures_served": 469,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1739,
+     "key_s": 2.2325,
+     "serve_s": 0.4148,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 56,
+   "t_s": 358.86,
+   "loss": 0.28835153579711914,
+   "grad_norm": 1.1544663906097412,
+   "learning_rate": 8.868861738047158e-05,
+   "epoch": 2.24,
+   "mps_alloc_gb": 0.402,
+   "mps_driver_gb": 21.17,
+   "footprint_gb": 25.195,
+   "footprint_peak_in_step_gb": 26.285,
+   "live_at_forward_end_gb": 7.627,
+   "driver_at_forward_end_gb": 22.24,
+   "training_counts": {
+    "head_taken": 448,
+    "head_fallback": 0,
+    "head_positions": 809596,
+    "head_labelled": 145164,
+    "fallbacks": {},
+    "lora_fused": 67200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 8064,
+     "bwd s1 d0": 8064
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 448,
+     "served_calls": 248,
+     "computed_calls": 200,
+     "pictures_served": 485,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1802,
+     "key_s": 2.2693,
+     "serve_s": 0.4263,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 57,
+   "t_s": 364.616,
+   "loss": 0.2999623715877533,
+   "grad_norm": 1.1815969944000244,
+   "learning_rate": 8.5477142875451e-05,
+   "epoch": 2.2800000000000002,
+   "mps_alloc_gb": 0.451,
+   "mps_driver_gb": 23.17,
+   "footprint_gb": 27.205,
+   "footprint_peak_in_step_gb": 27.216,
+   "live_at_forward_end_gb": 7.507,
+   "driver_at_forward_end_gb": 23.17,
+   "training_counts": {
+    "head_taken": 456,
+    "head_fallback": 0,
+    "head_positions": 824166,
+    "head_labelled": 147608,
+    "fallbacks": {},
+    "lora_fused": 68400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 8208,
+     "bwd s1 d0": 8208
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 456,
+     "served_calls": 256,
+     "computed_calls": 200,
+     "pictures_served": 501,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1873,
+     "key_s": 2.3107,
+     "serve_s": 0.4369,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 58,
+   "t_s": 370.161,
+   "loss": 0.29821261763572693,
+   "grad_norm": 1.2360680103302002,
+   "learning_rate": 8.228090084207774e-05,
+   "epoch": 2.32,
+   "mps_alloc_gb": 0.415,
+   "mps_driver_gb": 22.209,
+   "footprint_gb": 26.243,
+   "footprint_peak_in_step_gb": 28.197,
+   "live_at_forward_end_gb": 8.833,
+   "driver_at_forward_end_gb": 24.17,
+   "training_counts": {
+    "head_taken": 464,
+    "head_fallback": 0,
+    "head_positions": 837764,
+    "head_labelled": 149810,
+    "fallbacks": {},
+    "lora_fused": 69600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 8352,
+     "bwd s1 d0": 8352
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 464,
+     "served_calls": 264,
+     "computed_calls": 200,
+     "pictures_served": 517,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.1942,
+     "key_s": 2.3539,
+     "serve_s": 0.4494,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 59,
+   "t_s": 376.206,
+   "loss": 0.3244645595550537,
+   "grad_norm": 1.3212145566940308,
+   "learning_rate": 7.91032436968725e-05,
+   "epoch": 2.36,
+   "mps_alloc_gb": 0.439,
+   "mps_driver_gb": 23.185,
+   "footprint_gb": 27.232,
+   "footprint_peak_in_step_gb": 27.247,
+   "live_at_forward_end_gb": 7.772,
+   "driver_at_forward_end_gb": 23.209,
+   "training_counts": {
+    "head_taken": 472,
+    "head_fallback": 0,
+    "head_positions": 853094,
+    "head_labelled": 152312,
+    "fallbacks": {},
+    "lora_fused": 70800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 8496,
+     "bwd s1 d0": 8496
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 472,
+     "served_calls": 272,
+     "computed_calls": 200,
+     "pictures_served": 533,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2009,
+     "key_s": 2.4023,
+     "serve_s": 0.4638,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 60,
+   "t_s": 382.018,
+   "loss": 0.2920049726963043,
+   "grad_norm": 1.2819201946258545,
+   "learning_rate": 7.594750436337467e-05,
+   "epoch": 2.4,
+   "mps_alloc_gb": 0.422,
+   "mps_driver_gb": 22.177,
+   "footprint_gb": 26.204,
+   "footprint_peak_in_step_gb": 27.212,
+   "live_at_forward_end_gb": 8.329,
+   "driver_at_forward_end_gb": 23.185,
+   "training_counts": {
+    "head_taken": 480,
+    "head_fallback": 0,
+    "head_positions": 867930,
+    "head_labelled": 154649,
+    "fallbacks": {},
+    "lora_fused": 72000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 8640,
+     "bwd s1 d0": 8640
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 480,
+     "served_calls": 280,
+     "computed_calls": 200,
+     "pictures_served": 549,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2055,
+     "key_s": 2.4443,
+     "serve_s": 0.4759,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 61,
+   "t_s": 388.027,
+   "loss": 0.39135971665382385,
+   "grad_norm": 1.441422462463379,
+   "learning_rate": 7.281699277636572e-05,
+   "epoch": 2.44,
+   "mps_alloc_gb": 0.435,
+   "mps_driver_gb": 21.175,
+   "footprint_gb": 25.222,
+   "footprint_peak_in_step_gb": 27.267,
+   "live_at_forward_end_gb": 7.561,
+   "driver_at_forward_end_gb": 23.22,
+   "training_counts": {
+    "head_taken": 488,
+    "head_fallback": 0,
+    "head_positions": 882744,
+    "head_labelled": 157661,
+    "fallbacks": {},
+    "lora_fused": 73200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 8784,
+     "bwd s1 d0": 8784
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 488,
+     "served_calls": 288,
+     "computed_calls": 200,
+     "pictures_served": 564,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2109,
+     "key_s": 2.4856,
+     "serve_s": 0.4882,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 62,
+   "t_s": 393.379,
+   "loss": 0.3032340407371521,
+   "grad_norm": 1.560646653175354,
+   "learning_rate": 6.971499241020495e-05,
+   "epoch": 2.48,
+   "mps_alloc_gb": 0.389,
+   "mps_driver_gb": 20.211,
+   "footprint_gb": 24.22,
+   "footprint_peak_in_step_gb": 25.23,
+   "live_at_forward_end_gb": 7.501,
+   "driver_at_forward_end_gb": 22.195,
+   "training_counts": {
+    "head_taken": 496,
+    "head_fallback": 0,
+    "head_positions": 896050,
+    "head_labelled": 159886,
+    "fallbacks": {},
+    "lora_fused": 74400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 8928,
+     "bwd s1 d0": 8928
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 496,
+     "served_calls": 296,
+     "computed_calls": 200,
+     "pictures_served": 580,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2183,
+     "key_s": 2.5228,
+     "serve_s": 0.5015,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 63,
+   "t_s": 399.058,
+   "loss": 0.27788132429122925,
+   "grad_norm": 1.383854627609253,
+   "learning_rate": 6.664475683491796e-05,
+   "epoch": 2.52,
+   "mps_alloc_gb": 0.445,
+   "mps_driver_gb": 21.203,
+   "footprint_gb": 25.23,
+   "footprint_peak_in_step_gb": 25.244,
+   "live_at_forward_end_gb": 8.184,
+   "driver_at_forward_end_gb": 21.215,
+   "training_counts": {
+    "head_taken": 504,
+    "head_fallback": 0,
+    "head_positions": 910524,
+    "head_labelled": 162219,
+    "fallbacks": {},
+    "lora_fused": 75600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 9072,
+     "bwd s1 d0": 9072
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 504,
+     "served_calls": 304,
+     "computed_calls": 200,
+     "pictures_served": 596,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2239,
+     "key_s": 2.5715,
+     "serve_s": 0.5143,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 64,
+   "t_s": 404.031,
+   "loss": 0.3002561628818512,
+   "grad_norm": 1.5956672430038452,
+   "learning_rate": 6.360950630365126e-05,
+   "epoch": 2.56,
+   "mps_alloc_gb": 0.387,
+   "mps_driver_gb": 22.207,
+   "footprint_gb": 26.236,
+   "footprint_peak_in_step_gb": 26.236,
+   "live_at_forward_end_gb": 6.987,
+   "driver_at_forward_end_gb": 21.218,
+   "training_counts": {
+    "head_taken": 512,
+    "head_fallback": 0,
+    "head_positions": 922852,
+    "head_labelled": 164468,
+    "fallbacks": {},
+    "lora_fused": 76800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 9216,
+     "bwd s1 d0": 9216
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 512,
+     "served_calls": 312,
+     "computed_calls": 200,
+     "pictures_served": 612,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2303,
+     "key_s": 2.6061,
+     "serve_s": 0.5251,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 65,
+   "t_s": 409.905,
+   "loss": 0.5737555027008057,
+   "grad_norm": 1.3986319303512573,
+   "learning_rate": 6.061242437507131e-05,
+   "epoch": 2.6,
+   "mps_alloc_gb": 0.374,
+   "mps_driver_gb": 22.254,
+   "footprint_gb": 26.277,
+   "footprint_peak_in_step_gb": 28.276,
+   "live_at_forward_end_gb": 7.483,
+   "driver_at_forward_end_gb": 23.668,
+   "training_counts": {
+    "head_taken": 520,
+    "head_fallback": 0,
+    "head_positions": 936906,
+    "head_labelled": 168347,
+    "fallbacks": {},
+    "lora_fused": 78000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 9360,
+     "bwd s1 d0": 9360
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 520,
+     "served_calls": 320,
+     "computed_calls": 200,
+     "pictures_served": 625,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2366,
+     "key_s": 2.6393,
+     "serve_s": 0.5364,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 66,
+   "t_s": 415.51,
+   "loss": 0.28316816687583923,
+   "grad_norm": 1.4050370454788208,
+   "learning_rate": 5.765665457425102e-05,
+   "epoch": 2.64,
+   "mps_alloc_gb": 0.415,
+   "mps_driver_gb": 21.199,
+   "footprint_gb": 25.208,
+   "footprint_peak_in_step_gb": 26.277,
+   "live_at_forward_end_gb": 7.8,
+   "driver_at_forward_end_gb": 22.236,
+   "training_counts": {
+    "head_taken": 528,
+    "head_fallback": 0,
+    "head_positions": 951296,
+    "head_labelled": 170484,
+    "fallbacks": {},
+    "lora_fused": 79200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 9504,
+     "bwd s1 d0": 9504
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 528,
+     "served_calls": 328,
+     "computed_calls": 200,
+     "pictures_served": 641,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2423,
+     "key_s": 2.6791,
+     "serve_s": 0.5484,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 67,
+   "t_s": 421.016,
+   "loss": 0.3110738694667816,
+   "grad_norm": 1.4706987142562866,
+   "learning_rate": 5.474529709554612e-05,
+   "epoch": 2.68,
+   "mps_alloc_gb": 0.433,
+   "mps_driver_gb": 22.146,
+   "footprint_gb": 26.193,
+   "footprint_peak_in_step_gb": 27.193,
+   "live_at_forward_end_gb": 7.347,
+   "driver_at_forward_end_gb": 23.183,
+   "training_counts": {
+    "head_taken": 536,
+    "head_fallback": 0,
+    "head_positions": 965268,
+    "head_labelled": 172942,
+    "fallbacks": {},
+    "lora_fused": 80400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 9648,
+     "bwd s1 d0": 9648
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 536,
+     "served_calls": 336,
+     "computed_calls": 200,
+     "pictures_served": 657,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2465,
+     "key_s": 2.7204,
+     "serve_s": 0.5609,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 68,
+   "t_s": 427.137,
+   "loss": 0.27983736991882324,
+   "grad_norm": 1.3930435180664062,
+   "learning_rate": 5.1881405550919493e-05,
+   "epoch": 2.7199999999999998,
+   "mps_alloc_gb": 0.437,
+   "mps_driver_gb": 23.166,
+   "footprint_gb": 27.193,
+   "footprint_peak_in_step_gb": 27.212,
+   "live_at_forward_end_gb": 7.69,
+   "driver_at_forward_end_gb": 23.166,
+   "training_counts": {
+    "head_taken": 544,
+    "head_fallback": 0,
+    "head_positions": 981226,
+    "head_labelled": 175259,
+    "fallbacks": {},
+    "lora_fused": 81600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 9792,
+     "bwd s1 d0": 9792
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 544,
+     "served_calls": 344,
+     "computed_calls": 200,
+     "pictures_served": 673,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2522,
+     "key_s": 2.7648,
+     "serve_s": 0.5735,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 69,
+   "t_s": 432.89,
+   "loss": 0.3328299820423126,
+   "grad_norm": 1.3885406255722046,
+   "learning_rate": 4.9067983767123736e-05,
+   "epoch": 2.76,
+   "mps_alloc_gb": 0.424,
+   "mps_driver_gb": 22.175,
+   "footprint_gb": 26.205,
+   "footprint_peak_in_step_gb": 28.203,
+   "live_at_forward_end_gb": 8.409,
+   "driver_at_forward_end_gb": 24.156,
+   "training_counts": {
+    "head_taken": 552,
+    "head_fallback": 0,
+    "head_positions": 995758,
+    "head_labelled": 177836,
+    "fallbacks": {},
+    "lora_fused": 82800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 9936,
+     "bwd s1 d0": 9936
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 552,
+     "served_calls": 352,
+     "computed_calls": 200,
+     "pictures_served": 689,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2585,
+     "key_s": 2.8057,
+     "serve_s": 0.5858,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 70,
+   "t_s": 438.38,
+   "loss": 0.3648715317249298,
+   "grad_norm": 1.3100101947784424,
+   "learning_rate": 4.630798263510162e-05,
+   "epoch": 2.8,
+   "mps_alloc_gb": 0.399,
+   "mps_driver_gb": 21.175,
+   "footprint_gb": 25.185,
+   "footprint_peak_in_step_gb": 28.265,
+   "live_at_forward_end_gb": 7.431,
+   "driver_at_forward_end_gb": 24.238,
+   "training_counts": {
+    "head_taken": 560,
+    "head_fallback": 0,
+    "head_positions": 1009252,
+    "head_labelled": 180707,
+    "fallbacks": {},
+    "lora_fused": 84000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 10080,
+     "bwd s1 d0": 10080
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 560,
+     "served_calls": 360,
+     "computed_calls": 200,
+     "pictures_served": 704,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.264,
+     "key_s": 2.8376,
+     "serve_s": 0.597,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 71,
+   "t_s": 444.452,
+   "loss": 0.35681337118148804,
+   "grad_norm": 1.2432130575180054,
+   "learning_rate": 4.360429701490934e-05,
+   "epoch": 2.84,
+   "mps_alloc_gb": 0.434,
+   "mps_driver_gb": 21.156,
+   "footprint_gb": 25.185,
+   "footprint_peak_in_step_gb": 27.312,
+   "live_at_forward_end_gb": 8.047,
+   "driver_at_forward_end_gb": 23.285,
+   "training_counts": {
+    "head_taken": 568,
+    "head_fallback": 0,
+    "head_positions": 1024906,
+    "head_labelled": 183683,
+    "fallbacks": {},
+    "lora_fused": 85200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 10224,
+     "bwd s1 d0": 10224
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 568,
+     "served_calls": 368,
+     "computed_calls": 200,
+     "pictures_served": 719,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2694,
+     "key_s": 2.8824,
+     "serve_s": 0.6095,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 72,
+   "t_s": 450.209,
+   "loss": 0.3353264033794403,
+   "grad_norm": 1.2917852401733398,
+   "learning_rate": 4.0959762699407766e-05,
+   "epoch": 2.88,
+   "mps_alloc_gb": 0.412,
+   "mps_driver_gb": 22.148,
+   "footprint_gb": 26.178,
+   "footprint_peak_in_step_gb": 26.382,
+   "live_at_forward_end_gb": 8.442,
+   "driver_at_forward_end_gb": 22.336,
+   "training_counts": {
+    "head_taken": 576,
+    "head_fallback": 0,
+    "head_positions": 1039718,
+    "head_labelled": 186203,
+    "fallbacks": {},
+    "lora_fused": 86400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 10368,
+     "bwd s1 d0": 10368
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 576,
+     "served_calls": 376,
+     "computed_calls": 200,
+     "pictures_served": 734,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2749,
+     "key_s": 2.9247,
+     "serve_s": 0.6221,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 73,
+   "t_s": 456.691,
+   "loss": 0.2622162401676178,
+   "grad_norm": 1.2753056287765503,
+   "learning_rate": 3.8377153439907266e-05,
+   "epoch": 2.92,
+   "mps_alloc_gb": 0.501,
+   "mps_driver_gb": 22.15,
+   "footprint_gb": 26.197,
+   "footprint_peak_in_step_gb": 26.197,
+   "live_at_forward_end_gb": 8.4,
+   "driver_at_forward_end_gb": 22.148,
+   "training_counts": {
+    "head_taken": 584,
+    "head_fallback": 0,
+    "head_positions": 1056604,
+    "head_labelled": 188730,
+    "fallbacks": {},
+    "lora_fused": 87600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 10512,
+     "bwd s1 d0": 10512
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 584,
+     "served_calls": 384,
+     "computed_calls": 200,
+     "pictures_served": 750,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2803,
+     "key_s": 2.9814,
+     "serve_s": 0.6352,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 74,
+   "t_s": 462.177,
+   "loss": 0.36262989044189453,
+   "grad_norm": 1.3253147602081299,
+   "learning_rate": 3.585917803688603e-05,
+   "epoch": 2.96,
+   "mps_alloc_gb": 0.4,
+   "mps_driver_gb": 24.556,
+   "footprint_gb": 28.603,
+   "footprint_peak_in_step_gb": 28.603,
+   "live_at_forward_end_gb": 8.203,
+   "driver_at_forward_end_gb": 23.884,
+   "training_counts": {
+    "head_taken": 592,
+    "head_fallback": 0,
+    "head_positions": 1070318,
+    "head_labelled": 191347,
+    "fallbacks": {},
+    "lora_fused": 88800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 10656,
+     "bwd s1 d0": 10656
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 592,
+     "served_calls": 392,
+     "computed_calls": 200,
+     "pictures_served": 765,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.285,
+     "key_s": 3.0228,
+     "serve_s": 0.6472,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 75,
+   "t_s": 467.72,
+   "loss": 0.3599258065223694,
+   "grad_norm": 1.2725749015808105,
+   "learning_rate": 3.340847749883191e-05,
+   "epoch": 3.0,
+   "mps_alloc_gb": 0.408,
+   "mps_driver_gb": 20.892,
+   "footprint_gb": 24.92,
+   "footprint_peak_in_step_gb": 28.598,
+   "live_at_forward_end_gb": 8.435,
+   "driver_at_forward_end_gb": 24.556,
+   "training_counts": {
+    "head_taken": 600,
+    "head_fallback": 0,
+    "head_positions": 1084098,
+    "head_labelled": 194154,
+    "fallbacks": {},
+    "lora_fused": 90000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 10800,
+     "bwd s1 d0": 10800
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 600,
+     "served_calls": 400,
+     "computed_calls": 200,
+     "pictures_served": 780,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2903,
+     "key_s": 3.0597,
+     "serve_s": 0.6581,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 76,
+   "t_s": 473.053,
+   "loss": 0.21181972324848175,
+   "grad_norm": 1.0883653163909912,
+   "learning_rate": 3.102762227218957e-05,
+   "epoch": 3.04,
+   "mps_alloc_gb": 0.391,
+   "mps_driver_gb": 21.197,
+   "footprint_gb": 25.244,
+   "footprint_peak_in_step_gb": 25.244,
+   "live_at_forward_end_gb": 7.574,
+   "driver_at_forward_end_gb": 21.205,
+   "training_counts": {
+    "head_taken": 608,
+    "head_fallback": 0,
+    "head_positions": 1097614,
+    "head_labelled": 196489,
+    "fallbacks": {},
+    "lora_fused": 91200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 10944,
+     "bwd s1 d0": 10944
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 608,
+     "served_calls": 408,
+     "computed_calls": 200,
+     "pictures_served": 796,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.2947,
+     "key_s": 3.0942,
+     "serve_s": 0.6687,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 77,
+   "t_s": 479.333,
+   "loss": 0.2869909703731537,
+   "grad_norm": 0.9673085808753967,
+   "learning_rate": 2.871910954531709e-05,
+   "epoch": 3.08,
+   "mps_alloc_gb": 0.467,
+   "mps_driver_gb": 22.775,
+   "footprint_gb": 26.822,
+   "footprint_peak_in_step_gb": 27.432,
+   "live_at_forward_end_gb": 8.347,
+   "driver_at_forward_end_gb": 23.384,
+   "training_counts": {
+    "head_taken": 616,
+    "head_fallback": 0,
+    "head_positions": 1113756,
+    "head_labelled": 199419,
+    "fallbacks": {},
+    "lora_fused": 92400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 11088,
+     "bwd s1 d0": 11088
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 616,
+     "served_calls": 416,
+     "computed_calls": 200,
+     "pictures_served": 811,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3002,
+     "key_s": 3.1421,
+     "serve_s": 0.6804,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 78,
+   "t_s": 485.609,
+   "loss": 0.18538334965705872,
+   "grad_norm": 0.9770970344543457,
+   "learning_rate": 2.6485360629279977e-05,
+   "epoch": 3.12,
+   "mps_alloc_gb": 0.458,
+   "mps_driver_gb": 22.74,
+   "footprint_gb": 26.787,
+   "footprint_peak_in_step_gb": 27.807,
+   "live_at_forward_end_gb": 8.442,
+   "driver_at_forward_end_gb": 23.759,
+   "training_counts": {
+    "head_taken": 624,
+    "head_fallback": 0,
+    "head_positions": 1129980,
+    "head_labelled": 202016,
+    "fallbacks": {},
+    "lora_fused": 93600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 11232,
+     "bwd s1 d0": 11232
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 624,
+     "served_calls": 424,
+     "computed_calls": 200,
+     "pictures_served": 827,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3072,
+     "key_s": 3.194,
+     "serve_s": 0.6929,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 79,
+   "t_s": 491.582,
+   "loss": 0.17707569897174835,
+   "grad_norm": 1.1005408763885498,
+   "learning_rate": 2.432871841823047e-05,
+   "epoch": 3.16,
+   "mps_alloc_gb": 0.448,
+   "mps_driver_gb": 22.189,
+   "footprint_gb": 26.217,
+   "footprint_peak_in_step_gb": 26.787,
+   "live_at_forward_end_gb": 7.792,
+   "driver_at_forward_end_gb": 22.74,
+   "training_counts": {
+    "head_taken": 632,
+    "head_fallback": 0,
+    "head_positions": 1145418,
+    "head_labelled": 204222,
+    "fallbacks": {},
+    "lora_fused": 94800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 11376,
+     "bwd s1 d0": 11376
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 632,
+     "served_calls": 432,
+     "computed_calls": 200,
+     "pictures_served": 843,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3142,
+     "key_s": 3.2439,
+     "serve_s": 0.7063,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 80,
+   "t_s": 497.571,
+   "loss": 0.2903822362422943,
+   "grad_norm": 1.032409906387329,
+   "learning_rate": 2.225144493203508e-05,
+   "epoch": 3.2,
+   "mps_alloc_gb": 0.432,
+   "mps_driver_gb": 22.142,
+   "footprint_gb": 26.17,
+   "footprint_peak_in_step_gb": 28.111,
+   "live_at_forward_end_gb": 7.733,
+   "driver_at_forward_end_gb": 24.064,
+   "training_counts": {
+    "head_taken": 640,
+    "head_fallback": 0,
+    "head_positions": 1160590,
+    "head_labelled": 206996,
+    "fallbacks": {},
+    "lora_fused": 96000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 11520,
+     "bwd s1 d0": 11520
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 640,
+     "served_calls": 440,
+     "computed_calls": 200,
+     "pictures_served": 858,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3194,
+     "key_s": 3.2795,
+     "serve_s": 0.7178,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 81,
+   "t_s": 503.89,
+   "loss": 0.36833932995796204,
+   "grad_norm": 1.0789427757263184,
+   "learning_rate": 2.025571894372794e-05,
+   "epoch": 3.24,
+   "mps_alloc_gb": 0.423,
+   "mps_driver_gb": 22.142,
+   "footprint_gb": 26.17,
+   "footprint_peak_in_step_gb": 29.299,
+   "live_at_forward_end_gb": 8.01,
+   "driver_at_forward_end_gb": 25.252,
+   "training_counts": {
+    "head_taken": 648,
+    "head_fallback": 0,
+    "head_positions": 1176638,
+    "head_labelled": 210162,
+    "fallbacks": {},
+    "lora_fused": 97200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 11664,
+     "bwd s1 d0": 11664
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 648,
+     "served_calls": 448,
+     "computed_calls": 200,
+     "pictures_served": 872,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3247,
+     "key_s": 3.3151,
+     "serve_s": 0.7298,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 82,
+   "t_s": 509.576,
+   "loss": 0.19125144183635712,
+   "grad_norm": 0.9799877405166626,
+   "learning_rate": 1.8343633694278895e-05,
+   "epoch": 3.2800000000000002,
+   "mps_alloc_gb": 0.435,
+   "mps_driver_gb": 22.142,
+   "footprint_gb": 26.17,
+   "footprint_peak_in_step_gb": 26.17,
+   "live_at_forward_end_gb": 7.824,
+   "driver_at_forward_end_gb": 22.142,
+   "training_counts": {
+    "head_taken": 656,
+    "head_fallback": 0,
+    "head_positions": 1191092,
+    "head_labelled": 212605,
+    "fallbacks": {},
+    "lora_fused": 98400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 11808,
+     "bwd s1 d0": 11808
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 656,
+     "served_calls": 456,
+     "computed_calls": 200,
+     "pictures_served": 888,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3314,
+     "key_s": 3.3589,
+     "serve_s": 0.7428,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 83,
+   "t_s": 515.634,
+   "loss": 0.19805392622947693,
+   "grad_norm": 1.0166150331497192,
+   "learning_rate": 1.65171946970729e-05,
+   "epoch": 3.32,
+   "mps_alloc_gb": 0.455,
+   "mps_driver_gb": 22.123,
+   "footprint_gb": 26.17,
+   "footprint_peak_in_step_gb": 27.17,
+   "live_at_forward_end_gb": 7.577,
+   "driver_at_forward_end_gb": 23.142,
+   "training_counts": {
+    "head_taken": 664,
+    "head_fallback": 0,
+    "head_positions": 1206778,
+    "head_labelled": 215324,
+    "fallbacks": {},
+    "lora_fused": 99600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 11952,
+     "bwd s1 d0": 11952
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 664,
+     "served_calls": 464,
+     "computed_calls": 200,
+     "pictures_served": 904,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3382,
+     "key_s": 3.4047,
+     "serve_s": 0.7546,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 84,
+   "t_s": 521.147,
+   "loss": 0.16886572539806366,
+   "grad_norm": 1.0272389650344849,
+   "learning_rate": 1.4778317634403093e-05,
+   "epoch": 3.36,
+   "mps_alloc_gb": 0.426,
+   "mps_driver_gb": 21.187,
+   "footprint_gb": 25.218,
+   "footprint_peak_in_step_gb": 26.171,
+   "live_at_forward_end_gb": 7.589,
+   "driver_at_forward_end_gb": 22.123,
+   "training_counts": {
+    "head_taken": 672,
+    "head_fallback": 0,
+    "head_positions": 1220860,
+    "head_labelled": 217618,
+    "fallbacks": {},
+    "lora_fused": 100800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 12096,
+     "bwd s1 d0": 12096
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 672,
+     "served_calls": 472,
+     "computed_calls": 200,
+     "pictures_served": 920,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3439,
+     "key_s": 3.4492,
+     "serve_s": 0.7675,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 85,
+   "t_s": 527.405,
+   "loss": 0.2003641575574875,
+   "grad_norm": 1.1477208137512207,
+   "learning_rate": 1.3128826348184887e-05,
+   "epoch": 3.4,
+   "mps_alloc_gb": 0.434,
+   "mps_driver_gb": 23.14,
+   "footprint_gb": 27.172,
+   "footprint_peak_in_step_gb": 28.195,
+   "live_at_forward_end_gb": 8.614,
+   "driver_at_forward_end_gb": 24.172,
+   "training_counts": {
+    "head_taken": 680,
+    "head_fallback": 0,
+    "head_positions": 1236780,
+    "head_labelled": 220261,
+    "fallbacks": {},
+    "lora_fused": 102000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 12240,
+     "bwd s1 d0": 12240
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 680,
+     "served_calls": 480,
+     "computed_calls": 200,
+     "pictures_served": 936,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3505,
+     "key_s": 3.4884,
+     "serve_s": 0.7792,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 86,
+   "t_s": 532.444,
+   "loss": 0.2095443457365036,
+   "grad_norm": 1.0755144357681274,
+   "learning_rate": 1.1570450926997655e-05,
+   "epoch": 3.44,
+   "mps_alloc_gb": 0.409,
+   "mps_driver_gb": 23.142,
+   "footprint_gb": 27.172,
+   "footprint_peak_in_step_gb": 28.171,
+   "live_at_forward_end_gb": 8.092,
+   "driver_at_forward_end_gb": 24.142,
+   "training_counts": {
+    "head_taken": 688,
+    "head_fallback": 0,
+    "head_positions": 1249356,
+    "head_labelled": 222665,
+    "fallbacks": {},
+    "lora_fused": 103200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 12384,
+     "bwd s1 d0": 12384
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 688,
+     "served_calls": 488,
+     "computed_calls": 200,
+     "pictures_served": 952,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3579,
+     "key_s": 3.5285,
+     "serve_s": 0.7918,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 87,
+   "t_s": 538.421,
+   "loss": 0.2144142985343933,
+   "grad_norm": 1.128791093826294,
+   "learning_rate": 1.010482589146048e-05,
+   "epoch": 3.48,
+   "mps_alloc_gb": 0.44,
+   "mps_driver_gb": 24.14,
+   "footprint_gb": 28.189,
+   "footprint_peak_in_step_gb": 28.189,
+   "live_at_forward_end_gb": 8.044,
+   "driver_at_forward_end_gb": 24.14,
+   "training_counts": {
+    "head_taken": 696,
+    "head_fallback": 0,
+    "head_positions": 1264734,
+    "head_labelled": 225206,
+    "fallbacks": {},
+    "lora_fused": 104400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 12528,
+     "bwd s1 d0": 12528
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 696,
+     "served_calls": 496,
+     "computed_calls": 200,
+     "pictures_served": 968,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3637,
+     "key_s": 3.5772,
+     "serve_s": 0.8045,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 88,
+   "t_s": 544.156,
+   "loss": 0.25020626187324524,
+   "grad_norm": 1.2622311115264893,
+   "learning_rate": 8.733488479845997e-06,
+   "epoch": 3.52,
+   "mps_alloc_gb": 0.431,
+   "mps_driver_gb": 25.172,
+   "footprint_gb": 29.203,
+   "footprint_peak_in_step_gb": 29.228,
+   "live_at_forward_end_gb": 7.282,
+   "driver_at_forward_end_gb": 25.179,
+   "training_counts": {
+    "head_taken": 704,
+    "head_fallback": 0,
+    "head_positions": 1279270,
+    "head_labelled": 227656,
+    "fallbacks": {},
+    "lora_fused": 105600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 12672,
+     "bwd s1 d0": 12672
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 704,
+     "served_calls": 504,
+     "computed_calls": 200,
+     "pictures_served": 984,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3684,
+     "key_s": 3.6234,
+     "serve_s": 0.8182,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 89,
+   "t_s": 549.602,
+   "loss": 0.15127746760845184,
+   "grad_norm": 0.9546404480934143,
+   "learning_rate": 7.457877035729588e-06,
+   "epoch": 3.56,
+   "mps_alloc_gb": 0.399,
+   "mps_driver_gb": 24.246,
+   "footprint_gb": 28.277,
+   "footprint_peak_in_step_gb": 30.287,
+   "live_at_forward_end_gb": 8.508,
+   "driver_at_forward_end_gb": 26.238,
+   "training_counts": {
+    "head_taken": 712,
+    "head_fallback": 0,
+    "head_positions": 1293158,
+    "head_labelled": 230071,
+    "fallbacks": {},
+    "lora_fused": 106800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 12816,
+     "bwd s1 d0": 12816
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 712,
+     "served_calls": 512,
+     "computed_calls": 200,
+     "pictures_served": 1000,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3741,
+     "key_s": 3.661,
+     "serve_s": 0.8311,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 90,
+   "t_s": 554.821,
+   "loss": 0.19691170752048492,
+   "grad_norm": 1.0873050689697266,
+   "learning_rate": 6.2793294993656494e-06,
+   "epoch": 3.6,
+   "mps_alloc_gb": 0.417,
+   "mps_driver_gb": 23.205,
+   "footprint_gb": 27.234,
+   "footprint_peak_in_step_gb": 29.219,
+   "live_at_forward_end_gb": 7.589,
+   "driver_at_forward_end_gb": 25.213,
+   "training_counts": {
+    "head_taken": 720,
+    "head_fallback": 0,
+    "head_positions": 1306440,
+    "head_labelled": 232506,
+    "fallbacks": {},
+    "lora_fused": 108000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 12960,
+     "bwd s1 d0": 12960
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 720,
+     "served_calls": 520,
+     "computed_calls": 200,
+     "pictures_served": 1016,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3811,
+     "key_s": 3.702,
+     "serve_s": 0.8442,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 91,
+   "t_s": 560.76,
+   "loss": 0.20329506695270538,
+   "grad_norm": 1.1960593461990356,
+   "learning_rate": 5.199082004372957e-06,
+   "epoch": 3.64,
+   "mps_alloc_gb": 0.461,
+   "mps_driver_gb": 24.22,
+   "footprint_gb": 28.269,
+   "footprint_peak_in_step_gb": 28.269,
+   "live_at_forward_end_gb": 8.352,
+   "driver_at_forward_end_gb": 24.228,
+   "training_counts": {
+    "head_taken": 728,
+    "head_fallback": 0,
+    "head_positions": 1322054,
+    "head_labelled": 234816,
+    "fallbacks": {},
+    "lora_fused": 109200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 13104,
+     "bwd s1 d0": 13104
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 728,
+     "served_calls": 528,
+     "computed_calls": 200,
+     "pictures_served": 1032,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3852,
+     "key_s": 3.752,
+     "serve_s": 0.8573,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 92,
+   "t_s": 566.62,
+   "loss": 0.3617526590824127,
+   "grad_norm": 1.1951414346694946,
+   "learning_rate": 4.2182675812012965e-06,
+   "epoch": 3.68,
+   "mps_alloc_gb": 0.42,
+   "mps_driver_gb": 23.189,
+   "footprint_gb": 27.219,
+   "footprint_peak_in_step_gb": 29.707,
+   "live_at_forward_end_gb": 8.822,
+   "driver_at_forward_end_gb": 25.658,
+   "training_counts": {
+    "head_taken": 736,
+    "head_fallback": 0,
+    "head_positions": 1336562,
+    "head_labelled": 238318,
+    "fallbacks": {},
+    "lora_fused": 110400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 13248,
+     "bwd s1 d0": 13248
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 736,
+     "served_calls": 536,
+     "computed_calls": 200,
+     "pictures_served": 1046,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3916,
+     "key_s": 3.7867,
+     "serve_s": 0.8692,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 93,
+   "t_s": 572.609,
+   "loss": 0.21537238359451294,
+   "grad_norm": 1.1971722841262817,
+   "learning_rate": 3.3379149687388867e-06,
+   "epoch": 3.7199999999999998,
+   "mps_alloc_gb": 0.423,
+   "mps_driver_gb": 24.179,
+   "footprint_gb": 28.211,
+   "footprint_peak_in_step_gb": 28.275,
+   "live_at_forward_end_gb": 8.422,
+   "driver_at_forward_end_gb": 24.226,
+   "training_counts": {
+    "head_taken": 744,
+    "head_fallback": 0,
+    "head_positions": 1352094,
+    "head_labelled": 240862,
+    "fallbacks": {},
+    "lora_fused": 111600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 13392,
+     "bwd s1 d0": 13392
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 744,
+     "served_calls": 544,
+     "computed_calls": 200,
+     "pictures_served": 1062,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.3984,
+     "key_s": 3.8312,
+     "serve_s": 0.8833,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 94,
+   "t_s": 578.39,
+   "loss": 0.29635298252105713,
+   "grad_norm": 1.1433168649673462,
+   "learning_rate": 2.5589475353073988e-06,
+   "epoch": 3.76,
+   "mps_alloc_gb": 0.43,
+   "mps_driver_gb": 26.189,
+   "footprint_gb": 30.232,
+   "footprint_peak_in_step_gb": 30.238,
+   "live_at_forward_end_gb": 8.519,
+   "driver_at_forward_end_gb": 25.517,
+   "training_counts": {
+    "head_taken": 752,
+    "head_fallback": 0,
+    "head_positions": 1366726,
+    "head_labelled": 243912,
+    "fallbacks": {},
+    "lora_fused": 112800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 13536,
+     "bwd s1 d0": 13536
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 752,
+     "served_calls": 552,
+     "computed_calls": 200,
+     "pictures_served": 1077,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.4024,
+     "key_s": 3.8791,
+     "serve_s": 0.8943,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 95,
+   "t_s": 584.023,
+   "loss": 0.2751098871231079,
+   "grad_norm": 1.067800521850586,
+   "learning_rate": 1.882182310176095e-06,
+   "epoch": 3.8,
+   "mps_alloc_gb": 0.406,
+   "mps_driver_gb": 23.191,
+   "footprint_gb": 27.229,
+   "footprint_peak_in_step_gb": 30.238,
+   "live_at_forward_end_gb": 7.45,
+   "driver_at_forward_end_gb": 26.189,
+   "training_counts": {
+    "head_taken": 760,
+    "head_fallback": 0,
+    "head_positions": 1380710,
+    "head_labelled": 246602,
+    "fallbacks": {},
+    "lora_fused": 114000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 13680,
+     "bwd s1 d0": 13680
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 760,
+     "served_calls": 560,
+     "computed_calls": 200,
+     "pictures_served": 1092,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.4058,
+     "key_s": 3.9149,
+     "serve_s": 0.9052,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 96,
+   "t_s": 589.445,
+   "loss": 0.19468729197978973,
+   "grad_norm": 1.1016545295715332,
+   "learning_rate": 1.30832912661093e-06,
+   "epoch": 3.84,
+   "mps_alloc_gb": 0.417,
+   "mps_driver_gb": 24.191,
+   "footprint_gb": 28.223,
+   "footprint_peak_in_step_gb": 28.278,
+   "live_at_forward_end_gb": 7.377,
+   "driver_at_forward_end_gb": 24.246,
+   "training_counts": {
+    "head_taken": 768,
+    "head_fallback": 0,
+    "head_positions": 1394378,
+    "head_labelled": 249133,
+    "fallbacks": {},
+    "lora_fused": 115200,
+    "rule_calls": {
+     "fwd c8 s2 d0": 13824,
+     "bwd s1 d0": 13824
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 768,
+     "served_calls": 568,
+     "computed_calls": 200,
+     "pictures_served": 1108,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.4116,
+     "key_s": 3.9611,
+     "serve_s": 0.9161,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 97,
+   "t_s": 593.781,
+   "loss": 0.20271366834640503,
+   "grad_norm": 1.2458206415176392,
+   "learning_rate": 8.379898773574924e-07,
+   "epoch": 3.88,
+   "mps_alloc_gb": 0.358,
+   "mps_driver_gb": 23.183,
+   "footprint_gb": 27.215,
+   "footprint_peak_in_step_gb": 28.27,
+   "live_at_forward_end_gb": 6.899,
+   "driver_at_forward_end_gb": 24.238,
+   "training_counts": {
+    "head_taken": 776,
+    "head_fallback": 0,
+    "head_positions": 1404788,
+    "head_labelled": 251100,
+    "fallbacks": {},
+    "lora_fused": 116400,
+    "rule_calls": {
+     "fwd c8 s2 d0": 13968,
+     "bwd s1 d0": 13968
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 776,
+     "served_calls": 576,
+     "computed_calls": 200,
+     "pictures_served": 1124,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.4177,
+     "key_s": 3.9904,
+     "serve_s": 0.9257,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 98,
+   "t_s": 599.375,
+   "loss": 0.27376124262809753,
+   "grad_norm": 1.1726609468460083,
+   "learning_rate": 4.7165788333860536e-07,
+   "epoch": 3.92,
+   "mps_alloc_gb": 0.386,
+   "mps_driver_gb": 25.201,
+   "footprint_gb": 29.25,
+   "footprint_peak_in_step_gb": 29.25,
+   "live_at_forward_end_gb": 7.702,
+   "driver_at_forward_end_gb": 25.209,
+   "training_counts": {
+    "head_taken": 784,
+    "head_fallback": 0,
+    "head_positions": 1418464,
+    "head_labelled": 253842,
+    "fallbacks": {},
+    "lora_fused": 117600,
+    "rule_calls": {
+     "fwd c8 s2 d0": 14112,
+     "bwd s1 d0": 14112
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 784,
+     "served_calls": 584,
+     "computed_calls": 200,
+     "pictures_served": 1139,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.4226,
+     "key_s": 4.0292,
+     "serve_s": 0.9386,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 99,
+   "t_s": 604.58,
+   "loss": 0.2502537667751312,
+   "grad_norm": 1.1156277656555176,
+   "learning_rate": 2.0971737622883515e-07,
+   "epoch": 3.96,
+   "mps_alloc_gb": 0.388,
+   "mps_driver_gb": 23.177,
+   "footprint_gb": 27.207,
+   "footprint_peak_in_step_gb": 29.25,
+   "live_at_forward_end_gb": 7.696,
+   "driver_at_forward_end_gb": 25.201,
+   "training_counts": {
+    "head_taken": 792,
+    "head_fallback": 0,
+    "head_positions": 1430880,
+    "head_labelled": 256537,
+    "fallbacks": {},
+    "lora_fused": 118800,
+    "rule_calls": {
+     "fwd c8 s2 d0": 14256,
+     "bwd s1 d0": 14256
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 792,
+     "served_calls": 592,
+     "computed_calls": 200,
+     "pictures_served": 1154,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.4289,
+     "key_s": 4.0635,
+     "serve_s": 0.9507,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  },
+  {
+   "step": 100,
+   "t_s": 610.479,
+   "loss": 0.19850614666938782,
+   "grad_norm": 1.1983717679977417,
+   "learning_rate": 5.2443095448506674e-08,
+   "epoch": 4.0,
+   "mps_alloc_gb": 0.428,
+   "mps_driver_gb": 22.17,
+   "footprint_gb": 26.219,
+   "footprint_peak_in_step_gb": 28.219,
+   "live_at_forward_end_gb": 7.492,
+   "driver_at_forward_end_gb": 24.177,
+   "training_counts": {
+    "head_taken": 800,
+    "head_fallback": 0,
+    "head_positions": 1446332,
+    "head_labelled": 258872,
+    "fallbacks": {},
+    "lora_fused": 120000,
+    "rule_calls": {
+     "fwd c8 s2 d0": 14400,
+     "bwd s1 d0": 14400
+    },
+    "lora_fallbacks": {
+     "not on the Apple GPU": 2
+    },
+    "vision_cache": {
+     "calls": 800,
+     "served_calls": 600,
+     "computed_calls": 200,
+     "pictures_served": 1170,
+     "pictures_new": 372,
+     "pictures_again": 18,
+     "stored": 372,
+     "not_stored": 0,
+     "bytes_stored": 1676771328,
+     "bytes_merged": 419192832,
+     "emptied": 0,
+     "wait_s": 0.4358,
+     "key_s": 4.1107,
+     "serve_s": 0.9648,
+     "store_s": 0.3464,
+     "entries": 372,
+     "pending": 0,
+     "caches": 1
+    }
+   }
+  }
+ ],
+ "final_logs": [
+  {
+   "train_runtime": 610.4817,
+   "train_samples_per_second": 2.621,
+   "train_steps_per_second": 0.164,
+   "total_flos": 5357653412928000.0,
+   "train_loss": 0.5768512135744095,
+   "epoch": 4.0
+  }
+ ],
+ "patched_modules": [
+  "transformers.models.qwen3_5.modeling_qwen3_5",
+  "transformers.models.qwen3_5_moe.modeling_qwen3_5_moe",
+  "transformers.models.qwen3_next.modeling_qwen3_next"
+ ],
+ "macai": {
+  "version": "0.2.0",
+  "KERNEL": "chunked",
+  "KERNEL_BWD": "chunked",
+  "FUSED_NORM": true,
+  "chunk": 16,
+  "SIZE_CLASSES": false,
+  "RECOMPUTE_STATES": true,
+  "FWD_CHUNK": 8,
+  "DBUF": 0,
+  "VALUE_SPLIT": "auto",
+  "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU",
+  "layer": {
+   "RMSNORM": true,
+   "CONV": true,
+   "GATED_NORM": true,
+   "GATES": true,
+   "SWIGLU": true
+  },
+  "layer_patches": [
+   "rmsnorm",
+   "gated_norm",
+   "mlp",
+   "gated_delta_net"
+  ],
+  "training": {
+   "HEAD_AT_LABELS": true,
+   "VISION_CACHE": true
+  },
+  "training_patches": [
+   "head_conditional",
+   "head_causal_lm",
+   "vision_cache"
+  ],
+  "lora": {
+   "FUSED": true
+  },
+  "lora_patches": [
+   "linear"
+  ]
+ },
+ "gated_delta_rule": "macai.gated_delta.op.chunk_gated_delta_rule",
+ "versions": {
+  "torch": "2.15.0",
+  "transformers": "5.22.1",
+  "peft": "0.21.2",
+  "qwen_symbolic_thinking": "0.1.35",
+  "python": "3.12.16"
+ },
+ "mps_recommended_max_gb": 107.52,
+ "sample": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/sample_every55.json",
+ "pictures": {
+  "items": 382,
+  "pictures_by_locator": {
+   "url": 357,
+   "zip_member": 15
+  }
+ },
+ "examples": 400,
+ "accelerator": {
+  "mixed_precision": "bf16",
+  "native_amp": true,
+  "device": "mps"
+ },
+ "footprint_peak_before_training_gb": 3.284,
+ "checks": {
+  "modules_checkpointing": [],
+  "logging_steps": 1,
+  "args_gradient_checkpointing": false,
+  "torch_empty_cache_steps": 1,
+  "linear_attention_layers": 18,
+  "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule",
+  "layer_methods_at_train_begin": {
+   "Qwen3_5RMSNorm": "macai.layer._qwen3_5",
+   "Qwen3_5RMSNormGated": "macai.layer._qwen3_5",
+   "Qwen3_5MLP": "macai.layer._qwen3_5",
+   "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"
+  },
+  "training_methods_at_train_begin": {
+   "Qwen3_5ForConditionalGeneration": "macai.training._qwen3_5",
+   "Qwen3_5Model": "macai.training._qwen3_5"
+  },
+  "lora_linear_forward_at_train_begin": "macai.lora._peft",
+  "lora_dropout_modules": [
+   "Dropout"
+  ],
+  "trainable_parameters": 20447232,
+  "model_dtype": "torch.bfloat16",
+  "device": "mps:0",
+  "lora_A_abs_sum": 92571.90625,
+  "lora_A_first_values": [
+   0.021362,
+   -0.002548,
+   -0.016357,
+   -0.00082
+  ],
+  "PYTHONHASHSEED": null
+ },
+ "trainer": {
+  "package": "0.1.35",
+  "steps": 100,
+  "train_loss": 0.5768512135744095,
+  "s_per_step": 6.12,
+  "train_min": 10.2,
+  "items": 382,
+  "items_with_picture": 372,
+  "examples": 400,
+  "examples_by_form": {
+   "full": 335,
+   "spec_full": 10,
+   "short": 55
+  },
+  "collated_examples": 1600,
+  "examples_cut_at_max_len": 0,
+  "longest_example_tokens": 1282,
+  "lora_modules": {
+   "out_proj": 18,
+   "in_proj_qkv": 18,
+   "in_proj_z": 18,
+   "gate_proj": 24,
+   "up_proj": 24,
+   "down_proj": 24,
+   "q_proj": 6,
+   "k_proj": 6,
+   "v_proj": 6,
+   "o_proj": 6
+  },
+  "adapter_dir": "/Users/philipcoelho/mirel/data/mac_bench/reader_train/phase4/Qwen3.5-0.8B_r32_20261104_045415_d3_0.8b_2x8_100steps/adapter"
+ },
+ "trainer_log": [
+  {
+   "step": 1,
+   "spent_s": 6,
+   "left_s": 633,
+   "s_per_step": 6.39,
+   "loss": 2.562711238861084,
+   "learning_rate": 0.0
+  },
+  {
+   "step": 2,
+   "spent_s": 13,
+   "left_s": 645,
+   "s_per_step": 6.58,
+   "loss": 2.4253618717193604,
+   "learning_rate": 6.666666666666667e-05
+  },
+  {
+   "step": 3,
+   "spent_s": 19,
+   "left_s": 600,
+   "s_per_step": 6.18,
+   "loss": 2.030198335647583,
+   "learning_rate": 0.00013333333333333334
+  },
+  {
+   "step": 4,
+   "spent_s": 26,
+   "left_s": 625,
+   "s_per_step": 6.51,
+   "loss": 1.87082040309906,
+   "learning_rate": 0.0002
+  },
+  {
+   "step": 5,
+   "spent_s": 33,
+   "left_s": 629,
+   "s_per_step": 6.62,
+   "loss": 1.3870725631713867,
+   "learning_rate": 0.00019994755690455152
+  },
+  {
+   "step": 6,
+   "spent_s": 40,
+   "left_s": 631,
+   "s_per_step": 6.71,
+   "loss": 1.198000431060791,
+   "learning_rate": 0.00019979028262377118
+  },
+  {
+   "step": 7,
+   "spent_s": 47,
+   "left_s": 621,
+   "s_per_step": 6.68,
+   "loss": 1.2412190437316895,
+   "learning_rate": 0.0001995283421166614
+  },
+  {
+   "step": 8,
+   "spent_s": 54,
+   "left_s": 620,
+   "s_per_step": 6.74,
+   "loss": 1.138351321220398,
+   "learning_rate": 0.00019916201012264254
+  },
+  {
+   "step": 9,
+   "spent_s": 61,
+   "left_s": 615,
+   "s_per_step": 6.76,
+   "loss": 1.119328498840332,
+   "learning_rate": 0.00019869167087338907
+  },
+  {
+   "step": 10,
+   "spent_s": 68,
+   "left_s": 616,
+   "s_per_step": 6.84,
+   "loss": 0.9879754781723022,
+   "learning_rate": 0.0001981178176898239
+  },
+  {
+   "step": 11,
+   "spent_s": 75,
+   "left_s": 604,
+   "s_per_step": 6.78,
+   "loss": 1.0811182260513306,
+   "learning_rate": 0.00019744105246469263
+  },
+  {
+   "step": 12,
+   "spent_s": 81,
+   "left_s": 596,
+   "s_per_step": 6.77,
+   "loss": 0.9884229898452759,
+   "learning_rate": 0.00019666208503126112
+  },
+  {
+   "step": 13,
+   "spent_s": 88,
+   "left_s": 590,
+   "s_per_step": 6.78,
+   "loss": 0.8495057225227356,
+   "learning_rate": 0.00019578173241879872
+  },
+  {
+   "step": 14,
+   "spent_s": 95,
+   "left_s": 583,
+   "s_per_step": 6.78,
+   "loss": 0.9718014597892761,
+   "learning_rate": 0.00019480091799562704
+  },
+  {
+   "step": 15,
+   "spent_s": 102,
+   "left_s": 575,
+   "s_per_step": 6.77,
+   "loss": 1.0702778100967407,
+   "learning_rate": 0.00019372067050063438
+  },
+  {
+   "step": 16,
+   "spent_s": 108,
+   "left_s": 568,
+   "s_per_step": 6.76,
+   "loss": 0.903797447681427,
+   "learning_rate": 0.00019254212296427044
+  },
+  {
+   "step": 17,
+   "spent_s": 115,
+   "left_s": 561,
+   "s_per_step": 6.76,
+   "loss": 0.8423664569854736,
+   "learning_rate": 0.00019126651152015403
+  },
+  {
+   "step": 18,
+   "spent_s": 122,
+   "left_s": 554,
+   "s_per_step": 6.76,
+   "loss": 0.8332352042198181,
+   "learning_rate": 0.00018989517410853955
+  },
+  {
+   "step": 19,
+   "spent_s": 129,
+   "left_s": 551,
+   "s_per_step": 6.81,
+   "loss": 0.837743878364563,
+   "learning_rate": 0.00018842954907300236
+  },
+  {
+   "step": 20,
+   "spent_s": 136,
+   "left_s": 545,
+   "s_per_step": 6.82,
+   "loss": 0.8400524258613586,
+   "learning_rate": 0.00018687117365181512
+  },
+  {
+   "step": 21,
+   "spent_s": 143,
+   "left_s": 538,
+   "s_per_step": 6.81,
+   "loss": 0.8886385560035706,
+   "learning_rate": 0.00018522168236559695
+  },
+  {
+   "step": 22,
+   "spent_s": 150,
+   "left_s": 533,
+   "s_per_step": 6.83,
+   "loss": 0.7736278176307678,
+   "learning_rate": 0.00018348280530292713
+  },
+  {
+   "step": 23,
+   "spent_s": 158,
+   "left_s": 529,
+   "s_per_step": 6.87,
+   "loss": 1.042626142501831,
+   "learning_rate": 0.0001816563663057211
+  },
+  {
+   "step": 24,
+   "spent_s": 165,
+   "left_s": 523,
+   "s_per_step": 6.88,
+   "loss": 0.6908833980560303,
+   "learning_rate": 0.00017974428105627208
+  },
+  {
+   "step": 25,
+   "spent_s": 172,
+   "left_s": 516,
+   "s_per_step": 6.88,
+   "loss": 0.7751225829124451,
+   "learning_rate": 0.00017774855506796496
+  },
+  {
+   "step": 26,
+   "spent_s": 178,
+   "left_s": 507,
+   "s_per_step": 6.85,
+   "loss": 0.5868332982063293,
+   "learning_rate": 0.00017567128158176953
+  },
+  {
+   "step": 27,
+   "spent_s": 184,
+   "left_s": 496,
+   "s_per_step": 6.8,
+   "loss": 0.7674443125724792,
+   "learning_rate": 0.00017351463937072004
+  },
+  {
+   "step": 28,
+   "spent_s": 189,
+   "left_s": 487,
+   "s_per_step": 6.76,
+   "loss": 0.6042101383209229,
+   "learning_rate": 0.00017128089045468294
+  },
+  {
+   "step": 29,
+   "spent_s": 196,
+   "left_s": 480,
+   "s_per_step": 6.75,
+   "loss": 0.4690355062484741,
+   "learning_rate": 0.00016897237772781044
+  },
+  {
+   "step": 30,
+   "spent_s": 202,
+   "left_s": 472,
+   "s_per_step": 6.74,
+   "loss": 0.5705031752586365,
+   "learning_rate": 0.00016659152250116812
+  },
+  {
+   "step": 31,
+   "spent_s": 209,
+   "left_s": 465,
+   "s_per_step": 6.74,
+   "loss": 0.6723388433456421,
+   "learning_rate": 0.000164140821963114
+  },
+  {
+   "step": 32,
+   "spent_s": 216,
+   "left_s": 458,
+   "s_per_step": 6.74,
+   "loss": 0.6456975936889648,
+   "learning_rate": 0.00016162284656009274
+  },
+  {
+   "step": 33,
+   "spent_s": 221,
+   "left_s": 449,
+   "s_per_step": 6.7,
+   "loss": 0.5264124870300293,
+   "learning_rate": 0.00015904023730059228
+  },
+  {
+   "step": 34,
+   "spent_s": 227,
+   "left_s": 442,
+   "s_per_step": 6.69,
+   "loss": 0.5432770848274231,
+   "learning_rate": 0.00015639570298509064
+  },
+  {
+   "step": 35,
+   "spent_s": 234,
+   "left_s": 434,
+   "s_per_step": 6.68,
+   "loss": 0.527924120426178,
+   "learning_rate": 0.0001536920173648984
+  },
+  {
+   "step": 36,
+   "spent_s": 239,
+   "left_s": 426,
+   "s_per_step": 6.65,
+   "loss": 0.5865781307220459,
+   "learning_rate": 0.00015093201623287631
+  },
+  {
+   "step": 37,
+   "spent_s": 246,
+   "left_s": 419,
+   "s_per_step": 6.65,
+   "loss": 0.5120658874511719,
+   "learning_rate": 0.00014811859444908052
+  },
+  {
+   "step": 38,
+   "spent_s": 253,
+   "left_s": 412,
+   "s_per_step": 6.65,
+   "loss": 0.5265371203422546,
+   "learning_rate": 0.00014525470290445392
+  },
+  {
+   "step": 39,
+   "spent_s": 259,
+   "left_s": 406,
+   "s_per_step": 6.65,
+   "loss": 0.6337573528289795,
+   "learning_rate": 0.00014234334542574906
+  },
+  {
+   "step": 40,
+   "spent_s": 264,
+   "left_s": 397,
+   "s_per_step": 6.61,
+   "loss": 0.6065105199813843,
+   "learning_rate": 0.00013938757562492873
+  },
+  {
+   "step": 41,
+   "spent_s": 271,
+   "left_s": 390,
+   "s_per_step": 6.61,
+   "loss": 0.5256584882736206,
+   "learning_rate": 0.00013639049369634876
+  },
+  {
+   "step": 42,
+   "spent_s": 277,
+   "left_s": 382,
+   "s_per_step": 6.59,
+   "loss": 0.5051742792129517,
+   "learning_rate": 0.00013335524316508208
+  },
+  {
+   "step": 43,
+   "spent_s": 283,
+   "left_s": 375,
+   "s_per_step": 6.59,
+   "loss": 0.44705837965011597,
+   "learning_rate": 0.00013028500758979506
+  },
+  {
+   "step": 44,
+   "spent_s": 290,
+   "left_s": 369,
+   "s_per_step": 6.59,
+   "loss": 0.591241180896759,
+   "learning_rate": 0.0001271830072236343
+  },
+  {
+   "step": 45,
+   "spent_s": 296,
+   "left_s": 361,
+   "s_per_step": 6.57,
+   "loss": 0.5569962859153748,
+   "learning_rate": 0.00012405249563662537
+  },
+  {
+   "step": 46,
+   "spent_s": 302,
+   "left_s": 354,
+   "s_per_step": 6.56,
+   "loss": 0.6047887802124023,
+   "learning_rate": 0.00012089675630312754
+  },
+  {
+   "step": 47,
+   "spent_s": 308,
+   "left_s": 347,
+   "s_per_step": 6.55,
+   "loss": 0.4801100790500641,
+   "learning_rate": 0.0001177190991579223
+  },
+  {
+   "step": 48,
+   "spent_s": 314,
+   "left_s": 340,
+   "s_per_step": 6.53,
+   "loss": 0.49638631939888,
+   "learning_rate": 0.00011452285712454904
+  },
+  {
+   "step": 49,
+   "spent_s": 319,
+   "left_s": 332,
+   "s_per_step": 6.51,
+   "loss": 0.5992662906646729,
+   "learning_rate": 0.00011131138261952845
+  },
+  {
+   "step": 50,
+   "spent_s": 324,
+   "left_s": 324,
+   "s_per_step": 6.49,
+   "loss": 0.5639578104019165,
+   "learning_rate": 0.00010808804403614043
+  },
+  {
+   "step": 51,
+   "spent_s": 331,
+   "left_s": 318,
+   "s_per_step": 6.48,
+   "loss": 0.4040624797344208,
+   "learning_rate": 0.00010485622221144484
+  },
+  {
+   "step": 52,
+   "spent_s": 336,
+   "left_s": 310,
+   "s_per_step": 6.47,
+   "loss": 0.3006109893321991,
+   "learning_rate": 0.00010161930688025017
+  },
+  {
+   "step": 53,
+   "spent_s": 342,
+   "left_s": 304,
+   "s_per_step": 6.46,
+   "loss": 0.34819918870925903,
+   "learning_rate": 9.838069311974986e-05
+  },
+  {
+   "step": 54,
+   "spent_s": 348,
+   "left_s": 296,
+   "s_per_step": 6.44,
+   "loss": 0.4439013600349426,
+   "learning_rate": 9.514377778855521e-05
+  },
+  {
+   "step": 55,
+   "spent_s": 354,
+   "left_s": 290,
+   "s_per_step": 6.43,
+   "loss": 0.31746339797973633,
+   "learning_rate": 9.19119559638596e-05
+  },
+  {
+   "step": 56,
+   "spent_s": 359,
+   "left_s": 282,
+   "s_per_step": 6.41,
+   "loss": 0.28835153579711914,
+   "learning_rate": 8.868861738047158e-05
+  },
+  {
+   "step": 57,
+   "spent_s": 365,
+   "left_s": 275,
+   "s_per_step": 6.4,
+   "loss": 0.2999623715877533,
+   "learning_rate": 8.5477142875451e-05
+  },
+  {
+   "step": 58,
+   "spent_s": 370,
+   "left_s": 268,
+   "s_per_step": 6.38,
+   "loss": 0.29821261763572693,
+   "learning_rate": 8.228090084207774e-05
+  },
+  {
+   "step": 59,
+   "spent_s": 376,
+   "left_s": 261,
+   "s_per_step": 6.38,
+   "loss": 0.3244645595550537,
+   "learning_rate": 7.91032436968725e-05
+  },
+  {
+   "step": 60,
+   "spent_s": 382,
+   "left_s": 255,
+   "s_per_step": 6.37,
+   "loss": 0.2920049726963043,
+   "learning_rate": 7.594750436337467e-05
+  },
+  {
+   "step": 61,
+   "spent_s": 388,
+   "left_s": 248,
+   "s_per_step": 6.36,
+   "loss": 0.39135971665382385,
+   "learning_rate": 7.281699277636572e-05
+  },
+  {
+   "step": 62,
+   "spent_s": 393,
+   "left_s": 241,
+   "s_per_step": 6.34,
+   "loss": 0.3032340407371521,
+   "learning_rate": 6.971499241020495e-05
+  },
+  {
+   "step": 63,
+   "spent_s": 399,
+   "left_s": 234,
+   "s_per_step": 6.33,
+   "loss": 0.27788132429122925,
+   "learning_rate": 6.664475683491796e-05
+  },
+  {
+   "step": 64,
+   "spent_s": 404,
+   "left_s": 227,
+   "s_per_step": 6.31,
+   "loss": 0.3002561628818512,
+   "learning_rate": 6.360950630365126e-05
+  },
+  {
+   "step": 65,
+   "spent_s": 410,
+   "left_s": 221,
+   "s_per_step": 6.31,
+   "loss": 0.5737555027008057,
+   "learning_rate": 6.061242437507131e-05
+  },
+  {
+   "step": 66,
+   "spent_s": 416,
+   "left_s": 214,
+   "s_per_step": 6.3,
+   "loss": 0.28316816687583923,
+   "learning_rate": 5.765665457425102e-05
+  },
+  {
+   "step": 67,
+   "spent_s": 421,
+   "left_s": 207,
+   "s_per_step": 6.28,
+   "loss": 0.3110738694667816,
+   "learning_rate": 5.474529709554612e-05
+  },
+  {
+   "step": 68,
+   "spent_s": 427,
+   "left_s": 201,
+   "s_per_step": 6.28,
+   "loss": 0.27983736991882324,
+   "learning_rate": 5.1881405550919493e-05
+  },
+  {
+   "step": 69,
+   "spent_s": 433,
+   "left_s": 194,
+   "s_per_step": 6.27,
+   "loss": 0.3328299820423126,
+   "learning_rate": 4.9067983767123736e-05
+  },
+  {
+   "step": 70,
+   "spent_s": 438,
+   "left_s": 188,
+   "s_per_step": 6.26,
+   "loss": 0.3648715317249298,
+   "learning_rate": 4.630798263510162e-05
+  },
+  {
+   "step": 71,
+   "spent_s": 444,
+   "left_s": 182,
+   "s_per_step": 6.26,
+   "loss": 0.35681337118148804,
+   "learning_rate": 4.360429701490934e-05
+  },
+  {
+   "step": 72,
+   "spent_s": 450,
+   "left_s": 175,
+   "s_per_step": 6.25,
+   "loss": 0.3353264033794403,
+   "learning_rate": 4.0959762699407766e-05
+  },
+  {
+   "step": 73,
+   "spent_s": 457,
+   "left_s": 169,
+   "s_per_step": 6.26,
+   "loss": 0.2622162401676178,
+   "learning_rate": 3.8377153439907266e-05
+  },
+  {
+   "step": 74,
+   "spent_s": 462,
+   "left_s": 162,
+   "s_per_step": 6.25,
+   "loss": 0.36262989044189453,
+   "learning_rate": 3.585917803688603e-05
+  },
+  {
+   "step": 75,
+   "spent_s": 468,
+   "left_s": 156,
+   "s_per_step": 6.24,
+   "loss": 0.3599258065223694,
+   "learning_rate": 3.340847749883191e-05
+  },
+  {
+   "step": 76,
+   "spent_s": 473,
+   "left_s": 149,
+   "s_per_step": 6.22,
+   "loss": 0.21181972324848175,
+   "learning_rate": 3.102762227218957e-05
+  },
+  {
+   "step": 77,
+   "spent_s": 479,
+   "left_s": 143,
+   "s_per_step": 6.23,
+   "loss": 0.2869909703731537,
+   "learning_rate": 2.871910954531709e-05
+  },
+  {
+   "step": 78,
+   "spent_s": 486,
+   "left_s": 137,
+   "s_per_step": 6.23,
+   "loss": 0.18538334965705872,
+   "learning_rate": 2.6485360629279977e-05
+  },
+  {
+   "step": 79,
+   "spent_s": 492,
+   "left_s": 131,
+   "s_per_step": 6.22,
+   "loss": 0.17707569897174835,
+   "learning_rate": 2.432871841823047e-05
+  },
+  {
+   "step": 80,
+   "spent_s": 498,
+   "left_s": 124,
+   "s_per_step": 6.22,
+   "loss": 0.2903822362422943,
+   "learning_rate": 2.225144493203508e-05
+  },
+  {
+   "step": 81,
+   "spent_s": 504,
+   "left_s": 118,
+   "s_per_step": 6.22,
+   "loss": 0.36833932995796204,
+   "learning_rate": 2.025571894372794e-05
+  },
+  {
+   "step": 82,
+   "spent_s": 510,
+   "left_s": 112,
+   "s_per_step": 6.21,
+   "loss": 0.19125144183635712,
+   "learning_rate": 1.8343633694278895e-05
+  },
+  {
+   "step": 83,
+   "spent_s": 516,
+   "left_s": 106,
+   "s_per_step": 6.21,
+   "loss": 0.19805392622947693,
+   "learning_rate": 1.65171946970729e-05
+  },
+  {
+   "step": 84,
+   "spent_s": 521,
+   "left_s": 99,
+   "s_per_step": 6.2,
+   "loss": 0.16886572539806366,
+   "learning_rate": 1.4778317634403093e-05
+  },
+  {
+   "step": 85,
+   "spent_s": 527,
+   "left_s": 93,
+   "s_per_step": 6.2,
+   "loss": 0.2003641575574875,
+   "learning_rate": 1.3128826348184887e-05
+  },
+  {
+   "step": 86,
+   "spent_s": 532,
+   "left_s": 87,
+   "s_per_step": 6.19,
+   "loss": 0.2095443457365036,
+   "learning_rate": 1.1570450926997655e-05
+  },
+  {
+   "step": 87,
+   "spent_s": 538,
+   "left_s": 80,
+   "s_per_step": 6.19,
+   "loss": 0.2144142985343933,
+   "learning_rate": 1.010482589146048e-05
+  },
+  {
+   "step": 88,
+   "spent_s": 544,
+   "left_s": 74,
+   "s_per_step": 6.18,
+   "loss": 0.25020626187324524,
+   "learning_rate": 8.733488479845997e-06
+  },
+  {
+   "step": 89,
+   "spent_s": 550,
+   "left_s": 68,
+   "s_per_step": 6.18,
+   "loss": 0.15127746760845184,
+   "learning_rate": 7.457877035729588e-06
+  },
+  {
+   "step": 90,
+   "spent_s": 555,
+   "left_s": 62,
+   "s_per_step": 6.16,
+   "loss": 0.19691170752048492,
+   "learning_rate": 6.2793294993656494e-06
+  },
+  {
+   "step": 91,
+   "spent_s": 561,
+   "left_s": 55,
+   "s_per_step": 6.16,
+   "loss": 0.20329506695270538,
+   "learning_rate": 5.199082004372957e-06
+  },
+  {
+   "step": 92,
+   "spent_s": 567,
+   "left_s": 49,
+   "s_per_step": 6.16,
+   "loss": 0.3617526590824127,
+   "learning_rate": 4.2182675812012965e-06
+  },
+  {
+   "step": 93,
+   "spent_s": 573,
+   "left_s": 43,
+   "s_per_step": 6.16,
+   "loss": 0.21537238359451294,
+   "learning_rate": 3.3379149687388867e-06
+  },
+  {
+   "step": 94,
+   "spent_s": 578,
+   "left_s": 37,
+   "s_per_step": 6.15,
+   "loss": 0.29635298252105713,
+   "learning_rate": 2.5589475353073988e-06
+  },
+  {
+   "step": 95,
+   "spent_s": 584,
+   "left_s": 31,
+   "s_per_step": 6.15,
+   "loss": 0.2751098871231079,
+   "learning_rate": 1.882182310176095e-06
+  },
+  {
+   "step": 96,
+   "spent_s": 589,
+   "left_s": 25,
+   "s_per_step": 6.14,
+   "loss": 0.19468729197978973,
+   "learning_rate": 1.30832912661093e-06
+  },
+  {
+   "step": 97,
+   "spent_s": 594,
+   "left_s": 18,
+   "s_per_step": 6.12,
+   "loss": 0.20271366834640503,
+   "learning_rate": 8.379898773574924e-07
+  },
+  {
+   "step": 98,
+   "spent_s": 599,
+   "left_s": 12,
+   "s_per_step": 6.12,
+   "loss": 0.27376124262809753,
+   "learning_rate": 4.7165788333860536e-07
+  },
+  {
+   "step": 99,
+   "spent_s": 605,
+   "left_s": 6,
+   "s_per_step": 6.11,
+   "loss": 0.2502537667751312,
+   "learning_rate": 2.0971737622883515e-07
+  },
+  {
+   "step": 100,
+   "spent_s": 610,
+   "left_s": 0,
+   "s_per_step": 6.1,
+   "loss": 0.19850614666938782,
+   "learning_rate": 5.2443095448506674e-08
+  },
+  {
+   "step": 100,
+   "spent_s": 610,
+   "left_s": 0,
+   "s_per_step": 6.1
+  }
+ ],
+ "s_per_step_steady_trainer_clock": 6.022,
+ "s_per_step_steady_runner_clock": 6.023,
+ "loss_final_step": 0.19850614666938782,
+ "training_stats": {
+  "head": {
+   "taken": 800,
+   "fallback": 0,
+   "positions": 1446332,
+   "labelled": 258872
+  },
+  "vision_cache": [],
+  "fallbacks": {}
+ },
+ "lora_stats": {
+  "fused": 120000,
+  "fallbacks": {
+   "not on the Apple GPU": 2
+  }
+ },
+ "mps_driver_peak_gb": 26.189,
+ "live_at_forward_end_peak_gb": 9.093,
+ "footprint_peak_at_steps_gb": 30.232,
+ "footprint_peak_in_steps_gb": 30.287,
+ "wall_s": 614.4,
+ "ended": "2026-11-03 21:04:27 PST"
+}

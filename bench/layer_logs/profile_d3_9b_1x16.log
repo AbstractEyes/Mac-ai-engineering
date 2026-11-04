@@ -1,0 +1,95 @@
+[guard] start 21:23:29 limit 96.0 GB, swap +1.0 GB, wall 1500 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/profile_step.py --name profile_d3_9b_1x16 --logdir bench/layer_logs --model 9b --arm kernels --memory recompute --layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --lora-fused --fwd-chunk 8 --value-split auto --epochs 1 --batch 1 --accum 16 --empty-cache --profile-steps 2,4 --stop-after 5
+[profile] runner pid 63057
+[phase4] runner pid 63057
+W1103 21:23:30.890000 63057 torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+[phase4] macai {"version": "0.2.0", "KERNEL": "chunked", "KERNEL_BWD": "chunked", "FUSED_NORM": true, "chunk": 16, "SIZE_CLASSES": false, "RECOMPUTE_STATES": true, "FWD_CHUNK": 8, "DBUF": 0, "VALUE_SPLIT": "auto", "layer_option": "RMSNORM,CONV,GATED_NORM,GATES,SWIGLU", "layer": {"RMSNORM": true, "CONV": true, "GATED_NORM": true, "GATES": true, "SWIGLU": true}, "layer_patches": ["rmsnorm", "gated_norm", "mlp", "gated_delta_net"], "training": {"HEAD_AT_LABELS": true, "VISION_CACHE": false}, "training_patches": ["head_conditional", "head_causal_lm", "vision_cache"], "lora": {"FUSED": true}, "lora_patches": ["linear"]}
+{
+ "package": "0.1.35",
+ "python": "3.12.16",
+ "torch": "2.15.0",
+ "transformers": "5.22.1",
+ "qwen3_5": true,
+ "cuda": false,
+ "gpu": null,
+ "gpu_gb": null,
+ "hf_token": false
+}
+NO GPU: set the runtime to a GPU before running the screen.
+  10 pictures did not answer (first ['art-075014', 'art-076023', 'art-070017', 'art-043029', 'art-081041']: ['no locator', 'no locator', 'no locator', 'no locator', 'no locator'])
+train 20261104_052331_profile_d3_9b_1x16: 382 items (372 with a picture), 400 examples by form {'full': 335, 'spec_full': 10, 'short': 55}; images fetched in 0 s
+Loading weights:   0%|          | 0/760 [00:00<?, ?it/s]Loading weights:  20%|██        | 154/760 [00:00<00:00, 1190.85it/s]Loading weights:  36%|███▌      | 274/760 [00:00<00:00, 517.73it/s] Loading weights:  45%|████▌     | 344/760 [00:00<00:01, 409.13it/s]Loading weights:  52%|█████▏    | 395/760 [00:00<00:00, 406.04it/s]Loading weights:  58%|█████▊    | 442/760 [00:01<00:00, 356.62it/s]Loading weights: 100%|██████████| 760/760 [00:01<00:00, 726.14it/s]
+LoRA modules by name: {'out_proj': 24, 'in_proj_qkv': 24, 'in_proj_z': 24, 'gate_proj': 32, 'up_proj': 32, 'down_proj': 32, 'q_proj': 8, 'k_proj': 8, 'v_proj': 8, 'o_proj': 8}
+trainable params: 80,216,064 || all params: 9,490,029,808 || trainable%: 0.8453
+  a mixed batch (a picture row, a specification row) encodes: input_ids (2, 751)
+  25 steps of 1 x 16 sequences; 1.0 epoch(s)
+[phase4] checks {"modules_checkpointing": [], "logging_steps": 1, "args_gradient_checkpointing": false, "torch_empty_cache_steps": 1, "linear_attention_layers": 24, "gated_delta_rule_at_train_begin": "macai.gated_delta.op.chunk_gated_delta_rule", "layer_methods_at_train_begin": {"Qwen3_5RMSNorm": "macai.layer._qwen3_5", "Qwen3_5RMSNormGated": "macai.layer._qwen3_5", "Qwen3_5MLP": "macai.layer._qwen3_5", "Qwen3_5GatedDeltaNet": "macai.layer._qwen3_5"}, "training_methods_at_train_begin": {"Qwen3_5ForConditionalGeneration": "macai.training._qwen3_5", "Qwen3_5Model": "macai.training._qwen3_5"}, "lora_linear_forward_at_train_begin": "macai.lora._peft", "lora_dropout_modules": ["Dropout"], "trainable_parameters": 80216064, "model_dtype": "torch.bfloat16", "device": "mps:0", "lora_A_abs_sum": 228776.65625, "lora_A_first_values": [-0.01062, -0.014771, -0.012878, -0.002533], "PYTHONHASHSEED": null}
+  0%|          | 0/25 [00:00<?, ?it/s]/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/torch/utils/data/dataloader.py:759: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  super().__init__(loader)
+[guard]      30 s footprint  35.71 GB (peak  35.71) swap +0.00 GB pressure 1
+  4%|▍         | 1/25 [00:36<14:39, 36.66s/it]  step 1/25: loss 2.2245, 37 s spent, 881 s left, 36.71 s/step
+                                              {'loss': '2.225', 'grad_norm': '2.81', 'learning_rate': '0', 'epoch': '0.04'}
+  4%|▍         | 1/25 [00:36<14:39, 36.66s/it][profile] step 2 mb 0: tokens [1, 211] A 903 B 874 C 864 ms (C/B 0.989); events 863 ms over 3920 marks
+[profile] step 2 mb 1: tokens [1, 998] A 3192 B 3226 C 3304 ms (C/B 1.024); events 3304 ms over 3920 marks
+[guard]      60 s footprint  38.02 GB (peak  38.10) swap +0.00 GB pressure 1
+[profile] step 2 mb 2: tokens [1, 1101] A 3642 B 3662 C 3652 ms (C/B 0.997); events 3652 ms over 3920 marks
+[profile] step 2 mb 3: tokens [1, 1257] A 4104 B 4040 C 4107 ms (C/B 1.017); events 4107 ms over 3920 marks
+[profile] step 2 mb 4: tokens [1, 570] A 1981 B 1890 C 1878 ms (C/B 0.994); events 1877 ms over 3920 marks
+[guard]      91 s footprint  39.02 GB (peak  39.09) swap +0.00 GB pressure 1
+[profile] step 2 mb 5: tokens [1, 1006] A 3273 B 3237 C 3311 ms (C/B 1.023); events 3311 ms over 3920 marks
+[profile] step 2 mb 6: tokens [1, 491] A 1712 B 1660 C 1656 ms (C/B 0.998); events 1656 ms over 3920 marks
+[profile] step 2 mb 7: tokens [1, 489] A 1644 B 1629 C 1652 ms (C/B 1.014); events 1652 ms over 3920 marks
+[profile] step 2 mb 8: tokens [1, 974] A 3202 B 3244 C 3378 ms (C/B 1.041); events 3377 ms over 3920 marks
+[profile] step 2 mb 9: tokens [1, 535] A 1821 B 1816 C 1841 ms (C/B 1.014); events 1841 ms over 3920 marks
+[guard]     121 s footprint  38.87 GB (peak  39.11) swap +0.00 GB pressure 1
+[profile] step 2 mb 10: tokens [1, 987] A 3234 B 3239 C 3275 ms (C/B 1.011); events 3275 ms over 3920 marks
+[profile] step 2 mb 11: tokens [1, 885] A 2851 B 2851 C 2936 ms (C/B 1.030); events 2935 ms over 3920 marks
+[profile] step 2 mb 12: tokens [1, 576] A 1989 B 1911 C 1934 ms (C/B 1.012); events 1934 ms over 3920 marks
+[profile] step 2 mb 13: tokens [1, 405] A 1473 B 1453 C 1454 ms (C/B 1.001); events 1454 ms over 3920 marks
+[guard]     151 s footprint  39.90 GB (peak  39.96) swap +0.00 GB pressure 1
+[profile] step 2 mb 14: tokens [1, 855] A 2797 B 2832 C 2850 ms (C/B 1.006); events 2849 ms over 3920 marks
+[profile] step 2 mb 15: tokens [1, 440] A 1535 B 1520 C 1541 ms (C/B 1.014); events 1541 ms over 3920 marks
+  8%|▊         | 2/25 [02:35<32:41, 85.29s/it]  step 2/25: loss 2.0705, 156 s spent, 1794 s left, 78.01 s/step
+                                              {'loss': '2.07', 'grad_norm': '2.75', 'learning_rate': '0.0002', 'epoch': '0.08'}
+  8%|▊         | 2/25 [02:36<32:41, 85.29s/it][profile] step 2: as trained 39.68 s (micro-batches 39.36 s, outside 0.32 s); C / B 1.0141
+[guard]     182 s footprint  39.46 GB (peak  39.96) swap +0.00 GB pressure 1
+ 12%|█▏        | 3/25 [03:09<22:32, 61.47s/it]  step 3/25: loss 1.6919, 189 s spent, 1387 s left, 63.06 s/step
+                                              {'loss': '1.692', 'grad_norm': '1.839', 'learning_rate': '0.0001991', 'epoch': '0.12'}
+ 12%|█▏        | 3/25 [03:09<22:32, 61.47s/it][profile] step 4 mb 16: tokens [1, 890] A 2834 B 2905 C 2939 ms (C/B 1.012); events 2939 ms over 3920 marks
+[guard]     212 s footprint  40.30 GB (peak  40.38) swap +0.00 GB pressure 1
+[profile] step 4 mb 17: tokens [1, 1018] A 3288 B 3276 C 3374 ms (C/B 1.030); events 3374 ms over 3920 marks
+[profile] step 4 mb 18: tokens [1, 1026] A 3353 B 3381 C 3348 ms (C/B 0.990); events 3347 ms over 3920 marks
+[profile] step 4 mb 19: tokens [1, 658] A 2093 B 2089 C 2130 ms (C/B 1.019); events 2129 ms over 3802 marks
+[profile] step 4 mb 20: tokens [1, 426] A 1552 B 1498 C 1486 ms (C/B 0.992); events 1485 ms over 3920 marks
+[guard]     242 s footprint  41.28 GB (peak  42.38) swap +0.00 GB pressure 1
+[profile] step 4 mb 21: tokens [1, 1031] A 3341 B 3370 C 3459 ms (C/B 1.026); events 3459 ms over 3920 marks
+[profile] step 4 mb 22: tokens [1, 541] A 1878 B 1842 C 1806 ms (C/B 0.980); events 1805 ms over 3920 marks
+[profile] step 4 mb 23: tokens [1, 1046] A 3417 B 3394 C 3476 ms (C/B 1.024); events 3476 ms over 3920 marks
+[profile] step 4 mb 24: tokens [1, 424] A 1554 B 1507 C 1507 ms (C/B 1.000); events 1506 ms over 3920 marks
+[guard]     272 s footprint  42.23 GB (peak  42.38) swap +0.00 GB pressure 1
+[profile] step 4 mb 25: tokens [1, 1028] A 3358 B 3337 C 3423 ms (C/B 1.026); events 3423 ms over 3920 marks
+[profile] step 4 mb 26: tokens [1, 408] A 1537 B 1526 C 1473 ms (C/B 0.965); events 1472 ms over 3920 marks
+[profile] step 4 mb 27: tokens [1, 1090] A 3588 B 3555 C 3623 ms (C/B 1.019); events 3623 ms over 3920 marks
+[profile] step 4 mb 28: tokens [1, 863] A 2895 B 2831 C 2929 ms (C/B 1.034); events 2928 ms over 3920 marks
+[guard]     303 s footprint  42.31 GB (peak  42.38) swap +0.00 GB pressure 1
+[profile] step 4 mb 29: tokens [1, 981] A 3187 B 3221 C 3281 ms (C/B 1.018); events 3280 ms over 3920 marks
+[profile] step 4 mb 30: tokens [1, 829] A 2663 B 2759 C 2715 ms (C/B 0.984); events 2715 ms over 3920 marks
+[profile] step 4 mb 31: tokens [1, 520] A 1799 B 1758 C 1804 ms (C/B 1.026); events 1803 ms over 3920 marks
+ 16%|█▌        | 4/25 [05:17<30:46, 87.91s/it]  step 4/25: loss 1.5505, 318 s spent, 1667 s left, 79.4 s/step
+                                              {'loss': '1.55', 'grad_norm': '1.262', 'learning_rate': '0.0001966', 'epoch': '0.16'}
+ 16%|█▌        | 4/25 [05:17<30:46, 87.91s/it][profile] step 4: as trained 42.66 s (micro-batches 42.34 s, outside 0.32 s); C / B 1.0123
+[guard]     333 s footprint  42.33 GB (peak  43.24) swap +0.00 GB pressure 1
+[guard]     363 s footprint  43.26 GB (peak  43.26) swap +0.00 GB pressure 1
+ 20%|██        | 5/25 [06:01<24:02, 72.14s/it]  step 5/25: loss 1.0393, 362 s spent, 1447 s left, 72.36 s/step
+                                              {'loss': '1.039', 'grad_norm': '1.162', 'learning_rate': '0.0001924', 'epoch': '0.2'}
+ 20%|██        | 5/25 [06:01<24:02, 72.14s/it]  step 5/25: loss nan, 362 s spent, 1447 s left, 72.36 s/step
+                                              {'train_runtime': '361.8', 'train_samples_per_second': '0.221', 'train_steps_per_second': '0.014', 'train_loss': '1.715', 'epoch': '0.2'}
+ 20%|██        | 5/25 [06:01<24:02, 72.14s/it] 20%|██        | 5/25 [06:01<24:07, 72.35s/it]
+/Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/utils/save_and_load.py:313: UserWarning: Could not find a config file in Qwen/Qwen3.5-9B - will assume that the vocabulary was not modified.
+  warnings.warn(
+  examples longer than max_len 2048 (answer tail cut): 0 of 81 collated (the longest 1257 tokens)
+
+trained in 6.1 min: 5 steps, loss 1.7153, 73.03 s/step
+[phase4] profile_d3_9b_1x16: 5 steps, final loss 1.0392982959747314, steady None s a step (trainer clock, steps 11-5)
+[phase4] wrote bench/layer_logs/profile_d3_9b_1x16.json
+[profile] wrote bench/layer_logs/profile_d3_9b_1x16.json
+[guard] end 21:29:38 rc 0 peak footprint 43.27 GB wall 369 s

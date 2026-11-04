@@ -1,0 +1,31 @@
+[guard] start 21:29:38 limit 96.0 GB, swap +1.0 GB, wall 1200 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python -m pytest tests -q -p no:cacheprovider
+........................................................................ [  6%]
+........................................................................ [ 13%]
+........................................................................ [ 20%]
+........................................................................ [ 27%]
+........................................................................ [ 33%]
+........................................................................ [ 40%]
+[guard]      30 s footprint   2.61 GB (peak   3.42) swap +0.00 GB pressure 1
+........................................................................ [ 47%]
+........................................................................ [ 54%]
+...............................................[guard]      60 s footprint   2.28 GB (peak   3.86) swap +0.00 GB pressure 1
+......................... [ 60%]
+........................................................................ [ 67%]
+................................[guard]      91 s footprint   2.80 GB (peak   3.86) swap +0.00 GB pressure 1
+........................................ [ 74%]
+........................................................................ [ 81%]
+........[guard]     121 s footprint   6.44 GB (peak   8.65) swap +0.00 GB pressure 1
+...............................................[guard]     151 s footprint   7.30 GB (peak   8.65) swap +0.00 GB pressure 1
+................. [ 88%]
+........................................................................ [ 94%]
+.........................................[guard]     181 s footprint   6.95 GB (peak   9.07) swap +0.00 GB pressure 1
+[guard]     212 s footprint  26.87 GB (peak  26.87) swap +0.00 GB pressure 1
+..............                  [100%]
+=============================== warnings summary ===============================
+tests/test_lora.py::test_fallbacks_counted_and_peft_bits
+  /Users/philipcoelho/mirel/venvs/macbench/lib/python3.12/site-packages/peft/tuners/lora/layer.py:243: PeftWarning: `lora_bias=True` was passed but the targeted layer of type Linear has no bias. This means that merging LoRA weights won't be possible.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1063 passed, 1 warning in 225.40s (0:03:45)
+[guard] end 21:33:26 rc 0 peak footprint 26.87 GB wall 228 s

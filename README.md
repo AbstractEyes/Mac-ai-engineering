@@ -17,7 +17,10 @@ output is kept per picture after the first epoch: a step 9.18 -> 7.51 s at 0.8B 
 the second epoch on, the same loss within float32 rounding. PEFT's LoRA layers run their adapter path fused, on by default
 (`macai.lora`): the dropout drawn by torch's own call (PEFT's masks), the passes around the rank-32 products folded into two Metal
 kernels: the adapter path about twice as fast, a step 6.52 -> 6.00 s at 0.8B (43.1 -> 40.9 s at 9B) with the reference's loss.
-The rest of the design series (the rule's chunking) is not done. Treat the numbers below as measurements of a prototype.
+The rule's own chunking is tuned too, on by default (series design D3): forwards that keep no states run at chunks of 8 tokens, and
+the state passes split a head's value columns over two threadgroups where the batch's heads leave GPU cores idle: the rule's
+training forward 1.21x at the readers' micro-batches, a long single-row prefill 1.23-1.25x at 16 heads (1.17-1.18x at 32), the
+gradients' bits unchanged. Treat the numbers below as measurements of a prototype.
 
 ## What is here
 - `macai.gated_delta`: the gated delta rule (the linear attention in three of every four layers of Qwen3.5 / Qwen3-Next) as

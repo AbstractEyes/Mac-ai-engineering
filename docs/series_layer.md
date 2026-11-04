@@ -1609,6 +1609,254 @@ step's run-to-run spread, so the integration reads the loss, the footprint and t
 the step profile's rule rows. (b): no change at the readers' shapes; the prefill of a long prompt 1.6-2.0x on the rule's forward at
 16 heads.
 
+## D3: as built (`macai.gated_delta`, [gated_delta.md](gated_delta.md))
+
+| item | setting | default now | what runs |
+|---|---|---|---|
+| (a1) | `op.FWD_CHUNK` | 8 | a forward that keeps no states (a prefill, and the training forward under the recomputed states) runs `gdc_prep` and `gdc_fwd` compiled at chunk 8 (one 8 x 8 diagonal block: the inverse by substitution alone); the backward recomputes the chunk states at chunk 16 from the same inputs, so every gradient keeps its bits; a forward that stores states for a backward stays at chunk 16 |
+| (a2) | `_chunked.DBUF` | 0 | 1: the state passes read the next chunk's keys and queries into registers before this chunk's products and write them into the other of two threadgroup buffers after them (one barrier a chunk; 32 KB at chunk 16), and read each per-lane input of the next chunk (decay sums, beta, the value or output-gradient tiles, A, M) right after its last use in this chunk; 2: the same reads ahead into one buffer (two barriers a chunk, 16 KB). Not adopted (below) |
+| (a3) | | | not built (below) |
+| (b) | `op.VALUE_SPLIT` | "auto" | the state passes launch s threadgroups a head-row, each owning 128 / s value columns and staging the whole chunk's keys and queries (the kernels already index their columns by threadgroup; no kernel change); "auto" (`_chunked.AUTO_SPLIT`, measured below): s = 2 for a chunk-16 pass at up to 16 head-rows (B x H) and for the chunk-8 forward at up to 64, else 1; an int splits every pass |
+| | `op.CALLS` | | the rule's calls by the path they took ("fwd c8 s2 d0": the forward at chunk 8, split 2, no read-ahead), for the runner and the probes |
+
+The libraries compile per chunk length (and, with DBUF, per threadgroup width); the forward and the backward each pick theirs at
+the call. The training runner keeps every D3 setting off unless asked (`--fwd-chunk`, `--dbuf`, `--value-split`), so the runs
+before reproduce; `bench/bench_gated_delta.py` and `bench/profile_gated_delta.py` keep measuring Phase 3's chunking.
+
+(a3) not built. The re-estimate written before any code put it under the bar on its part (the backward 1.02-1.08x). The kernels
+alone at a mean 0.8B micro-batch (2 x 811 x 16 heads, `d3_bench.json`) bound it again: the per-chunk backward takes 1.07 ms of the
+call's ~3.0 ms backward; by count the states and their gradients it reads are 214 MB of its ~340 MB (~320 GB/s, ~90% of the
+ceiling), halving them removes 107 MB, at most ~0.30 ms, and the pair's cross terms (~13% more products) and the halved stores in the two state
+passes (latency-bound) move that by -0.15 to +0.3 ms -> 1.03-1.13x on the backward, ~0.2-0.5% of a 0.8B step. It would also need its
+own integration after (a1) and (b)'s, beyond the entry's budget. The design (two chunks a threadgroup; S_b and dS_b entering the
+pair's six large products only through C x C cross terms) is set out above for a later entry.
+
+## D3: parity (`tests/test_chunking.py`; the test run of record `bench/layer_logs/d3_tests.log`, every case's errors in `d3_parity.jsonl`)
+
+The harness's cases (shapes on and off the chunk, batch > 1, key / value widths 32-256, starting states or none, the five stress
+cases, nearly parallel keys, 2,048 tokens), a 4,096-token case and the drop-in end to end (float32 and bfloat16 inputs), for the
+chunked pair under every new setting, each against the float64 step-by-step reference at the harness's bars (2e-4; stress and
+correlated keys 5e-4; 2,048 and 4,096 tokens 1e-3; the drop-in in bfloat16 2e-2).
+
+| setting (cases) | worst error over its bar | its errors over the current kernels' on the same case | bits |
+|---|---|---|---|
+| chunk 8, `FWD_CHUNK = 8` (23; with the split 24) | 0.13 (the bf16 drop-in's query gradient, the current kernels' own); the forward's output and final state in the float32 cases at most 0.0022 of their bars (the current kernels' 0.0027) | the output and final state 0.33-1.50x (the largest ratio 2.9e-7 against 2.0e-7, the final state with nearly parallel keys); every gradient 1.00 | every gradient the current kernels' bits (40 cases); the output rounds by its own chunking |
+| the reads ahead, `DBUF = 1`, `2` (23 each) | 0.13 (the same) | 1.00 everywhere | the current kernels' bits, every output and gradient (20 cases each) |
+| the splits 2 / 4 / 8 and "auto" (23-24 each) | 0.13 (the same) | 1.00 everywhere | the same bits |
+
+The test run of record: 1,063 passed (the 606 before and 457 new), 226 s, peak footprint 25.7 GB; `tests/test_memory.py` pins
+chunk 16 and no split, so the recomputed states keep giving the stored path's bits there. In real training runs
+(`bench/d3_probe.py`, records `probe_d3_0.8b.json`, `probe_d3_9b.json`, chunk 8 and the automatic split with every admitted entry):
+
+| check | 0.8B (2 x 2, 12 items, 1 epoch) | 9B (1 x 4, 8 items, 1 epoch) |
+|---|---|---|
+| every micro-batch: one forward and one backward a linear-attention layer on the configured path | 12 of 12: 216 forwards "fwd c8 s2 d0", 216 backwards "bwd s1 d0" (18 layers) | 16 of 16: 384 / 384 (24 layers) |
+
+## D3: speed
+
+### The bench (`bench/bench_d3.py`): the rule as the layer calls it
+
+q, k bfloat16 and v, g, beta float32 (what the convolution and gates paths hand the rule), every input needing its gradient, the
+final state kept (a fresh cache in training); Metal events around back-to-back calls; three modes: the forward without gradients
+(a prefill), the training forward, forward + backward. Shapes: the bench shapes, every micro-batch of D5's step profiles (0.8B 24
+of 2 rows x 474-1,090 tokens x 16 heads; 9B 32 of 1 row x 211-1,257 x 32), read as the rule a micro-batch (each call times its
+model's 18 / 24 layers, averaged over the micro-batches), and 1 row x 16 / 32 heads x 1,024-32,768 tokens. The baselines came first
+(`d3_baseline.json`, 20:03, the code before D3): the rule a micro-batch 21.86 / 77.67 ms (0.8B, forward / forward + backward) and
+27.72 / 99.02 ms (9B) against the step profiles' 21.6 / 75.8 and 28.6 / 99.2: the bench reproduces the rule in situ.
+
+The bench of record (`d3_bench.json`, 20:44-20:52, commit e254e1a, the tracked tree clean): 3 rounds, at each shape every variant
+back to back, the order rotating with the round and the shape, 20 s idle between rounds. A first run of record timed one variant at
+every shape before the next and drifted (kept as `d3_bench_drifted.json`, entry 29).
+
+| the rule a micro-batch, ms (0.8B / 9B) | the training forward | forward + backward | the training forward against Phase 3's chunking |
+|---|---|---|---|
+| Phase 3's chunking (base) | 22.19 / 28.08 | 78.51 / 99.77 | |
+| (a1) chunk 8 | 20.02 / 25.23 | 76.19 / 97.16 | 1.108x / 1.113x |
+| (a2) reads ahead, two buffers / one | 25.10 / 31.79; 25.09 / 31.58 | 87.79 / 111.39; 86.80 / 110.47 | 0.88x / 0.88x; 0.88x / 0.89x |
+| (b) split 2 everywhere / "auto" | 22.13 / 28.01; 22.21 / 28.05 | 78.01 / 99.13; 78.33 / 99.71 | 1.00x / 1.00x |
+| (a1) + (b) "auto": the defaults now | 18.30 / 23.14 | 74.57 / 94.98 | 1.213x / 1.213x |
+
+| the bench shapes, ms (0.8B 4 x 1,024 x 16 / 9B 2 x 1,024 x 32) | the training forward | forward + backward |
+|---|---|---|
+| base | 3.093 / 3.026 | 10.616 / 10.686 |
+| chunk 8 | 2.863 / 2.798 (1.080x / 1.081x) | 10.393 / 10.414 |
+| the reads ahead (two buffers) | 3.561 / 3.514 | 11.979 / 12.063 |
+| split 2 everywhere | 3.261 / 3.195 | 11.019 / 10.952 |
+| the defaults now | 2.734 / 2.682 (1.131x / 1.128x) | 10.210 / 10.252 |
+
+| 1 row, the forward without gradients, ms | 1,024 | 4,096 | 8,192 | 16,384 | 32,768 tokens |
+|---|---|---|---|---|---|
+| 16 heads, base | 1.299 | 5.004 | 9.943 | 19.713 | 39.222 |
+| 16 heads, split 2 at chunk 16 (alone) | 1.143 (1.14x) | 4.423 (1.13x) | 9.069 (1.10x) | 17.513 (1.13x) | 36.019 (1.09x) |
+| 16 heads, chunk 8 | 1.147 | 4.567 | 9.057 | 17.999 | 35.780 |
+| 16 heads, the defaults now (chunk 8, split 2) | 0.971 (1.34x) | 4.000 (1.25x) | 8.044 (1.24x) | 15.976 (1.23x) | 31.799 (1.23x) |
+| 16 heads, the defaults over chunk 8 alone | 1.18x | 1.14x | 1.13x | 1.13x | 1.13x |
+| 32 heads, base | 1.531 | 5.896 | 11.629 | 23.066 | 45.690 |
+| 32 heads, split 2 at chunk 16 (alone) | 1.01x | 1.00x | 0.98x | 0.96x | 0.95x |
+| 32 heads, the defaults now | 1.252 (1.22x) | 5.045 (1.17x) | 9.882 (1.18x) | 19.578 (1.18x) | 38.852 (1.18x) |
+
+| 1 row, forward + backward (training), ms | 1,024 | 4,096 | 8,192 | 16,384 | 32,768 tokens |
+|---|---|---|---|---|---|
+| 16 heads, base | 4.232 | 16.028 | 31.639 | 62.619 | 124.888 |
+| 16 heads, the defaults now | 3.623 (1.17x) | 13.765 (1.16x) | 27.291 (1.16x) | 54.428 (1.15x) | 108.362 (1.15x) |
+| 32 heads, base / the defaults now | 5.399 / 5.125 | 20.607 / 19.627 | 40.826 / 38.806 | 80.666 / 77.315 | 161.758 / 155.678 |
+
+The state passes and the per-chunk backward alone (prepared float32 inputs, as the rule launches them; ms):
+
+| shape | forward pass (no states) | recompute pass | backward state pass | per-chunk backward |
+|---|---|---|---|---|
+| 0.8B bench, base / chunk 8 + "auto" / two buffers / one | 2.265 / 2.063 / 2.720 / 2.695 | 2.247 / 2.280 / 2.715 / 2.595 | 1.876 / 1.894 / 2.336 / 2.291 | 2.624 / 2.618 / 2.594 / 2.590 |
+| 1 x 8,192 x 16, base / split 2 / chunk 8 + "auto" / two buffers | 8.307 / 7.320 / 6.535 / 9.446 | 8.249 / 6.913 / 6.904 / 9.043 | 6.737 / 5.743 / 5.677 / 8.268 | 5.082 / 5.092 / 5.086 / 5.086 |
+| 1 x 32,768 x 16, base / split 2 / chunk 8 + "auto" / two buffers | 33.04 / 28.66 / 26.00 / 37.60 | 32.93 / 27.67 / 27.44 / 35.93 | 26.91 / 22.70 / 22.98 / 32.98 | 20.27 / 20.11 / 20.15 / 20.14 |
+
+At the micro-batch shapes the kernels alone read noisily (the first pass timed after each input's preparation on the CPU: base
+0.99-1.70 ms for the same pass across records); the drop-in's readings above are the ones used there.
+
+### What a chunk costs, as the variants show it
+- The split at 16 heads: each core then walks half a head's columns, so its products halve -> the forward pass falls 8.31 -> 7.32
+  ms at 8,192 tokens, i.e. a 16-token chunk ~16.2 -> ~14.3 us -> the products are ~4 us of a chunk, the rest (~12 us) is work every
+  threadgroup does whatever its columns: staging the whole chunk's keys and queries, the per-lane loads of A, M, the decay sums,
+  the barriers, the dependent chains. At 32 or 64 head-rows the split puts two threadgroups on most cores and repeats that ~12 us
+  for each -> slower (at 32 heads 1.01-0.95x, slower from 8,192 tokens; 0.95x at the bench shapes).
+- Chunk 8: a chunk's work halves, including most of the ~12 us part -> 7.54 ms at 8,192 tokens for 1,024 chunks (7.4 us a chunk):
+  ~10% less a token, the C x C parts (A, M, their products) shrinking with the chunk. With the half-size chunk the split pays at up
+  to 64 head-rows: two threadgroups of 8-token work share a core better than one -> "auto" splits the chunk-8 forward there.
+- The reads ahead: moving the loads a chunk earlier did not shorten the chunk -> the ~12 us part is not load latency; in both forms
+  the extra registers in flight cost 12-18% on the state passes (two buffers and one alike, so not the 32 KB of threadgroup memory
+  either). The first
+  form, which held every per-lane input of the next chunk as a second register set, made the forward pass 13x slower (30.3 against
+  2.23 ms at the bench shape; `d3_dbuf_first_form.log`) while the backward state pass, written the same way, was 1.37x slower: a
+  register spill in the forward pass is the likely cause, not traced (no shader profiler on this machine).
+
+## D3: admission
+
+| item | its part, at its target shapes (bar >= 1.1x) | no shape slower by more than 2% | verdict |
+|---|---|---|---|
+| (a1) chunk 8 for forwards that keep no states | the training forward at the readers' micro-batches 1.108x / 1.113x (0.8B / 9B); at the bench shapes 1.080x / 1.081x | every shape faster in every mode (the worst 1.010, forward + backward at a 9B micro-batch of 440 tokens) | ADMITTED, the default |
+| (a2) the reads ahead, two buffers / one | the state passes 0.82-0.87x / 0.84-0.88x at the bench and long shapes | every shape slower in every mode (0.85-0.91x / 0.82-0.91x) | not adopted (`DBUF = 0`, selectable) |
+| (a3) states every 32 tokens | | | not built |
+| (b) the split, "auto" | with (a1) admitted first, against chunk 8 alone: the forward at 1 row x 16 heads x 4,096-32,768 tokens 1.13-1.14x, training 1.12-1.13x; at the readers' micro-batches the forward 1.09x more | none slower than chunk 8 alone (the worst 1.006) | ADMITTED, the default |
+
+Read against Phase 3's chunking alone, the split (2 at chunk 16) gives the 16-head forward 1.09-1.13x (two of four lengths under
+1.1x) and training 1.11-1.12x, and costs 2-5% at 32 heads and at the bench shapes when applied everywhere: hence the rule. The
+"auto" variant alone reads one shape 5% slower than the base (a 9B micro-batch of 211 tokens, 0.3 ms calls, where "auto" runs the
+base's own kernels: the bench's noise at its smallest shape).
+
+## D3: integration (`bench/layer_logs/d3_0.8b_2x8_100steps.json`, `d3_9b_1x16_25steps.json`; `bench/d3_report.py` -> `d3_results.json`)
+
+Every admitted entry on (`--layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --lora-fused`) and D3's
+admitted settings (`--fwd-chunk 8 --value-split auto`), at commit 2b50b9d, one job at a time under the guard; every training forward
+ran at chunk 8 with the split and every backward unsplit, at every linear-attention layer (0.8B 14,400 = 800 micro-batches x 18 of
+each, "fwd c8 s2 d0" / "bwd s1 d0"; 9B 9,600 = 400 x 24). The 9B run's and the profiles' records say the tree was dirty: the
+design log, the README and `docs/gated_delta.md` were being written beside them; `src/`, `bench/` and `tests/` were 2b50b9d's
+(checked by diff).
+
+### Qwen3.5-0.8B, 2 x 8, the cache emptied each micro-batch, 4 epochs (100 steps), 20:54-21:04 PST
+
+| measure | bar / prediction | D3 | D5 (run of record) | verdict |
+|---|---|---|---|---|
+| the guard's peak footprint | <= 53.5 GB | 30.29 GB | 31.27 GB | MET |
+| the steady step (steps 11-100), each step's own clock / the trainer's | predicted 5.91-5.97 s | 6.023 / 6.022 s (+0.4%) | 5.999 / 6.000 s | missed: no gain resolved |
+| steps 1-10 / 11-25 / 26-50 / 51-75 / 76-100, own clock | | 6.84 / 6.91 / 6.09 / 5.74 / 5.71 | 6.78 / 7.23 / 5.91 / 5.67 / 5.67 | |
+| steps 1-2 | | 2.56271 / 2.42536 | 2.56249 / 2.42678 | not the same bits (8.6e-5 / 5.8e-4 relative): chunk 8's forward rounds by its own chunking |
+| the loss: the largest gap from the reference pair's mean | <= .0159 | .0100 (step 6) | .0103 | met |
+| the final loss within 1% of the pair's mean (0.1967) | <= 1% | 0.1985 (0.94%) | 0.1978 (0.60%) | met |
+| root mean square of the step-loss difference against A / B / C (the references among themselves .0034) | | .0031 / .0034 / .0031 | .0037 / .0038 / .0036 | |
+| its gap over spread (0.87 expected of a run drawn like the reference) | | 0.82 | 0.98 | |
+| mean loss (the pair's 0.5776) | | 0.5769 | 0.5763 | |
+| the live tensors at a forward's end (peak) / the driver's pool (peak) | | 9.09 GiB / 26.19 GB | 9.09 GiB / 26.59 GB | |
+
+### Qwen3.5-9B, 1 x 16, the cache emptied, 1 epoch (25 steps), 21:04-21:21 PST
+
+| measure | bar / prediction | D3 | D5 (run of record) | verdict |
+|---|---|---|---|---|
+| the guard's peak footprint | <= 74.6 GB | 50.29 GB | 49.33 GB | MET |
+| steps 11-25, own clock / the trainer's | predicted 40.70-40.85 s | 41.29 / 41.27 s (+0.8%) | 40.95 / 40.93 s | missed: no gain resolved |
+| steps 1-10, own clock | | 41.47 s | 41.45 s | |
+| steps 1-2 | | 2.22452 / 2.07048 | 2.22231 / 2.07060 | not the same bits (1.0e-3 / 6e-5 relative) |
+| the loss over steps 1-25 against Phase 4's 9B reference (the same schedule), root mean square of the difference | | .0012 | .0015 (D8 alone .0012, D4 .0013) | |
+| step 25 | | 0.5432 | 0.5425 (the reference 0.5452) | |
+| the live tensors at a forward's end / the driver's pool (peaks) | | 15.27 GiB / 44.69 GB | 15.33 GiB / 44.82 GB | |
+
+As chains:
+- The step: the bench puts the rule a micro-batch at 78.51 -> 74.57 ms (0.8B, 18 calls) and 99.77 -> 94.98 ms (9B, 24 calls) ->
+  -32 ms of a ~6,000 ms 0.8B step (8 micro-batches, -0.5%) and -77 ms of a ~41,000 ms 9B step (16, -0.2%) -> a step's time moves
+  by more than that from run to run (the memory series read runs differing in nothing measurable ~1% apart; D8's first run read
+  steps 16-25 5-12% slower than a repeat of the same configuration) -> the runs read +0.4% and +0.8%, inside that spread: the step
+  does not resolve D3's gain; the step profiles read the rule in situ (below).
+- The loss: chunk 8 changes the forward's float32 rounding (0.33-1.50x the chunk-16 error) -> after the output's cast to bf16 some
+  elements land on the neighbouring bf16 value -> through 24 (0.8B) or 32 (9B) layers the loss moves by 1e-4-1e-3 at steps 1-2 (D5's
+  steps 1-2 were the same bits because its change added an exact zero there) -> over the run the curve stays within the
+  references' spread by Phase 4's readings, and at 9B closer to Phase 4's reference than D5's run.
+- The memory: the training forward keeps only its inputs either way; chunk 8's per-chunk matrices are the forward's temporaries ->
+  the live tensors the same (9.09 GiB; 15.27 against 15.33 GiB) -> the footprint 30.29 against 31.27 GB and 50.29 against 49.33
+  GB: the pool's own movement from run to run (D5 read +2.07 GB at 0.8B with the same live tensors).
+
+### In situ: the step profiles with D3 (`profile_d3_0.8b_2x8.json`, `profile_d3_9b_1x16.json` against D5's, the same micro-batches)
+
+The same profiler and steps as D5's (0.8B steps 3, 5, 7; 9B steps 2 and 4; D4 + D8 + D5 on, D9 off), with chunk 8 and the
+automatic split. Valid as before: the profiled pass against its unprofiled replay 0.992 / 1.014 (median; one of 24 0.8B
+micro-batches over 1.10), the components against the wall clock 0.9993 / 0.9998.
+
+| ms a micro-batch | 0.8B D5 | 0.8B with D3 | 9B D5 | 9B with D3 |
+|---|---|---|---|---|
+| the rule: forward / backward | 21.62 / 54.18 | 18.07 / 54.31 (the forward 1.20x) | 28.56 / 70.61 | 22.81 / 68.98 (the forward 1.25x) |
+| the rule | 75.80 (9.9%) | 72.38 (9.4%): 1.047x | 99.17 (3.7%) | 91.79 (3.5%): 1.080x |
+| the frozen products | 281.31 | 283.60 | 1,868.60 | 1,764.41 |
+| the LoRA adapters' extra work | 83.30 | 86.02 | 128.68 | 128.82 |
+| the vision tower | 131.94 | 132.21 | 312.26 | 312.79 |
+| the LM head and the loss | 52.16 | 54.85 | 116.99 | 116.22 |
+| the micro-batch | 761.91 | 768.75 | 2,706.93 | 2,594.88 |
+
+As a chain: the rule falls 3.4 ms a 0.8B micro-batch and 7.4 ms a 9B one in situ, as the bench put it (3.9 / 4.8 ms) -> its share
+9.9% -> 9.4% and 3.7% -> 3.5% -> the micro-batch moves +6.8 ms and -112 ms, both carried by parts D3 does not touch (at 9B the
+frozen products' 104 ms; at 0.8B +2-3 ms each in the products, the adapters and the head): the profiles' own spread, larger than the
+rule's gain, which is why the integration's step times cannot show it.
+
+## D3's verdicts in short
+
+| registered (series journal) or the design's own (written before any code) | measured | verdict |
+|---|---|---|
+| registered: (a) <= 1 ms a layer call together | the defaults against Phase 3's chunking: forward + backward 0.41 / 0.43 ms less a call at the bench shapes, 0.22 / 0.20 ms at the readers' micro-batches | met |
+| registered: (b) >= 1.5x the current forward at 1 row, 16 heads, >= 4,096 tokens | the defaults 1.23-1.25x (chunk 8 with the split); the split alone at chunk 16 1.09-1.13x | missed |
+| bars: the harness at its float64 bars, each new variant added | every setting at the current kernels' error (0.13 of the bar at worst, the bf16 drop-in's); chunk 8's forward 0.33-1.50x the current error; the gradients' bits unchanged | MET |
+| bars: >= 1.1x on its part, no shape slower by more than 2% | (a1) 1.108x / 1.113x, none slower; (a2) 0.82-0.88x; (b) 1.13-1.14x over chunk 8 alone, none slower | (a1), (b) ADMITTED; (a2) not adopted |
+| design: (a1) the training forward 1.05-1.14x at the bench shapes, 0.95-1.05x at the readers' | 1.080x / 1.081x; 1.108x / 1.113x | met; missed (faster) |
+| design: (a1) the forward at the bench shapes -0.1 to -0.3 ms | -0.23 / -0.23 ms (the training forward) | met |
+| design: (a2) the state passes 1.05-1.15x | 0.82-0.88x | missed (slower) |
+| design: (a3) the backward 1.02-1.08x | not built | |
+| design: (b) 16 heads, the forward 1.6-2.0x; training 1.4-1.8x | the split alone 1.09-1.13x / 1.11-1.12x; over chunk 8 1.13-1.14x / 1.12-1.13x | missed (slower) |
+| design: (b) 32 heads 1.0-1.25x; the readers' micro-batches 0.95-1.10x | the rule: unsplit at chunk 16 (1.00x), the chunk-8 forward split (1.08-1.11x over chunk 8); the readers' 1.00x at chunk 16, the forward 1.09x more with chunk 8 | met; met |
+| design: the long 16-head forward now ~6 / 12 / 24 / 49 ms (4,096-32,768 tokens) | 5.00 / 9.94 / 19.71 / 39.22 ms (1.2 us a token: the prediction used the in-situ 1.4 us, measured at 32 head-rows, where a chunk takes ~22 us against ~19 us at 16; 32 heads at 1 row read 1.4 us) | missed (faster) |
+| design: (a) together -0.5 to -1.5 ms a call at the bench shapes; -0.2 to -0.6 ms at the readers' | -0.41 / -0.43 ms; -0.22 / -0.20 ms | missed (smaller); met (at its edge) |
+| design: the step 0.8B 5.91-5.97 s, 9B 40.70-40.85 s | 6.023 s (+0.4% against D5's 5.999), 41.29 s (+0.8% against 40.95), each step's own clock; in situ the rule 75.8 -> 72.4 / 99.2 -> 91.8 ms a micro-batch | missed: the gain (-0.5% / -0.2% predicted) is under a step's run-to-run spread |
+| integration: 0.8B footprint <= 53.5 GB, the loss as Phase 4 read it; 9B footprint <= 74.6 GB | 30.29 GB; the largest gap .0100 (bar .0159), the final loss 0.94% (bar 1%), gap over spread 0.82; 50.29 GB, the loss .0012 from Phase 4's 9B reference | MET; like the reference |
+
+In plain words: the rule's training forward now runs its chunks 8 tokens long, because it keeps nothing for the backward and the
+backward rebuilds what it needs at its own 16; that alone makes the forward 1.11x faster at the readers' micro-batches without
+changing a single gradient bit. Where a batch leaves GPU cores idle, the forward and the state passes now hand each head's value
+columns to two threadgroups: a long single-row prefill runs 1.23-1.25x faster at 16 heads with both changes. Reading the next
+chunk's inputs ahead, the third registered change, made every pass slower and stays off; storing the states every 32 tokens, the
+fourth, was not built (at most ~1% of a step by its own estimate). In a training step the rule was already only ~10% (0.8B) and
+~4% (9B) of a micro-batch, so the step moves by well under 1%.
+
+## D3: not done, and what is uncertain
+
+- (a3), states every 32 tokens with the chunk-16 algebra: not built (above); the per-chunk backward stays bandwidth-bound on the
+  chunk states and their gradients.
+- Where a chunk's ~12 us goes beyond its products is not traced: not the loads' latency (the reads ahead), not the threadgroup
+  memory's size (one buffer and two alike); the reads-ahead first form's 13x is most likely a register spill, not confirmed (no
+  shader profiler on this machine).
+- The split's rule rests on two models' head counts (16, 32), one key / value width (128) and one machine (40 cores); at other
+  core counts the thresholds move. 4 and 8 threadgroups a head-row were slower everywhere measured; 3 or 5 (not dividing the 16
+  column blocks) were not tried.
+- The kernels-alone readings at the micro-batch shapes are noisy (the first pass timed after each input's preparation on the CPU);
+  the bench reads those shapes through the drop-in.
+- Chunk 8 is used only where the forward keeps no states; with the stored states (`RECOMPUTE_STATES = False`) the forward stays at
+  chunk 16, so that path is unchanged.
+- Qwen3.5-MoE and Qwen3-Next get the same rule (installed by `macai.patch`): untimed.
+- Packed rows (cu_seqlens) stay refused.
+
 ## The log
 
 ### 1. 2026-11-03 11:4x-11:5x PST: the instrument and its check (commit 8fb6609)
@@ -1787,9 +2035,62 @@ calls: all agree to rounding. Notes:
   stopped by hand at 19:43:31 with SIGTERM (it had answered no SIGINT): rc -15, 6,242 s after its start; its full log replaces
   the earlier copy (`probe_d5_0.8b_stopped.log`).
 
+### 24. 2026-11-03 20:00-20:04 PST: the design and its predictions; the baselines (commits 4272571, b766b01)
+The design, (a3)'s re-estimate under the recomputed states and the predicted times written into this log before any code
+(4272571). Then the bench (`bench/bench_d3.py`) and the baselines with the code before D3 (`d3_baseline.json`, 20:03-20:04, 3
+rounds): the rule a micro-batch within 2.5% of the step profiles' rule rows; the first record of the long sequences.
+
+### 25. 20:04-20:13: the code; a smoke test; a first bench run stopped by hand (commit 761dba0 carries them)
+`op.FWD_CHUNK`, `op.VALUE_SPLIT`, `_chunked.DBUF` and their launch helpers. A smoke test (compile, pipeline limits, nine harness
+shapes against float64 and against the current kernels' bits): every pipeline at 1,024 threads, every variant at the base's error,
+the reads ahead and the splits bit-identical, chunk 8's gradients bit-identical. The first full bench run (all variants, the
+kernels alone) took 76.5 s for its double-buffered round against 16.5 s for the base's: stopped with SIGINT to its own process id
+(20:12:29; it ended at once, rc -2, no record; its log kept as `d3_bench_run1.log`). A diagnostic of the state passes alone
+(`d3_dbuf_first_form.log`): the double-buffered forward pass 13x slower, its backward state pass 1.37x.
+
+### 26. 20:13-20:19: the reads ahead, two more forms
+The lean form (each per-lane input of the next chunk read right after its last use: one register set) removed the 13x but stayed
+1.2-1.4x slower; the single-buffer form (`DBUF = 2`, 16 KB) as slow (`d3_dbuf_forms.log`, `bench/d3_dbuf_forms.py`). Both kept,
+off.
+
+### 27. 20:19-20:26: the exploration run; the split's rule
+`d3_bench_run2.json` (7 variants, 3 rounds, one variant at every shape before the next): chunk 8 1.10x on the readers' training
+forward; the split 1.10-1.14x at 16 heads and slower at 32-64 head-rows at chunk 16, but paying with chunk 8 at the readers'
+micro-batches (1.21x with both). The rule became chunk-dependent (`_chunked.AUTO_SPLIT`); a subset of the new tests (154) passed
+in 32 s; the code committed (761dba0).
+
+### 28. 20:27-20:43: chain 1 (commit 761dba0, the tracked tree clean)
+The test run of record 20:27-20:31 (1,063 passed); the bench of record as first run 20:31-20:42; the probes at 0.8B (20:42:09-21)
+and 9B (20:42:22-49), both passing. All under the guard, rc 0, one job at a time. The bench's record drifted: its first round
+matched the earlier runs, rounds 2-4 read the same variants up to 67% slower and unevenly (the 9B base's training forward 28.1 / 36.3
+/ 46.8 / 30.2 ms a micro-batch by round), with ~3 minutes between the variants compared at a shape and the GPU under ~15 minutes of
+continuous load; kept as `d3_bench_drifted.json` (its content untouched: inside, its name is the original), not read for the
+verdicts.
+
+### 29. 20:43-20:53: the bench of record; admission; the defaults (commits e254e1a, 2b50b9d)
+The bench now times every variant at one shape before the next (the order rotating with the round and the shape) with 20 s idle
+between rounds. The record 20:44-20:52 (`d3_bench.json`): its base within 1% of the baseline run's micro-batch sums. (a1) and (b)
+admitted and made macai's defaults (2b50b9d: `FWD_CHUNK = 8`, `VALUE_SPLIT = "auto"`, `DBUF = 0`); the training runner keeps them
+off unless asked; the older benches pinned to Phase 3's chunking.
+
+### 30. 20:54-21:33: chain 2 (commit 2b50b9d; `src/`, `bench/`, `tests/` as committed)
+The 0.8B integration 20:54-21:04 (6.023 s a step, 30.29 GB), the 9B 21:04-21:21 (41.29 s, 50.29 GB), the step profiles 21:21-21:23
+(0.8B) and 21:23-21:29 (9B), the whole suite with D3's settings as macai's defaults 21:29-21:33 (`d3_tests_defaults.log`: 1,063
+passed, 225 s, peak footprint 26.9 GB). All under the guard with walls of about three times each job (2,100 / 2,700 / 900 / 1,500
+/ 1,200 s; `bench/phase4_run.sh` now takes `WALL`), rc 0, one job at a time, stdin from /dev/null. The design log, the README and
+`docs/gated_delta.md` were written during the chain (the records of the 9B run and both profiles say dirty: those three files
+alone; the 0.8B run's says clean).
+
+### 31. 21:3x: the report
+`bench/d3_report.py` -> `d3_results.json` (offline by itself): every figure of this entry from the records (the bench of record and
+the exploration run by variant and shape, the read-ahead diagnostics, the parity log by setting, the probes, both integration runs
+on both clocks against D5's runs and Phase 4's references, both step profiles by group).
+
 ### Next
-D5 is done and on by default: the adapters' extra work is 10.9% / 4.8% of a micro-batch (0.8B / 9B) after it, the frozen products
-36.9% / 69.0% at the platform's rate. Then D3 (the rule's chunking: 9.9% / 3.7%). D8b (a fused cross-entropy, ~2% of a 0.8B
-step) is set aside for now (17:3x PST): not built, outside D5 and D3, back only if asked for. The vision cache's trim stays
-proposed for its own entry; so do the adapter path's next steps (dY read once for G and dB; the mask applied as x is loaded; the
-weights' bf16 casts kept per optimizer step) and the head's forward in another form at the labelled row counts.
+D3 is done: chunk 8 for forwards that keep no states and the automatic value split are on by default; the reads ahead stay off;
+states every 32 tokens are designed, not built. With D3 the phase's registered entries (D3-D5, D8, D9) are all read. What is
+left, each for its own entry and his word: states every 32 tokens (the per-chunk backward's state reads, ~0.5% of a 0.8B step at
+most); where a state pass's chunk spends its ~12 us beyond the products (a profiler-free hunt); D8b (a fused cross-entropy, ~2% of
+a 0.8B step; set aside 17:3x PST); the vision cache's trim; the adapter path's next steps (dY read once for G and dB; the mask
+applied as x is loaded; the weights' bf16 casts kept per optimizer step); the head's forward in another form at the labelled row
+counts. The frozen products (36.9% / 69.0% of a micro-batch at the platform's rate) are now the step's largest part.
