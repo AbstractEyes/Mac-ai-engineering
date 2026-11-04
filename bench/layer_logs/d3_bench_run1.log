@@ -1,0 +1,23 @@
+[guard] start 20:09:52 limit 96.0 GB, swap +1.0 GB, wall 1500 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/bench_d3.py --name d3_bench_run1 --variants base,fwd8,dbuf,fwd8+dbuf,split2,split4,split8,split2+dbuf,split4+dbuf --rounds 3 --kernels
+[bench_d3] pid 56349
+[bench_d3] 9 variants x 66 shapes x 3 modes x 3 rounds; commit b766b01 dirty True
+[guard]      30 s footprint  21.69 GB (peak  21.69) swap +0.00 GB pressure 1
+[bench_d3] round 1/3 base: 16.5 s; spent 0.3 min, left ~7.2 min
+[bench_d3] round 1/3 fwd8: 16.0 s; spent 0.5 min, left ~6.8 min
+[guard]      60 s footprint   8.68 GB (peak  22.18) swap +0.00 GB pressure 1
+[guard]      91 s footprint   9.68 GB (peak  22.18) swap +0.00 GB pressure 1
+[guard]     121 s footprint  10.48 GB (peak  22.18) swap +0.00 GB pressure 1
+[bench_d3] round 1/3 dbuf: 76.5 s; spent 1.8 min, left ~14.5 min
+[guard]     151 s footprint   8.48 GB (peak  22.18) swap +0.00 GB pressure 1
+Traceback (most recent call last):
+  File "/Users/philipcoelho/mirel/mac_ai_engineering/bench/bench_d3.py", line 304, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/philipcoelho/mirel/mac_ai_engineering/bench/bench_d3.py", line 266, in main
+    kern[n][s].append(kernel_parts(B, T, H))
+                      ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/philipcoelho/mirel/mac_ai_engineering/bench/bench_d3.py", line 159, in kernel_parts
+    k = l2norm(torch.randn(B, T, H, D, generator=g0)).to("mps")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+[guard] end 20:12:31 rc -2 peak footprint 22.18 GB wall 159 s

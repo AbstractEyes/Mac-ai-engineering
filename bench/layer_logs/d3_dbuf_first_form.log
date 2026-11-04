@@ -1,0 +1,17 @@
+[guard] start 20:12:57 limit 96.0 GB, swap +1.0 GB, wall 600 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python /private/tmp/claude-501/-Users-philipcoelho-mirel-claude/ed19792c-b925-4ca1-b6be-3102c6a3a4d7/scratchpad/d345/builder_d3/diag_dbuf.py
+[diag] pid 56653
+[bench_d3] pid 56653
+[diag] (4, 1024, 16) dbuf 0 split 1: fwd_state_pass 2.234 prep16 0.252 recompute_state_pass 2.26 bwd_state_pass 1.856 bwd_chunk 2.611 state_passes 6.35  (0.5 s)
+[diag] (4, 1024, 16) dbuf 0 split 2: fwd_state_pass 2.813 prep16 0.251 recompute_state_pass 2.333 bwd_state_pass 2.006 bwd_chunk 2.549 state_passes 7.152  (0.4 s)
+[diag] (4, 1024, 16) dbuf 1 split 1: fwd_state_pass 30.267 prep16 0.24 recompute_state_pass 31.331 bwd_state_pass 2.547 bwd_chunk 2.582 state_passes 64.145  (1.4 s)
+[diag] (4, 1024, 16) dbuf 1 split 2: fwd_state_pass 31.491 prep16 0.247 recompute_state_pass 32.666 bwd_state_pass 2.835 bwd_chunk 2.691 state_passes 66.992  (1.4 s)
+[diag] (2, 811, 16) dbuf 0 split 1: fwd_state_pass 0.946 prep16 0.126 recompute_state_pass 0.906 bwd_state_pass 0.876 bwd_chunk 1.077 state_passes 2.728  (0.2 s)
+[diag] (2, 811, 16) dbuf 0 split 2: fwd_state_pass 1.03 prep16 0.117 recompute_state_pass 0.915 bwd_state_pass 0.861 bwd_chunk 1.057 state_passes 2.806  (0.2 s)
+[diag] (2, 811, 16) dbuf 1 split 1: fwd_state_pass 12.152 prep16 0.116 recompute_state_pass 12.537 bwd_state_pass 1.004 bwd_chunk 1.065 state_passes 25.693  (0.6 s)
+[diag] (2, 811, 16) dbuf 1 split 2: fwd_state_pass 11.161 prep16 0.104 recompute_state_pass 11.711 bwd_state_pass 1.018 bwd_chunk 1.067 state_passes 23.89  (0.5 s)
+[diag] (1, 8192, 16) dbuf 0 split 1: fwd_state_pass 8.298 prep16 0.47 recompute_state_pass 8.16 bwd_state_pass 6.769 bwd_chunk 5.043 state_passes 23.227  (1.1 s)
+[diag] (1, 8192, 16) dbuf 0 split 2: fwd_state_pass 7.353 prep16 0.485 recompute_state_pass 6.912 bwd_state_pass 5.695 bwd_chunk 5.057 state_passes 19.96  (1.0 s)
+[diag] (1, 8192, 16) dbuf 1 split 1: fwd_state_pass 52.241 prep16 0.48 recompute_state_pass 54.173 bwd_state_pass 8.942 bwd_chunk 5.061 state_passes 115.356  (2.5 s)
+[diag] (1, 8192, 16) dbuf 1 split 2: fwd_state_pass 49.341 prep16 0.477 recompute_state_pass 51.152 bwd_state_pass 5.826 bwd_chunk 5.031 state_passes 106.319  (2.4 s)
+[diag] done 12.1 s
+[guard] end 20:13:11 rc 0 peak footprint 3.03 GB wall 14 s

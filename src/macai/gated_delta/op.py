@@ -1,5 +1,6 @@
 """The gated delta rule on the Mac's GPU: an autograd function over the Metal kernels, and a drop-in for transformers'
 torch_chunk_gated_delta_rule (same arguments, same returns)."""
+import collections
 import math
 
 import torch
@@ -30,6 +31,18 @@ SIZE_CLASSES = False
 # False = the forward stores them (Phase 3's choice; the stored states hold the Metal allocator's heaps from the forward to
 # the backward)
 RECOMPUTE_STATES = True
+# the rule's chunking and tiling (series design D3, docs/series_layer.md):
+# FWD_CHUNK: the chunk length of a chunked forward that keeps no states (inference, and the training forward under
+# RECOMPUTE_STATES): 16 (Phase 3's, the backward's own) or 8. The backward recomputes at _chunked.C from the inputs either way, so
+# the gradients do not change; the forward's output rounds by its own chunking
+FWD_CHUNK = 16
+# VALUE_SPLIT: the threadgroups a head-row's value columns are split over in the state passes (each owns DV / VALUE_SPLIT
+# columns and stages the whole chunk's keys and queries): 1, 2, 4, 8, or "auto" (split_for: by the pass's chunk length and the
+# call's head-rows, _chunked.AUTO_SPLIT)
+VALUE_SPLIT = 1
+# the chunked kernels' calls by what they ran: "fwd c<chunk> s<split> d<double buffering>" and "bwd s<split> d<..>" (counted
+# at every call, read by the training runner and the probes; no GPU work)
+CALLS = collections.Counter()
 
 
 def head_shape(dk: int, dv: int) -> bool:
@@ -46,21 +59,57 @@ def _even(t: torch.Tensor) -> torch.Tensor:
     return t if t.storage_offset() % 4 == 0 else t.clone()
 
 
-def _prep(lib, q, k, g, beta, classes: bool = False):
-    """Per chunk: the cumulative log decay G, the inverse A, the decayed Q K^T (M) and K K^T (KG)."""
+def _prep(lib, q, k, g, beta, classes: bool = False, c: int | None = None):
+    """Per chunk (of c tokens, default _chunked.C; lib compiled at that length): the cumulative log decay G, the inverse A, the
+    decayed Q K^T (M) and K K^T (KG)."""
     B, T, H, _ = q.shape
-    nt = math.ceil(T / _chunked.C)
-    c = _chunked.C
+    c = c or _chunked.C
+    nt = math.ceil(T / c)
     gc = _memory.empty((B, H, nt, c), torch.float32, q.device, classes)
     a, m, kg = (_memory.empty((B, H, nt, c, c), torch.float32, q.device, classes) for _ in range(3))
     lib.gdc_prep(q, k, g, beta, gc, a, m, kg, T, H, threads=(nt * 128, H, B), group_size=(128, 1, 1))
     return gc, a, m, kg
 
 
-def _state_grid(dv: int, H: int, Z: int):
-    """The state passes' launch: threadgroups of up to NSG simdgroups, each simdgroup 8 * NCB value columns."""
-    nsg = _chunked.state_simdgroups(dv)
+def split_for(rows: int, T: int, dv: int, c: int | None = None) -> int:
+    """VALUE_SPLIT's choice for a state pass of chunk length c (default _chunked.C) over `rows` head-rows (B x H) of T tokens: an
+    int setting as it is (capped at the value width's column blocks); "auto" by the rule measured in docs/series_layer.md (D3,
+    _chunked.AUTO_SPLIT)."""
+    blocks = dv // (8 * _chunked.NCB)
+    if VALUE_SPLIT == "auto":
+        s = _chunked.auto_split(rows, T, c or _chunked.C)
+    else:
+        s = int(VALUE_SPLIT)
+    s = max(1, min(s, blocks))
+    while blocks % s:
+        s -= 1
+    return s
+
+
+def _state_grid(dv: int, H: int, Z: int, split: int = 1):
+    """The state passes' launch: threadgroups of up to NSG simdgroups, each simdgroup 8 * NCB value columns; with split > 1 a
+    head-row's columns go to at least `split` threadgroups (each NSG / split simdgroups wide)."""
+    nsg = _chunked.state_simdgroups(dv, split)
     return dict(threads=(dv // (8 * _chunked.NCB * nsg) * 32 * nsg, H, Z), group_size=(32 * nsg, 1, 1))
+
+
+def _launch(DK: int, DV: int, H: int, Z: int, T: int, c: int | None = None):
+    """The library and the state passes' launch for one call: compiled at chunk length c (default _chunked.C) and, with double
+    buffering, for the launch's threadgroup width; the split from VALUE_SPLIT for Z x H head-rows of T tokens."""
+    split = split_for(Z * H, T, DV, c)
+    grid = _state_grid(DV, H, Z, split)
+    return _chunked.library(DK, c=c, nsg=grid["group_size"][0] // 32), grid
+
+
+def plan(B: int, T: int, H: int, DK: int, DV: int, save: bool) -> dict:
+    """What a call of these dimensions runs under the current settings (for benches): the forward's chunk length, its library
+    and state-pass launch; the backward's (chunk _chunked.C) library and launch."""
+    keeps_nothing = not save or (KERNEL_BWD == "chunked" and RECOMPUTE_STATES)
+    cf = FWD_CHUNK if keeps_nothing else _chunked.C
+    fwd_lib, fwd_grid = _launch(DK, DV, H, B, T, cf)
+    bwd_lib, bwd_grid = _launch(DK, DV, H, B, T)
+    return {"fwd_chunk": cf, "fwd_lib": fwd_lib, "fwd_grid": fwd_grid, "bwd_lib": bwd_lib, "bwd_grid": bwd_grid,
+            "fwd_split": split_for(B * H, T, DV, cf), "bwd_split": split_for(B * H, T, DV)}
 
 
 class GatedDeltaRule(torch.autograd.Function):
@@ -88,21 +137,26 @@ class GatedDeltaRule(torch.autograd.Function):
         nb = math.ceil(T / BLK)
         ctx.dims = (B, T, H, DK, DV)
         if KERNEL == "chunked":
-            lib = _chunked.library(DK)
-            nt = math.ceil(T / _chunked.C)
-            gc, a, m, kg = _prep(lib, q, k, g, beta, classes)
+            recompute = chunked_bwd and RECOMPUTE_STATES
+            stored = chunked_bwd and not recompute
+            checkpoints = save and not chunked_bwd
+            # a forward that keeps no states runs at FWD_CHUNK; one that stores states for a backward at the backward's C
+            c = _chunked.C if stored or checkpoints else FWD_CHUNK
+            lib, grid = _launch(DK, DV, H, B, T, c)
+            nt = math.ceil(T / c)
+            gc, a, m, kg = _prep(lib, q, k, g, beta, classes, c)
             sc = vn = xu = ckpt = none
             flags = 0
-            recompute = chunked_bwd and RECOMPUTE_STATES
-            if chunked_bwd and not recompute:
+            if stored:
                 sc = _memory.empty((B, H, nt, DK, DV), torch.float32, dev, classes)
                 vn = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
                 xu = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
                 flags = 1
-            elif save and not chunked_bwd:
+            elif checkpoints:
                 ckpt = _memory.empty((B, H, nb, DK, DV), torch.float32, dev, classes)
                 flags = 2
-            lib.gdc_fwd(q, k, v, beta, s0, gc, a, m, o, sT, sc, vn, xu, ckpt, T, H, DV, flags, 1, nt, **_state_grid(DV, H, B))
+            lib.gdc_fwd(q, k, v, beta, s0, gc, a, m, o, sT, sc, vn, xu, ckpt, T, H, DV, flags, 1, nt, **grid)
+            CALLS[f"fwd c{c} s{DV // 8 // (grid['group_size'][0] // 32) // _chunked.NCB} d{_chunked.dbuf_for(DK, c)}"] += 1
             if recompute:
                 # nothing a chunk is kept: the backward rebuilds G, A, M, KG, the chunk states, Vn and Xu from the inputs
                 ctx.mode = "chunked_recompute"
@@ -144,7 +198,7 @@ class GatedDeltaRule(torch.autograd.Function):
         dsT = (torch.zeros(B, H, DK, DV, device=dev, dtype=torch.float32) if dsT is None
                else _even(dsT.to(torch.float32).contiguous()))
         if chunked:
-            lib = _chunked.library(DK)
+            lib, grid = _launch(DK, DV, H, B, T)
             nt = math.ceil(T / _chunked.C)
             if ctx.mode == "chunked":
                 q, k, beta, gc, a, kg, m, sc, vn, xu = ctx.saved_tensors
@@ -159,8 +213,7 @@ class GatedDeltaRule(torch.autograd.Function):
                 vn = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
                 xu = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
                 none = torch.empty(4, device=dev, dtype=torch.float32)
-                lib.gdc_fwd(q, k, v, beta, s0, gc, a, m, none, none, sc, vn, xu, none, T, H, DV, 1 | 8, 1, nt,
-                            **_state_grid(DV, H, B))
+                lib.gdc_fwd(q, k, v, beta, s0, gc, a, m, none, none, sc, vn, xu, none, T, H, DV, 1 | 8, 1, nt, **grid)
                 sstride, nstates = 1, nt
             else:
                 # after a token-at-a-time forward: its checkpoints every BLK tokens hold the chunk states (every C / BLK-th);
@@ -171,12 +224,14 @@ class GatedDeltaRule(torch.autograd.Function):
                 xu = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
                 none = torch.empty(4, device=dev, dtype=torch.float32)
                 sc, sstride, nstates = ckpt, _chunked.C // BLK, ckpt.shape[2]
-                lib.gdc_fwd(q, k, v, beta, none, gc, a, m, none, none, sc, vn, xu, none, T, H, DV, 4, sstride, nstates,
-                            **_state_grid(DV, H, B * nt))
+                lib_r, grid_r = _launch(DK, DV, H, B * nt, _chunked.C)
+                lib_r.gdc_fwd(q, k, v, beta, none, gc, a, m, none, none, sc, vn, xu, none, T, H, DV, 4, sstride, nstates,
+                              **grid_r)
             dsn = _memory.empty((B, H, nt, DK, DV), torch.float32, dev, classes)
             dvn = _memory.empty((B, H, nt * _chunked.C, DV), torch.float32, dev, classes)
             ds0 = torch.empty(B, H, DK, DV, device=dev, dtype=torch.float32)
-            lib.gdc_bwd_state(q, k, beta, do, dsT, gc, a, m, dsn, dvn, ds0, T, H, DV, **_state_grid(DV, H, B))
+            lib.gdc_bwd_state(q, k, beta, do, dsT, gc, a, m, dsn, dvn, ds0, T, H, DV, **grid)
+            CALLS[f"bwd s{DV // 8 // (grid['group_size'][0] // 32) // _chunked.NCB} d{_chunked.dbuf_for(DK, _chunked.C)}"] += 1
             make = (lambda t: _memory.empty(t.shape, t.dtype, dev, True)) if classes else torch.empty_like
             dq, dk = make(q), make(k)
             dv = _memory.empty((B, T, H, DV), torch.float32, dev, classes)

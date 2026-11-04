@@ -46,6 +46,11 @@ STAGE = 1    # the state passes stage each chunk's K and Q in threadgroup memory
 HWLOAD = 0   # whole device tiles through simdgroup_load instead of per-lane loads
 NSGB = 8     # simdgroups a threadgroup in the per-chunk backward
 KGRP = 1     # 8-column key blocks a simdgroup of the per-chunk backward accumulates at once
+DBUF = 0     # series design D3 (a2): the state passes read the next chunk's keys and queries into registers before this chunk's
+             # products and each per-lane input of the next chunk (decay sums, beta, value / output-gradient tiles, A, M) right
+             # after its last use in this chunk. 1: the keys and queries staged into one of two threadgroup buffers, one barrier a
+             # chunk (needs C * DK <= 2,048: four C x DK buffers in 32 KB); 2: one buffer, written after a barrier that retires
+             # its reads (two barriers a chunk, 16 KB). 0 = Phase 3's staging (each chunk's loads after its first barrier)
 
 _SOURCE = r"""
 #include <metal_stdlib>
@@ -59,6 +64,9 @@ using namespace metal;
 #define HWLOAD __HWLOAD__            // 1: whole device tiles through simdgroup_load
 #define NSGB __NSGB__                // simdgroups a threadgroup in gdc_bwd_chunk
 #define KGRP __KGRP__                // 8-column key blocks a simdgroup of gdc_bwd_chunk accumulates at once
+#define DBUF __DBUF__                // the state passes read the next chunk's inputs ahead: 1 into two staging buffers, 2 into one
+#define NBUF ((DBUF) == 1 ? 2 : 1)   // staging buffers with DBUF
+#define NSGT __NSGT__                // with DBUF: the state passes' simdgroups a threadgroup (the launch's width)
 #define NRB (C / 8)                  // 8-row blocks in a chunk
 #define NKB (DK / 8)                 // 8-row blocks of the state (key rows)
 #define NLB (NRB * (NRB + 1) / 2)    // lower 8 x 8 blocks of a C x C matrix
@@ -146,12 +154,41 @@ inline mat tg_tile_t(const threadgroup float* src, uint rb, uint kk) {
   return m;
 }
 
+#if DBUF
+// a thread's share of a chunk's rows [0, n) (row stride ld floats, DK columns) read into registers (rows past n read as zeros),
+// and written to threadgroup memory as stage_chunk lays it out; the launch has exactly 32 * NSGT threads
+#define PFN ((C * (DK / 4) + 32 * NSGT - 1) / (32 * NSGT))
+inline void kq_load(thread float4* x, const device float* src, uint ld, uint n, uint tid) {
+  for (uint i = 0; i < PFN; ++i) {
+    const uint e = tid + i * (32 * NSGT);
+    const uint r = e / (DK / 4), c4 = e % (DK / 4);
+    x[i] = float4(0.0f);
+    if (e < C * (DK / 4) && r < n) x[i] = *((const device float4*)(src + (ulong)r * ld + 4 * c4));
+  }
+}
+
+inline void kq_store(threadgroup float* dst, thread const float4* x, uint tid) {
+  for (uint i = 0; i < PFN; ++i) {
+    const uint e = tid + i * (32 * NSGT);
+    if (e < C * (DK / 4)) {
+      const uint r = e / (DK / 4), c4 = e % (DK / 4);
+      *((threadgroup float4*)(dst + ((r / 8) * NKB + c4 / 2) * 64 + (r % 8) * 8 + (c4 % 2) * 4)) = x[i];
+    }
+  }
+}
+#define KSRC Kb
+#define QSRC Qb
+#else
+#define KSRC Ks
+#define QSRC Qs
+#endif
+
 // the state passes' K and Q tiles: tile (rb, kk) of the chunk, and the transpose of tile (rb, kk)
 #if STAGE
-#define KTILE(rb, kk) tg_tile(Ks, rb, kk)
-#define KTILE_T(rb, kk) tg_tile_t(Ks, rb, kk)
-#define QTILE(rb, kk) tg_tile(Qs, rb, kk)
-#define QTILE_T(rb, kk) tg_tile_t(Qs, rb, kk)
+#define KTILE(rb, kk) tg_tile(KSRC, rb, kk)
+#define KTILE_T(rb, kk) tg_tile_t(KSRC, rb, kk)
+#define QTILE(rb, kk) tg_tile(QSRC, rb, kk)
+#define QTILE_T(rb, kk) tg_tile_t(QSRC, rb, kk)
 #else
 #define KTILE(rb, kk) ld_tile(kc, ld, 8 * (rb), 8 * (kk), n, fm, fn)
 #define KTILE_T(rb, kk) ld_tile_t(kc, ld, 8 * (rb), 8 * (kk), n, fm, fn)
@@ -288,7 +325,10 @@ kernel void gdc_fwd(device const float* q [[buffer(0)]], device const float* k [
                     uint3 tg [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]],
                     uint lane [[thread_index_in_simdgroup]], uint sg [[simdgroup_index_in_threadgroup]],
                     uint nsg [[simdgroups_per_threadgroup]]) {
-#if STAGE
+#if DBUF
+  threadgroup float Ks[NBUF * C * DK];
+  threadgroup float Qs[NBUF * C * DK];
+#elif STAGE
   threadgroup float Ks[C * DK];
   threadgroup float Qs[C * DK];
 #endif
@@ -311,6 +351,185 @@ kernel void gdc_fwd(device const float* q [[buffer(0)]], device const float* k [
   mat S[NKB][NCB];
   for (uint kk = 0; kk < NKB; ++kk)
     for (uint cb = 0; cb < NCB; ++cb) simdgroup_load(S[kk][cb], sinit + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
+#if DBUF
+  // chunk c's keys and queries sit in buffer (c - cbeg) & 1: chunk c + 1's are read into registers (pk, pq) one chunk ahead and
+  // written to the other buffer after chunk c's products; the barrier closing each chunk publishes them and retires every read
+  // of the buffer written next. Each per-lane input of chunk c + 1 (decay sums and beta, the value tiles, A, M) is read into
+  // its own registers right after its last use in chunk c, so its latency runs under the rest of chunk c's products (one set
+  // of registers, as the single-buffered pass holds).
+  float4 pk[PFN], pq[PFN];
+  mat Vr[NRB][NCB], Ar[NLB], Mr[NLB];
+  float Gn, bn;
+#define KQ_LOAD(cn)                                                                                                           \
+  {                                                                                                                           \
+    const uint t0n = (cn) * C, nn = min((uint)C, T - t0n);                                                                    \
+    const ulong r0n = ((ulong)b * T + t0n) * H + h;                                                                           \
+    kq_load(pk, k + r0n * DK, ld, nn, tid);                                                                                   \
+    if (outs) kq_load(pq, q + r0n * DK, ld, nn, tid);                                                                         \
+  }
+#define LANE_G(cn)                                                                                                            \
+  {                                                                                                                           \
+    const uint t0n = (cn) * C, nn = min((uint)C, T - t0n);                                                                    \
+    const ulong r0n = ((ulong)b * T + t0n) * H + h;                                                                           \
+    Gn = Gc[(bh * NT + (cn)) * C + min(lane, (uint)C - 1)];                                                                   \
+    bn = (lane < nn) ? beta[r0n + (ulong)lane * H] : 0.0f;                                                                    \
+  }
+#define LANE_V(cn)                                                                                                            \
+  {                                                                                                                           \
+    const uint t0n = (cn) * C, nn = min((uint)C, T - t0n);                                                                    \
+    const device float* vn_ = v + (((ulong)b * T + t0n) * H + h) * DV;                                                        \
+    for (uint rb = 0; rb < NRB; ++rb)                                                                                         \
+      for (uint cb = 0; cb < NCB; ++cb) Vr[rb][cb] = ld_tile(vn_, ldv, 8 * rb, j0 + 8 * cb, nn, fm, fn);                      \
+  }
+#define LANE_A(cn)                                                                                                            \
+  {                                                                                                                           \
+    const device float* an_ = Am + (bh * NT + (cn)) * (C * C);                                                                \
+    for (uint bi = 0; bi < NRB; ++bi)                                                                                         \
+      for (uint bj = 0; bj <= bi; ++bj) Ar[bi * (bi + 1) / 2 + bj] = ld_tile(an_, C, 8 * bi, 8 * bj, C, fm, fn);              \
+  }
+#define LANE_M(cn)                                                                                                            \
+  {                                                                                                                           \
+    const device float* mn_ = Mm + (bh * NT + (cn)) * (C * C);                                                                \
+    for (uint bi = 0; bi < NRB; ++bi)                                                                                         \
+      for (uint bj = 0; bj <= bi; ++bj) Mr[bi * (bi + 1) / 2 + bj] = ld_tile(mn_, C, 8 * bi, 8 * bj, C, fm, fn);              \
+  }
+  KQ_LOAD(cbeg);
+  LANE_G(cbeg);
+  LANE_V(cbeg);
+  LANE_A(cbeg);
+  if (outs) LANE_M(cbeg);
+  kq_store(Ks, pk, tid);
+  if (outs) kq_store(Qs, pq, tid);
+  if (cbeg + 1 < cend) KQ_LOAD(cbeg + 1);
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+  for (uint c = cbeg; c < cend; ++c) {
+    const uint cur = NBUF == 2 ? (c - cbeg) & 1u : 0u;
+    const threadgroup float* Kb = Ks + cur * (C * DK);
+    const threadgroup float* Qb = Qs + cur * (C * DK);
+    const bool more = c + 1 < cend;
+    const uint t0 = c * C, n = min((uint)C, T - t0);
+    const ulong ch = bh * NT + c;
+    const ulong row0 = ((ulong)b * T + t0) * H + h;
+    const float Gl = Gn;
+    const float bl = bn;
+    if (more) LANE_G(c + 1);
+    const float Glast = simd_shuffle(Gl, (ushort)(C - 1));
+    float gam[NRB], ee[NRB], bb[NRB];
+    for (uint rb = 0; rb < NRB; ++rb) {
+      const float Gi = simd_shuffle(Gl, (ushort)(8 * rb + fm));
+      gam[rb] = exp(Gi);
+      ee[rb] = exp(Glast - Gi);
+      bb[rb] = simd_shuffle(bl, (ushort)(8 * rb + fm));
+    }
+    if (!redo && (flags & 1u)) {
+      device float* sc = Sc + ch * SS;
+      for (uint kk = 0; kk < NKB; ++kk)
+        for (uint cb = 0; cb < NCB; ++cb) simdgroup_store(S[kk][cb], sc + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
+    }
+    if (flags & 2u) {
+      device float* sc = ck8 + (bh * NB8 + (ulong)c * (C / 8)) * SS;
+      for (uint kk = 0; kk < NKB; ++kk)
+        for (uint cb = 0; cb < NCB; ++cb) simdgroup_store(S[kk][cb], sc + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
+    }
+    // K S and Q S
+    mat KS[NRB][NCB], QS[NRB][NCB];
+    for (uint rb = 0; rb < NRB; ++rb)
+      for (uint cb = 0; cb < NCB; ++cb) {
+        KS[rb][cb] = mzero();
+        QS[rb][cb] = mzero();
+      }
+    for (uint kk = 0; kk < NKB; ++kk) {
+      for (uint rb = 0; rb < NRB; ++rb) {
+        const mat kt = KTILE(rb, kk);
+        for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(KS[rb][cb], kt, S[kk][cb], KS[rb][cb]);
+        if (outs) {
+          const mat qt = QTILE(rb, kk);
+          for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(QS[rb][cb], qt, S[kk][cb], QS[rb][cb]);
+        }
+      }
+    }
+    // Xu = V - diag(gamma) K S; the products' input diag(beta) Xu replaces K S
+    for (uint rb = 0; rb < NRB; ++rb)
+      for (uint cb = 0; cb < NCB; ++cb) {
+        mat xu;
+        for (uint e = 0; e < 2; ++e) {
+          EL(xu, e) = EL(Vr[rb][cb], e) - gam[rb] * EL(KS[rb][cb], e);
+          EL(KS[rb][cb], e) = bb[rb] * EL(xu, e);
+        }
+        if (flags & 5u) st_tile(xu, Xu + ch * (C * DV), DV, 8 * rb, j0 + 8 * cb, C, fm, fn);
+      }
+    if (more) LANE_V(c + 1);
+    // Vn = A diag(beta) Xu
+    mat VN[NRB][NCB];
+    for (uint rb = 0; rb < NRB; ++rb) {
+      for (uint cb = 0; cb < NCB; ++cb) VN[rb][cb] = mzero();
+      for (uint m = 0; m <= rb; ++m)
+        for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(VN[rb][cb], Ar[rb * (rb + 1) / 2 + m], KS[m][cb], VN[rb][cb]);
+      if (flags & 5u)
+        for (uint cb = 0; cb < NCB; ++cb) st_tile(VN[rb][cb], Vn + ch * (C * DV), DV, 8 * rb, j0 + 8 * cb, C, fm, fn);
+    }
+    if (more) LANE_A(c + 1);
+    if (!redo) {
+      // O = diag(gamma) Q S + M Vn
+      if (outs) {
+        for (uint rb = 0; rb < NRB; ++rb) {
+          mat ot[NCB];
+          for (uint cb = 0; cb < NCB; ++cb) ot[cb] = scaled(QS[rb][cb], gam[rb]);
+          for (uint m = 0; m <= rb; ++m)
+            for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(ot[cb], Mr[rb * (rb + 1) / 2 + m], VN[m][cb], ot[cb]);
+          for (uint cb = 0; cb < NCB; ++cb) st_tile(ot[cb], o + row0 * DV, ldv, 8 * rb, j0 + 8 * cb, n, fm, fn);
+        }
+        if (more) LANE_M(c + 1);
+      }
+      // the states every 8 tokens inside the chunk (only for the token-at-a-time backward)
+      if (flags & 2u) {
+        for (uint m = 1; m < NRB; ++m) {
+          if (t0 + 8 * m >= T) break;
+          const float Gm = simd_shuffle(Gl, (ushort)(8 * m - 1));
+          mat W[NRB][NCB];
+          for (uint rb = 0; rb < m; ++rb) {
+            const float f = exp(Gm - simd_shuffle(Gl, (ushort)(8 * rb + fm)));
+            for (uint cb = 0; cb < NCB; ++cb) W[rb][cb] = scaled(VN[rb][cb], f);
+          }
+          const float gm = exp(Gm);
+          device float* sc = ck8 + (bh * NB8 + (ulong)c * (C / 8) + m) * SS;
+          for (uint kk = 0; kk < NKB; ++kk) {
+            mat acc[NCB];
+            for (uint cb = 0; cb < NCB; ++cb) acc[cb] = scaled(S[kk][cb], gm);
+            for (uint rb = 0; rb < m; ++rb) {
+              const mat ktt = KTILE_T(rb, kk);
+              for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(acc[cb], ktt, W[rb][cb], acc[cb]);
+            }
+            for (uint cb = 0; cb < NCB; ++cb) simdgroup_store(acc[cb], sc + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
+          }
+        }
+      }
+      // S <- exp(G_last) S + K^T diag(e) Vn
+      const float glast = exp(Glast);
+      for (uint rb = 0; rb < NRB; ++rb)
+        for (uint cb = 0; cb < NCB; ++cb) VN[rb][cb] = scaled(VN[rb][cb], ee[rb]);
+      for (uint kk = 0; kk < NKB; ++kk) {
+        for (uint cb = 0; cb < NCB; ++cb) S[kk][cb] = scaled(S[kk][cb], glast);
+        for (uint rb = 0; rb < NRB; ++rb) {
+          const mat ktt = KTILE_T(rb, kk);
+          for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(S[kk][cb], ktt, VN[rb][cb], S[kk][cb]);
+        }
+      }
+    }
+    if (more) {
+      if (NBUF == 1) threadgroup_barrier(mem_flags::mem_threadgroup);
+      kq_store(Ks + (cur ^ (NBUF - 1u)) * (C * DK), pk, tid);
+      if (outs) kq_store(Qs + (cur ^ (NBUF - 1u)) * (C * DK), pq, tid);
+      if (c + 2 < cend) KQ_LOAD(c + 2);
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+  }
+#undef KQ_LOAD
+#undef LANE_G
+#undef LANE_V
+#undef LANE_A
+#undef LANE_M
+#else
   for (uint c = cbeg; c < cend; ++c) {
     const uint t0 = c * C, n = min((uint)C, T - t0);
     const ulong ch = bh * NT + c;
@@ -433,6 +652,7 @@ kernel void gdc_fwd(device const float* q [[buffer(0)]], device const float* k [
       }
     }
   }
+#endif
   if (outs)
     for (uint kk = 0; kk < NKB; ++kk)
       for (uint cb = 0; cb < NCB; ++cb) simdgroup_store(S[kk][cb], sT + bh * SS + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
@@ -449,7 +669,10 @@ kernel void gdc_bwd_state(device const float* q [[buffer(0)]], device const floa
                           uint3 tg [[threadgroup_position_in_grid]], uint tid [[thread_index_in_threadgroup]],
                           uint lane [[thread_index_in_simdgroup]], uint sg [[simdgroup_index_in_threadgroup]],
                           uint nsg [[simdgroups_per_threadgroup]]) {
-#if STAGE
+#if DBUF
+  threadgroup float Ks[NBUF * C * DK];
+  threadgroup float Qs[NBUF * C * DK];
+#elif STAGE
   threadgroup float Ks[C * DK];
   threadgroup float Qs[C * DK];
 #endif
@@ -463,6 +686,138 @@ kernel void gdc_bwd_state(device const float* q [[buffer(0)]], device const floa
   mat dS[NKB][NCB];
   for (uint kk = 0; kk < NKB; ++kk)
     for (uint cb = 0; cb < NCB; ++cb) simdgroup_load(dS[kk][cb], dsT + bh * SS + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
+#if DBUF
+  // as gdc_fwd's double buffering, the chunks in reverse: chunk c's keys and queries in buffer (NT - 1 - c) & 1, chunk c - 1's
+  // read into registers a chunk ahead; each per-lane input of chunk c - 1 (decay sums and beta, M^T, A^T, the output-gradient
+  // tiles) read right after its last use in chunk c
+  float4 pk[PFN], pq[PFN];
+  mat DOr[NRB][NCB], MTr[NLB], ATr[NLB];
+  float Gn, bn;
+#define KQ_LOAD(cn)                                                                                                           \
+  {                                                                                                                           \
+    const uint t0n = (cn) * C, nn = min((uint)C, T - t0n);                                                                    \
+    const ulong r0n = ((ulong)b * T + t0n) * H + h;                                                                           \
+    kq_load(pk, k + r0n * DK, ld, nn, tid);                                                                                   \
+    kq_load(pq, q + r0n * DK, ld, nn, tid);                                                                                   \
+  }
+#define LANE_G(cn)                                                                                                            \
+  {                                                                                                                           \
+    const uint t0n = (cn) * C, nn = min((uint)C, T - t0n);                                                                    \
+    const ulong r0n = ((ulong)b * T + t0n) * H + h;                                                                           \
+    Gn = Gc[(bh * NT + (cn)) * C + min(lane, (uint)C - 1)];                                                                   \
+    bn = (lane < nn) ? beta[r0n + (ulong)lane * H] : 0.0f;                                                                    \
+  }
+#define LANE_DO(cn)                                                                                                           \
+  {                                                                                                                           \
+    const uint t0n = (cn) * C, nn = min((uint)C, T - t0n);                                                                    \
+    const device float* don_ = dout + (((ulong)b * T + t0n) * H + h) * DV;                                                    \
+    for (uint rb = 0; rb < NRB; ++rb)                                                                                         \
+      for (uint cb = 0; cb < NCB; ++cb) DOr[rb][cb] = ld_tile(don_, ldv, 8 * rb, j0 + 8 * cb, nn, fm, fn);                    \
+  }
+#define LANE_MT(cn)                                                                                                           \
+  {                                                                                                                           \
+    const device float* mn_ = Mm + (bh * NT + (cn)) * (C * C);                                                                \
+    for (uint bi = 0; bi < NRB; ++bi)                                                                                         \
+      for (uint bj = 0; bj <= bi; ++bj) MTr[bi * (bi + 1) / 2 + bj] = ld_tile_t(mn_, C, 8 * bi, 8 * bj, C, fm, fn);           \
+  }
+#define LANE_AT(cn)                                                                                                           \
+  {                                                                                                                           \
+    const device float* an_ = Am + (bh * NT + (cn)) * (C * C);                                                                \
+    for (uint bi = 0; bi < NRB; ++bi)                                                                                         \
+      for (uint bj = 0; bj <= bi; ++bj) ATr[bi * (bi + 1) / 2 + bj] = ld_tile_t(an_, C, 8 * bi, 8 * bj, C, fm, fn);           \
+  }
+  KQ_LOAD(NT - 1);
+  LANE_G(NT - 1);
+  LANE_DO(NT - 1);
+  LANE_MT(NT - 1);
+  LANE_AT(NT - 1);
+  kq_store(Ks, pk, tid);
+  kq_store(Qs, pq, tid);
+  if (NT >= 2) KQ_LOAD(NT - 2);
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+  for (int ci = (int)NT - 1; ci >= 0; --ci) {
+    const uint c = (uint)ci;
+    const uint cur = NBUF == 2 ? (NT - 1 - c) & 1u : 0u;
+    const threadgroup float* Kb = Ks + cur * (C * DK);
+    const threadgroup float* Qb = Qs + cur * (C * DK);
+    const bool more = ci >= 1;
+    const ulong ch = bh * NT + c;
+    const float Gl = Gn;
+    const float bl = bn;
+    if (more) LANE_G(c - 1);
+    const float Glast = simd_shuffle(Gl, (ushort)(C - 1));
+    float gam[NRB], ee[NRB], bb[NRB];
+    for (uint rb = 0; rb < NRB; ++rb) {
+      const float Gi = simd_shuffle(Gl, (ushort)(8 * rb + fm));
+      gam[rb] = exp(Gi);
+      ee[rb] = exp(Glast - Gi);
+      bb[rb] = simd_shuffle(bl, (ushort)(8 * rb + fm));
+    }
+    {
+      device float* sc = dSn + ch * SS;
+      for (uint kk = 0; kk < NKB; ++kk)
+        for (uint cb = 0; cb < NCB; ++cb) simdgroup_store(dS[kk][cb], sc + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
+    }
+    // K dS
+    mat KD[NRB][NCB];
+    for (uint rb = 0; rb < NRB; ++rb)
+      for (uint cb = 0; cb < NCB; ++cb) KD[rb][cb] = mzero();
+    for (uint kk = 0; kk < NKB; ++kk)
+      for (uint rb = 0; rb < NRB; ++rb) {
+        const mat kt = KTILE(rb, kk);
+        for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(KD[rb][cb], kt, dS[kk][cb], KD[rb][cb]);
+      }
+    mat DO[NRB][NCB];
+    for (uint rb = 0; rb < NRB; ++rb)
+      for (uint cb = 0; cb < NCB; ++cb) DO[rb][cb] = DOr[rb][cb];
+    if (more) LANE_DO(c - 1);
+    // dVn = M^T dO + diag(e) K dS
+    mat DVN[NRB][NCB];
+    for (uint rb = 0; rb < NRB; ++rb) {
+      for (uint cb = 0; cb < NCB; ++cb) DVN[rb][cb] = scaled(KD[rb][cb], ee[rb]);
+      for (uint m = rb; m < NRB; ++m)
+        for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(DVN[rb][cb], MTr[m * (m + 1) / 2 + rb], DO[m][cb], DVN[rb][cb]);
+      for (uint cb = 0; cb < NCB; ++cb) st_tile(DVN[rb][cb], dVn + ch * (C * DV), DV, 8 * rb, j0 + 8 * cb, C, fm, fn);
+    }
+    if (more) LANE_MT(c - 1);
+    // Z = -diag(beta gamma) A^T dVn (into KD); dO scaled by gamma
+    for (uint rb = 0; rb < NRB; ++rb) {
+      for (uint cb = 0; cb < NCB; ++cb) KD[rb][cb] = mzero();
+      for (uint m = rb; m < NRB; ++m)
+        for (uint cb = 0; cb < NCB; ++cb) simdgroup_multiply_accumulate(KD[rb][cb], ATr[m * (m + 1) / 2 + rb], DVN[m][cb], KD[rb][cb]);
+      for (uint cb = 0; cb < NCB; ++cb) {
+        KD[rb][cb] = scaled(KD[rb][cb], -bb[rb] * gam[rb]);
+        DO[rb][cb] = scaled(DO[rb][cb], gam[rb]);
+      }
+    }
+    if (more) LANE_AT(c - 1);
+    // dS <- exp(G_last) dS + Q^T diag(gamma) dO - K^T diag(beta gamma) A^T dVn
+    const float glast = exp(Glast);
+    for (uint kk = 0; kk < NKB; ++kk) {
+      for (uint cb = 0; cb < NCB; ++cb) dS[kk][cb] = scaled(dS[kk][cb], glast);
+      for (uint rb = 0; rb < NRB; ++rb) {
+        const mat qtt = QTILE_T(rb, kk);
+        const mat ktt = KTILE_T(rb, kk);
+        for (uint cb = 0; cb < NCB; ++cb) {
+          simdgroup_multiply_accumulate(dS[kk][cb], qtt, DO[rb][cb], dS[kk][cb]);
+          simdgroup_multiply_accumulate(dS[kk][cb], ktt, KD[rb][cb], dS[kk][cb]);
+        }
+      }
+    }
+    if (more) {
+      if (NBUF == 1) threadgroup_barrier(mem_flags::mem_threadgroup);
+      kq_store(Ks + (cur ^ (NBUF - 1u)) * (C * DK), pk, tid);
+      kq_store(Qs + (cur ^ (NBUF - 1u)) * (C * DK), pq, tid);
+      if (ci >= 2) KQ_LOAD(c - 2);
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+  }
+#undef KQ_LOAD
+#undef LANE_G
+#undef LANE_DO
+#undef LANE_MT
+#undef LANE_AT
+#else
   for (int ci = (int)NT - 1; ci >= 0; --ci) {
     const uint c = (uint)ci;
     const uint t0 = c * C, n = min((uint)C, T - t0);
@@ -542,6 +897,7 @@ kernel void gdc_bwd_state(device const float* q [[buffer(0)]], device const floa
       }
     }
   }
+#endif
   for (uint kk = 0; kk < NKB; ++kk)
     for (uint cb = 0; cb < NCB; ++cb) simdgroup_store(dS[kk][cb], ds0 + bh * SS + (ulong)(8 * kk) * DV + j0 + 8 * cb, DV);
 }
@@ -822,30 +1178,59 @@ kernel void gdc_bwd_chunk(device const float* q [[buffer(0)]], device const floa
 """
 
 
-def library(dk: int):
-    """The compiled chunked kernels for one key head width (a multiple of 32) at the module's chunk length and tiling."""
-    return _library(dk, C, NCB, int(STAGE and C * dk <= 4096), HWLOAD, NSGB, min(KGRP, dk // 8 // NSGB) or 1)
+def library(dk: int, c: int | None = None, nsg: int | None = None):
+    """The compiled chunked kernels for one key head width (a multiple of 32) at chunk length c (default C) and the module's
+    tiling. With DBUF (where the chunk fits: C * DK <= 2,048), the state passes are compiled for threadgroups of nsg simdgroups
+    (default NSG): launch them only that wide."""
+    c = c or C
+    stage = int(STAGE and c * dk <= 4096)
+    dbuf = dbuf_for(dk, c)
+    return _library(dk, c, NCB, stage, HWLOAD, NSGB, min(KGRP, dk // 8 // NSGB) or 1, dbuf, (nsg or NSG) if dbuf else NSG)
 
 
-def state_simdgroups(dv: int) -> int:
-    """Simdgroups a threadgroup of the state passes for value width dv: as many 8 * NCB column slices as fit, up to NSG."""
+def dbuf_for(dk: int, c: int) -> int:
+    """The state passes' DBUF form at this key width and chunk length: DBUF 1 needs four C x DK buffers in 32 KB (C * DK <=
+    2,048), DBUF 2 the two of single-buffered staging (C * DK <= 4,096); 0 where they do not fit."""
+    if not (DBUF and STAGE):
+        return 0
+    return int(DBUF) if c * dk <= (2048 if DBUF == 1 else 4096) else 0
+
+
+def state_simdgroups(dv: int, split: int = 1) -> int:
+    """Simdgroups a threadgroup of the state passes for value width dv: as many 8 * NCB column slices as fit, up to NSG; with
+    split > 1, at most NSG / split, so a head-row's columns go to at least `split` threadgroups (series design D3 (b))."""
     per = 8 * NCB
     if dv % per != 0:
         raise ValueError(f"the chunked kernels need the value head width to be a multiple of {per}, got {dv}")
-    n = min(NSG, dv // per)
+    n = max(1, min(NSG, dv // per) // max(1, split))
     while (dv // per) % n:
         n -= 1
     return n
 
 
+# VALUE_SPLIT = "auto" (op.split_for): the split for a state pass of chunk length c over a call's head-rows (B x H), measured on
+# the M3 Max (docs/series_layer.md, D3, bench/layer_logs/d3_bench*.json): a pass at chunk 16 gains from 2 threadgroups a head-row
+# only while the head-rows leave most cores idle (16 head-rows: 1.10-1.14x; 32: 0.96-0.99x; 64: 0.94-0.97x); the chunk-8 forward,
+# with half the products a chunk, gains at up to 64 (32 head-rows: 1.10x over chunk 8 unsplit; 64: 1.05x). 4 and 8 threadgroups a
+# head-row measured slower than 2 at every shape. ((chunk length, max head-rows, split), ...): the first match wins; else 1
+AUTO_SPLIT = ((8, 64, 2), (16, 16, 2))
+
+
+def auto_split(rows: int, T: int, c: int = C) -> int:
+    for chunk, max_rows, s in AUTO_SPLIT:
+        if c == chunk and rows <= max_rows:
+            return s
+    return 1
+
+
 @functools.lru_cache(maxsize=None)
-def _library(dk: int, c: int, ncb: int, stage: int, hwload: int, nsgb: int, kgrp: int):
+def _library(dk: int, c: int, ncb: int, stage: int, hwload: int, nsgb: int, kgrp: int, dbuf: int = 0, nsgt: int = NSG):
     if dk % 32 != 0:
         raise ValueError(f"the key head width must be a multiple of 32, got {dk}")
     if c % 8 != 0 or not 8 <= c <= 32:
         raise ValueError(f"the chunk length must be 8, 16, 24 or 32, got {c}")
     src = _SOURCE
     for key, val in (("__DK__", dk), ("__C__", c), ("__NCB__", ncb), ("__STAGE__", stage),
-                     ("__HWLOAD__", hwload), ("__NSGB__", nsgb), ("__KGRP__", kgrp)):
+                     ("__HWLOAD__", hwload), ("__NSGB__", nsgb), ("__KGRP__", kgrp), ("__DBUF__", dbuf), ("__NSGT__", nsgt)):
         src = src.replace(key, str(val))
     return torch.mps.compile_shader(src)

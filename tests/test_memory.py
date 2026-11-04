@@ -14,7 +14,10 @@ import torch
 from macai.gated_delta import _memory, chunk_gated_delta_rule, l2norm, op
 
 mps = pytest.mark.skipif(not torch.backends.mps.is_available(), reason="needs an Apple GPU")
-STORED = dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True, SIZE_CLASSES=False, RECOMPUTE_STATES=False)
+# FWD_CHUNK and VALUE_SPLIT (series design D3) pinned to the settings these tests were written against: the recomputed states
+# give the stored path's bits when the forward chunks as the backward does (D3's own tests: tests/test_chunking.py)
+STORED = dict(KERNEL="chunked", KERNEL_BWD="chunked", FUSED_NORM=True, SIZE_CLASSES=False, RECOMPUTE_STATES=False,
+              FWD_CHUNK=16, VALUE_SPLIT=1)
 DESIGNS = {"classes": dict(SIZE_CLASSES=True, RECOMPUTE_STATES=False),
            "recompute": dict(SIZE_CLASSES=False, RECOMPUTE_STATES=True),
            "classes+recompute": dict(SIZE_CLASSES=True, RECOMPUTE_STATES=True)}

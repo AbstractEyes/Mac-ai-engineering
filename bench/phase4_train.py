@@ -30,7 +30,9 @@ designs D8 (the LM head and the loss at the labelled positions only) and D9 (the
 picture) of macai.training (docs/training.md); both off by default (the runs before reproduce), recorded with the run, their
 counts (the head's calls, the cache's stores and hits and its own time) at every step. --lora-fused switches on series design
 D5, the LoRA adapter path fused (macai.lora.FUSED; docs/lora.md): off by default (the runs before reproduce), recorded with the
-run, its counts (fused calls, PEFT's own forward by reason) at every step. --logdir puts the record elsewhere
+run, its counts (fused calls, PEFT's own forward by reason) at every step. --fwd-chunk, --dbuf and --value-split set series
+design D3's settings of the rule (op.FWD_CHUNK, _chunked.DBUF, op.VALUE_SPLIT; docs/series_layer.md): 16, off and 1 by default
+(the runs before reproduce), recorded with the run, the rule's calls by the path they took at every step. --logdir puts the record elsewhere
 (bench/phase4_run.sh passes its LOGS). The first line the runner prints is its own process id: stop a run by hand with SIGINT to
 that id only (the record is still written).
 """
@@ -161,6 +163,8 @@ def training_counts() -> dict:
            "fallbacks": {f"{p}: {r}": n for (p, r), n in _qwen3_5.FALLBACKS.items()}}
     from macai.lora import _peft
     out["lora_fused"] = _peft.CALLS["fused"]
+    from macai.gated_delta import op
+    out["rule_calls"] = dict(op.CALLS)
     out["lora_fallbacks"] = dict(_peft.FALLBACKS)
     caches = list(_vision_cache._caches.values())
     if caches:
@@ -196,6 +200,13 @@ def main(argv=None, customize=None) -> int:
                          "design D9); off by default")
     ap.add_argument("--lora-fused", action="store_true",
                     help="the kernels arm's LoRA adapter path fused (macai.lora.FUSED, series design D5); off by default")
+    ap.add_argument("--fwd-chunk", type=int, choices=(16, 8), default=16,
+                    help="the kernels arm's chunk length for forwards that keep no states (op.FWD_CHUNK, series design D3 (a1)); "
+                         "16 by default")
+    ap.add_argument("--dbuf", action="store_true",
+                    help="the kernels arm's double-buffered state passes (_chunked.DBUF, series design D3 (a2)); off by default")
+    ap.add_argument("--value-split", default="1", choices=("1", "2", "4", "8", "auto"),
+                    help="the kernels arm's value-column split in the state passes (op.VALUE_SPLIT, series design D3 (b)); 1 by default")
     ap.add_argument("--logdir", default=os.path.join(HERE, "phase4_logs"), help="where the run's record (<name>.json) goes")
     ap.add_argument("--epochs", type=float, required=True)
     ap.add_argument("--batch", type=int, required=True)
@@ -218,6 +229,8 @@ def main(argv=None, customize=None) -> int:
         ap.error(f"--layer: 'off', 'default', 'all' or part names from {LAYER_PARTS}")
     if (a.head_at_labels or a.vision_cache or a.lora_fused) and a.arm != "kernels":
         ap.error("--head-at-labels, --vision-cache and --lora-fused are settings of the kernels arm")
+    if (a.fwd_chunk != 16 or a.dbuf or a.value_split != "1") and a.arm != "kernels":
+        ap.error("--fwd-chunk, --dbuf and --value-split are settings of the kernels arm")
 
     os.makedirs(a.logdir, exist_ok=True)
     out_json = os.path.join(a.logdir, f"{a.name}.json")
@@ -262,9 +275,13 @@ def main(argv=None, customize=None) -> int:
             TR.configure(HEAD_AT_LABELS=a.head_at_labels, VISION_CACHE=a.vision_cache)
             from macai import lora as LO
             LO.configure(FUSED=a.lora_fused)
+            op.FWD_CHUNK = a.fwd_chunk
+            _chunked.DBUF = int(a.dbuf)
+            op.VALUE_SPLIT = a.value_split if a.value_split == "auto" else int(a.value_split)
             rec["macai"] = {"version": macai.__version__, "KERNEL": op.KERNEL, "KERNEL_BWD": op.KERNEL_BWD,
                             "FUSED_NORM": op.FUSED_NORM, "chunk": _chunked.C, "SIZE_CLASSES": op.SIZE_CLASSES,
-                            "RECOMPUTE_STATES": op.RECOMPUTE_STATES, "layer_option": a.layer, "layer": L.settings(),
+                            "RECOMPUTE_STATES": op.RECOMPUTE_STATES, "FWD_CHUNK": op.FWD_CHUNK, "DBUF": _chunked.DBUF,
+                            "VALUE_SPLIT": op.VALUE_SPLIT, "layer_option": a.layer, "layer": L.settings(),
                             "layer_patches": macai.patch.layer_patches(), "training": TR.settings(),
                             "training_patches": macai.patch.training_patches(), "lora": LO.settings(),
                             "lora_patches": macai.patch.lora_patches()}

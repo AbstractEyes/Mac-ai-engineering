@@ -8,7 +8,9 @@
 #
 # The log (the guard's lines, the trainer's output, the guard's peak footprint at the end) goes to $LOGS/<name>.log, the run's
 # record to $LOGS/<name>.json; LOGS defaults to bench/phase4_logs (the memory series: LOGS=bench/memory_logs). RUNNER names
-# the runner script (default bench/phase4_train.py; the step profile: RUNNER=bench/profile_step.py LOGS=bench/layer_logs).
+# the runner script (default bench/phase4_train.py; the step profile: RUNNER=bench/profile_step.py LOGS=bench/layer_logs). WALL
+# sets the guard's wall in seconds (default 10800, every run before; a probe 900, a 100-step 0.8B run 2100, a 25-step 9B run 2700:
+# about three times the job, so a hung job ends by itself).
 set -eu
 cd "$(dirname "$0")/.."
 : "${GUARD:?set GUARD to the memory guard script}"
@@ -16,9 +18,10 @@ cd "$(dirname "$0")/.."
 PY=${PY:-python}
 LOGS=${LOGS:-bench/phase4_logs}
 RUNNER=${RUNNER:-bench/phase4_train.py}
+WALL=${WALL:-10800}
 name=$1
 shift
 mkdir -p "$LOGS"
 PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.75 PYTORCH_MPS_LOW_WATERMARK_RATIO=0.55 HF_HUB_OFFLINE=1 \
-    "$PY" "$GUARD" --limit-gb 96 --swap-gb 1 --wall-s 10800 --log "$LOGS/$name.log" -- \
+    "$PY" "$GUARD" --limit-gb 96 --swap-gb 1 --wall-s "$WALL" --log "$LOGS/$name.log" -- \
     "$PY" "$RUNNER" --name "$name" --logdir "$LOGS" "$@"

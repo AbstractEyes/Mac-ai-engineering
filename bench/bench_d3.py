@@ -51,18 +51,22 @@ D = 128
 VARIANTS = {
     "base": {},
     "fwd8": {"op": {"FWD_CHUNK": 8}},                                   # (a1)
-    "dbuf": {"chunked": {"DBUF": 1}},                                   # (a2)
+    "dbuf": {"chunked": {"DBUF": 1}},                                   # (a2), two buffers, one barrier a chunk
+    "dbuf2": {"chunked": {"DBUF": 2}},                                  # (a2), one buffer, the next chunk read ahead
     "fwd8+dbuf": {"op": {"FWD_CHUNK": 8}, "chunked": {"DBUF": 1}},
     "split2": {"op": {"VALUE_SPLIT": 2}},                               # (b)
     "split4": {"op": {"VALUE_SPLIT": 4}},
     "split8": {"op": {"VALUE_SPLIT": 8}},
     "split2+dbuf": {"op": {"VALUE_SPLIT": 2}, "chunked": {"DBUF": 1}},
     "split4+dbuf": {"op": {"VALUE_SPLIT": 4}, "chunked": {"DBUF": 1}},
+    "fwd8+split2": {"op": {"FWD_CHUNK": 8, "VALUE_SPLIT": 2}},
+    "fwd8+split4": {"op": {"FWD_CHUNK": 8, "VALUE_SPLIT": 4}},
     "auto": {"op": {"VALUE_SPLIT": "auto"}},
+    "fwd8+auto": {"op": {"FWD_CHUNK": 8, "VALUE_SPLIT": "auto"}},
 }
 PROFILES = {"0.8b": ("profile_d5_0.8b_2x8", 16, 18), "9b": ("profile_d5_9b_1x16", 32, 24)}
 BENCH_SHAPES = {"0.8b_bench": (4, 1024, 16), "9b_bench": (2, 1024, 32)}
-LONG_T = (4096, 8192, 16384, 32768)
+LONG_T = (1024, 4096, 8192, 16384, 32768)
 LONG_H = (16, 32)
 KERNEL_SHAPES = {"0.8b_bench": (4, 1024, 16), "9b_bench": (2, 1024, 32), "0.8b_mean": (2, 811, 16), "9b_mean": (1, 768, 32),
                  "long_8k_h16": (1, 8192, 16), "long_8k_h32": (1, 8192, 32), "long_32k_h16": (1, 32768, 16)}
@@ -209,7 +213,7 @@ def main() -> int:
     ap.add_argument("--name", required=True)
     ap.add_argument("--variants", default="base")
     ap.add_argument("--rounds", type=int, default=3)
-    ap.add_argument("--reps", type=int, default=3)
+    ap.add_argument("--reps", type=int, default=5)
     ap.add_argument("--kernels", action="store_true")
     ap.add_argument("--no-long", action="store_true")
     ap.add_argument("--no-readers", action="store_true")
@@ -256,6 +260,10 @@ def main() -> int:
         for n in order:
             t0 = time.time()
             with Settings(VARIANTS[n]):
+                # the variant's libraries compiled and the GPU's clocks up before the first timed shape
+                first = next(iter(data.values()))
+                time_modes(first[0], first[1], est[next(iter(data))], 2)
+                warm_gpu(0.3)
                 for s, (base, dout) in data.items():
                     reps = a.reps if not s.startswith("long") else max(2, a.reps - 1)
                     for m, v in time_modes(base, dout, est[s], reps).items():
