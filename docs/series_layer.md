@@ -1154,6 +1154,62 @@ then 37.5 s in the second epoch; the footprint falls 12 / 8 GB with the cache's 
   both met it at 0.44%): the references themselves disagree by 1.2% and 2.2% at the last step, and each run's adapters start from
   their own unseeded draw.
 
+## D5, the products and the LoRA adapter path (registered before any code)
+
+| part | registered | predicted | bars |
+|---|---|---|---|
+| (a) the frozen products | step 0's products reading decides (PyTorch's products tie MLX's: no custom product for the frozen projections); read again at the shapes D8 created: the LM head's product at the labelled row counts (~312 rows at 0.8B, ~163 at 9B, against 248,320 words), PyTorch beside MLX's mx.matmul | the big projections at >= 85% of the large-product rate at the bench's token counts, >= 70% at the micro-batch's; MLX within 10% of PyTorch there | |
+| (b) the LoRA adapter path fused | the dropout, the rank-32 products, the scaled add, forward and backward, in place of PEFT 0.21.2's `lora.Linear.forward` for vanilla LoRA only (one active adapter, no variant or DoRA, not merged, adapters enabled, no adapter_names, an nn.Linear base, a plain nn.Dropout or Identity); anything else runs PEFT's own forward and is counted. Replaced only while its source hashes as in PEFT 0.21.2; selectable off. The masks drawn by torch's own dropout call, so the fused path and PEFT draw the same masks from the same generator state (no random stream of its own). Under bf16 autocast as the readers train: PEFT's semantics matched, or every difference documented with its parity reading | the rank-32 products <= 30% of the large-product rate in PyTorch; the fused adapter path >= 1.5x its PyTorch path | parity as D4 (the forward and every gradient against float64 on the CPU at the harness's shapes: odd lengths, B > 1, float32 / bfloat16 / float16 inputs; the fused path's error at most twice the PyTorch path's own, both measured); the same generator state gives the same masks; speed: >= 1.2x on its part (the adapter path, forward + backward) at both sizes, else not adopted |
+| (c) a custom product | MLX's open kernel through compile_shader, its licence kept, only at a shape carrying >= 5% of the step where PyTorch reaches < 80% of MLX: the head's product is 3.9% of a D8 micro-batch, so built only if the measurement puts it at >= 5% of the step and under 80% of MLX; otherwise the reading is reported | | |
+
+Integration, once admitted (as D4, D8 and D9): every run with the admitted entries (`--layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU
+--head-at-labels --vision-cache`) and D5's new runner option. Qwen3.5-0.8B 2 x 8, the cache emptied, the recomputed states, 4 epochs
+(100 steps): the loss read as Phase 4 read it against A, B, C, the guard's peak footprint <= 53.5 GB, the steady step and each
+window against D8 and D9's run of record (`d8d9_0.8b_2x8_100steps`: 6.522 s over steps 11-100; windows 1-10 7.60, 11-25 7.67,
+26-50 6.32, 51-75 6.28, 76-100 6.28 s). Qwen3.5-9B 1 x 16, the cache emptied, 25 steps (1 epoch): footprint <= 74.6 GB, the
+steady step (11-25) against `d8d9_9b_1x16_50steps`' same steps (43.13 s; the first epoch, where the vision cache served 18
+repeated pictures, as a 25-step run with it on does), the loss over steps 1-25 against Phase 4's 9B reference.
+
+### D5 (b): the design, and its predictions written before any code
+
+What PEFT runs today per adapted projection, under the readers' bf16 autocast (the adapters in float32, the base in bf16):
+
+| PEFT's pass | bytes an input element (d_in wide) | bytes an output element (d_out wide) |
+|---|---|---|
+| forward: the float32 copy of x; dropout in float32 (a byte mask); autocast's cast of the dropped copy to bf16; the A product reads it | 6 + 9 + 6 + 2 = 23 | |
+| forward: the B product's output; the scaled copy; the add to the base output | | 2 + 4 + 6 = 12 |
+| backward: the scaled gradient; the two products that read it (dP, dB) | | 4 + 4 = 8 |
+| backward: the A product's input gradient, its cast to float32, dropout's backward in float32, the cast back, the add to the base's input gradient; dA reads the dropped copy | 2 + 6 + 9 + 6 + 6 + 2 = 31 | |
+
+The design (`macai.lora`), the base product left to PEFT's own module call:
+
+- forward: `xd, mask = torch.native_dropout(x, p, True)` on x in its own dtype when that is the compute dtype (probe: the same
+  mask as PEFT's draw from the same generator state at every dtype, and the dropped bf16 / fp16 values bit for bit PEFT's dropped
+  float32 copy after autocast's cast, 0 of 5.4 M elements differing); P = xd A^T by PyTorch's product ([N, 32]); Y = R + s P B^T
+  by one Metal kernel (simdgroup-matrix products of rank 32 in float32, the base output R read and Y written once, one rounding);
+- backward: G = s dY B and dB = s dY^T P by PyTorch's products, the scale applied to the [N, 32] and [d_out, 32] results instead
+  of to dY (exact for s = 2: the products give the same bits for a power-of-two scale, probed); dA = G^T xd by PyTorch's
+  product; dX_lora = M (G A) / (1 - p) by one Metal kernel (the rank-32 product with the mask and the scale in its epilogue,
+  dX written once); autograd adds it to the base's input gradient, as before.
+- traffic: about 18 bytes an input element and 8 an output element against PEFT's 54 and 20.
+- numerics: dA and dB the same products on the same bits as PEFT's (s = 2); Y and dX_lora rounded once where PEFT rounds three
+  and two times.
+
+Predicted before any code (in situ, a micro-batch; the products at step 0's measured rank-32 rates, the passes at the copy rate,
+the kernels at 1.5x their traffic):
+
+| | 0.8B 2 x 8 (1,622 positions) | 9B 1 x 16 (768 positions) |
+|---|---|---|
+| the adapter path now | 154.8 ms (the step profile with D4 + D8) | ~256 ms (step 0; not profiled since D4) |
+| predicted with the fused path | 60-85 ms (point 70: the products ~38, dropout ~5, the two kernels ~14, the gradient add ~6, casts and launches ~7) | 105-150 ms (point 125) |
+| the adapter path in isolation, forward + backward, all projections weighted by their calls | >= 1.8x | >= 1.8x |
+| the step | -0.55 to -0.75 s (8 micro-batches): steady 6.52 -> 5.8-6.0 s (-8 to -11%); the later epochs 6.29 -> ~5.6 s | -1.7 to -2.4 s (16 micro-batches): steps 11-25 43.13 -> 40.7-41.4 s (-4 to -6%) |
+| memory | unchanged or lower (the same tensors kept: the dropped input, the mask, P; the float32 copies gone) | the same |
+
+The rank-32 products' registered prediction (<= 30% of the large-product rate) can be read from step 0's records already: at
+the micro-batch shapes they ran at 15-67% of the 11.5 TFLOP/s large-square rate (median 36% at 0.8B, 45% at 9B; at the bench
+shapes 29-77%, medians 49% / 48%); this entry's bench grades it again.
+
 ## The log
 
 ### 1. 2026-11-03 11:4x-11:5x PST: the instrument and its check (commit 8fb6609)
