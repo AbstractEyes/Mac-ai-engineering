@@ -1,0 +1,31 @@
+[guard] start 17:40:56 limit 96.0 GB, swap +1.0 GB, wall 1200 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python bench/profile_products.py --mlx --head-rows 0.8b=128,256,312,512,1024,1622 --head-rows 9b=64,128,163,256,512,768
+[products] pid 22343
+squares {"2048": {"wall_ms": 1.4563, "inner": 4, "tflops_wall": 11.797}, "4096": {"wall_ms": 10.6883, "inner": 3, "tflops_wall": 12.859}, "8192": {"wall_ms": 86.855, "inner": 3, "tflops_wall": 12.659}}
+0.8b 128 forward Z = E W^T {"wall_ms": 5.1592, "tflops_wall": 12.617}
+0.8b 128 backward dE = dZ W {"wall_ms": 7.5987, "tflops_wall": 8.567}
+0.8b 256 forward Z = E W^T {"wall_ms": 10.5946, "tflops_wall": 12.288}
+0.8b 256 backward dE = dZ W {"wall_ms": 12.6041, "tflops_wall": 10.329}
+0.8b 312 forward Z = E W^T {"wall_ms": 13.3683, "tflops_wall": 11.869}
+0.8b 312 backward dE = dZ W {"wall_ms": 16.0326, "tflops_wall": 9.897}
+0.8b 512 forward Z = E W^T {"wall_ms": 22.1541, "tflops_wall": 11.753}
+0.8b 512 backward dE = dZ W {"wall_ms": 26.1343, "tflops_wall": 9.963}
+0.8b 1024 forward Z = E W^T {"wall_ms": 44.564, "tflops_wall": 11.686}
+0.8b 1024 backward dE = dZ W {"wall_ms": 48.795, "tflops_wall": 10.673}
+0.8b 1622 forward Z = E W^T {"wall_ms": 72.82, "tflops_wall": 11.328}
+0.8b 1622 backward dE = dZ W {"wall_ms": 80.0998, "tflops_wall": 10.298}
+9b 64 forward Z = E W^T {"wall_ms": 10.947, "tflops_wall": 11.893}
+9b 64 backward dE = dZ W {"wall_ms": 16.9956, "tflops_wall": 7.66}
+9b 128 forward Z = E W^T {"wall_ms": 22.6691, "tflops_wall": 11.486}
+9b 128 backward dE = dZ W {"wall_ms": 30.2937, "tflops_wall": 8.595}
+9b 163 forward Z = E W^T {"wall_ms": 33.9525, "tflops_wall": 9.766}
+9b 163 backward dE = dZ W {"wall_ms": 36.034, "tflops_wall": 9.202}
+9b 256 forward Z = E W^T {"wall_ms": 45.4679, "tflops_wall": 11.453}
+9b 256 backward dE = dZ W {"wall_ms": 50.2758, "tflops_wall": 10.358}
+9b 512 forward Z = E W^T {"wall_ms": 90.3466, "tflops_wall": 11.528}
+9b 512 backward dE = dZ W {"wall_ms": 96.5107, "tflops_wall": 10.792}
+9b 768 forward Z = E W^T {"wall_ms": 133.9272, "tflops_wall": 11.665}
+[guard]      30 s footprint  18.45 GB (peak  18.45) swap +0.00 GB pressure 1
+9b 768 backward dE = dZ W {"wall_ms": 145.6263, "tflops_wall": 10.728}
+squares at the end {"2048": {"wall_ms": 1.4268, "inner": 6, "tflops_wall": 12.041}, "4096": {"wall_ms": 12.0061, "inner": 3, "tflops_wall": 11.447}, "8192": {"wall_ms": 95.0378, "inner": 3, "tflops_wall": 11.569}}
+wrote /Users/philipcoelho/mirel/mac_ai_engineering/bench/layer_logs/products_head_rows_mlx.json
+[guard] end 17:41:33 rc 0 peak footprint 18.47 GB wall 36 s

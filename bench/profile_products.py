@@ -5,6 +5,13 @@ autocast runs them) against MLX (mx.matmul, bf16), read against the large-square
     python bench/profile_products.py --shapes 0.8b=4x1024,2x903 --shapes 9b=2x1024,1x859          # PyTorch: products_torch.json
     python bench/profile_products.py --mlx --shapes 0.8b=4x1024,2x903 --shapes 9b=2x1024,1x859    # MLX (its own process, after)
     python bench/profile_products.py --square-forms      # the large-square rate per form (X W, X W^T): products_square_forms.json
+    python bench/profile_products.py --head-rows 0.8b=128,256,312,512,1024,1622 --head-rows 9b=64,128,163,256,512,768
+    python bench/profile_products.py --mlx --head-rows ...                 # series design D5 (a): products_head_rows_*.json
+
+--head-rows (series design D5 (a), docs/series_layer.md): the LM head's two products at the row counts D8 leaves them (the
+positions with a label, flattened to [rows, hidden]): Z = E W^T (F.linear, the head's forward) and dE = dZ W (its gradient to
+the hidden states; the head is frozen), against 248,320 words, with the large squares as the control, PyTorch and MLX each in
+its own process.
 
 Each shape is batch x tokens: the bench's (first) and the training micro-batch's median padded one. At each, for every
 projection (in -> out) of both models, the products autograd runs in LoRA training with frozen weights:
@@ -282,6 +289,112 @@ def mlx_main(a):
     return out
 
 
+def head_rows_main(a):
+    """The LM head's forward (Z = E W^T) and its gradient to E (dE = dZ W) at each row count, bf16, PyTorch (Metal events and
+    the wall clock) or MLX (the wall clock around mx.eval); the large squares at the start and the end as the control."""
+    out = {"started": time.strftime("%Y-%m-%d %H:%M:%S %Z"), "reps": REPS, "models": {}}
+    if a.mlx:
+        import mlx.core as mx
+        mx.random.seed(0)
+        bf = mx.bfloat16
+        out["framework"] = f"mlx {mx.__version__}"
+
+        def rnd(*s):
+            return (mx.random.normal(s) * 0.5).astype(bf)
+
+        def time_case(fn, fl):
+            for _ in range(3):
+                mx.eval(fn())
+            t0 = time.perf_counter()
+            mx.eval(fn())
+            inner = fill((time.perf_counter() - t0) * 1e3)
+            walls = []
+            for _ in range(REPS):
+                t0 = time.perf_counter()
+                mx.eval([fn() for _ in range(inner)])
+                walls.append((time.perf_counter() - t0) * 1e3 / inner)
+            w = statistics.median(walls)
+            return {"wall_ms": round(w, 4), "inner": inner, "tflops_wall": round(fl / w / 1e9, 3)}
+
+        def squares():
+            res = {}
+            for n in SQUARES:
+                x, w = rnd(n, n), rnd(n, n)
+                res[str(n)] = time_case(lambda: mx.matmul(x, w.T), 2 * n ** 3)
+            return res
+
+        def cases(rows, h, v):
+            e, w, dz = rnd(rows, h), rnd(v, h), rnd(rows, v)
+            return {"forward Z = E W^T": lambda: mx.matmul(e, w.T), "backward dE = dZ W": lambda: mx.matmul(dz, w)}
+    else:
+        import torch
+        import torch.nn.functional as F
+        sys.path.insert(0, os.path.join(HERE, "..", "src"))
+        from macai.instruments import gpu_ms, warm_gpu
+        out["framework"] = f"torch {torch.__version__}"
+        gen = torch.Generator().manual_seed(0)
+        warm_gpu(2.0)
+
+        def rnd(*s):
+            return (torch.randn(*s, generator=gen) * 0.5).to("mps", torch.bfloat16)
+
+        def time_case(fn, fl):
+            for _ in range(3):
+                fn()
+            torch.mps.synchronize()
+            t0 = time.perf_counter()
+            fn()
+            torch.mps.synchronize()
+            inner = fill((time.perf_counter() - t0) * 1e3)
+            ev = gpu_ms(fn, reps=REPS, warm=1, inner=inner)
+            walls = []
+            for _ in range(REPS):
+                torch.mps.synchronize()
+                t0 = time.perf_counter()
+                for _ in range(inner):
+                    fn()
+                torch.mps.synchronize()
+                walls.append((time.perf_counter() - t0) * 1e3 / inner)
+            w = statistics.median(walls)
+            return {"events_ms": ev["median_ms"], "wall_ms": round(w, 4), "inner": inner,
+                    "tflops_events": round(fl / ev["median_ms"] / 1e9, 3), "tflops_wall": round(fl / w / 1e9, 3)}
+
+        def squares():
+            res = {}
+            for n in SQUARES:
+                x, w = rnd(n, n), rnd(n, n)
+                res[str(n)] = time_case(lambda: F.linear(x, w), 2 * n ** 3)
+                del x, w
+            return res
+
+        def cases(rows, h, v):
+            e, w, dz = rnd(rows, h), rnd(v, h), rnd(rows, v)
+            return {"forward Z = E W^T": lambda: F.linear(e, w), "backward dE = dZ W": lambda: torch.mm(dz, w)}
+    out["squares"] = squares()
+    print("squares", json.dumps(out["squares"]), flush=True)
+    for model, rows_list in a.head_rows.items():
+        tc = text_config(MODELS[model])
+        h, v = tc["hidden_size"], tc["vocab_size"]
+        res = []
+        for rows in rows_list:
+            for name, fn in cases(rows, h, v).items():
+                r = time_case(fn, 2 * rows * h * v)
+                r.update(rows=rows, hidden=h, vocab=v, product=name, flops=2 * rows * h * v)
+                res.append(r)
+                print(model, rows, name, json.dumps({k: r[k] for k in r if k in ("events_ms", "wall_ms", "tflops_events",
+                                                                                     "tflops_wall")}), flush=True)
+            if not a.mlx:
+                torch.mps.empty_cache()
+        out["models"][model] = res
+    out["squares_end"] = squares()
+    print("squares at the end", json.dumps(out["squares_end"]), flush=True)
+    out["ended"] = time.strftime("%Y-%m-%d %H:%M:%S %Z")
+    path = os.path.join(HERE, "layer_logs", "products_head_rows_mlx.json" if a.mlx else "products_head_rows_torch.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(out, fh, indent=1)
+    print("wrote", path, flush=True)
+
+
 def square_forms_main():
     """The large-square rate in the forms PyTorch can run it: X W (torch.mm, a new output or a preallocated one), X W^T
     (F.linear, the form nn.Linear runs) and X W^T through torch.mm on the transposed view. Metal events, back-to-back calls."""
@@ -325,8 +438,14 @@ def main():
         return square_forms_main()
     ap = argparse.ArgumentParser()
     ap.add_argument("--mlx", action="store_true")
-    ap.add_argument("--shapes", action="append", required=True, help="model=BxT,BxT (the bench's shape first)")
+    ap.add_argument("--shapes", action="append", help="model=BxT,BxT (the bench's shape first)")
+    ap.add_argument("--head-rows", action="append", help="model=rows,rows: the LM head's products at these row counts (D5 (a))")
     a = ap.parse_args()
+    if a.head_rows:
+        a.head_rows = {k: [int(x) for x in v.split(",")] for k, v in (t.split("=") for t in a.head_rows)}
+        return head_rows_main(a)
+    if not a.shapes:
+        ap.error("--shapes or --head-rows")
     a.shapes = {k: [tuple(int(x) for x in s.split("x")) for s in v.split(",")] for k, v in (t.split("=") for t in a.shapes)}
     out = mlx_main(a) if a.mlx else torch_main(a)
     out["shapes"] = {k: [f"{b}x{t}" for b, t in v] for k, v in a.shapes.items()}
