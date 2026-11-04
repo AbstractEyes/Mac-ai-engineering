@@ -1096,6 +1096,8 @@ The proposal (D8b, for its own entry):
 | bars (proposed) | parity as D8's (the loss within relative 1e-5 of the model's own loss; the gradient to the hidden states within twice its error against float64); speed >= 1.5% of the 0.8B step |
 | the larger lever beside it | the head's products at these row counts run at 7.1-8.6 TFLOP/s forward (312 / 163 rows) against 11-12 at full positions: 61% of what is left; a matter for D5 (the products), not D8b |
 
+Set aside for now (17:3x PST): not built, not part of D5 or D3; it returns only if asked for.
+
 ## D8 and D9's verdicts in short
 
 | registered | measured | verdict |
@@ -1685,9 +1687,36 @@ profiles without and with D5 18:51-19:04. All under the guard, rc 0, one job at 
 ### 22. 19:0x: the report
 `bench/d5_report.py` -> `d5_results.json` (offline by itself): every figure of this entry from the records.
 
+### 23. 19:1x-19:5x: a review
+The test suite run again on 6c64926 (the code of f2a7b55), 19:43-19:46 with nothing else on the GPU: 606 passed, 177 s, peak
+footprint 25.8 GB; every parity case's errors (331 cases) the same numbers as the record's. Every figure above recomputed from
+the raw records by separate code: the parity log (the 172 adapter cases; the 159 earlier cases identical to D8 and D9's
+record), the probes' checks and the whole-model float64 reading, both bench runs from their per-shape timings, both sizes' step
+profiles by group, steps 1-2, each window's step time, the loss readings, the footprints and the memory by step, the fused
+calls: all agree to rounding. Notes:
+- The windows above are on the trainer's clock, which counts whole seconds (a 10-step window reads to about 0.1 s). On each
+  step's own clock the 0.8B windows read 6.78 / 7.23 / 5.91 / 5.67 / 5.67 s a step (D8 and D9: 7.62 / 7.67 / 6.30 / 6.28 /
+  6.28), the steady step 5.999 against 6.519 (-8.0%), the later epochs 5.752 against 6.287 (-8.5%); 9B steps 11-25 40.95
+  against 43.13 (-5.0%).
+- (a)'s ratios are wall clock against wall clock (the gradient at 312 rows 1.205); PyTorch's event clock gives 0.73 / 1.22.
+- The whole-model float64 reading: the probe's record marks its own check unmet at 0.8B for its one gradient over 2 (layer 8's
+  in_proj_z LoRA B: 0.326 against PEFT's 0.137 of the gradient's largest value). Over the 301 gradients the ratios' logarithms
+  have mean -0.10 and spread 0.29; a symmetric scatter that wide puts 0.9 of 301 over 2 by itself, so the one exceedance is what
+  the reading's scatter predicts. Both paths are far from float64 there (PEFT's median 0.24), and the change touches every layer,
+  so their drifts part (D8's change at the head alone read at most 1.09 on the same reading). The reading has no measured noise
+  floor (PEFT against itself under another valid rounding order would give one).
+- The memory at 0.8B: the allocated memory between steps (0.43 GB) and the live tensors at a forward's end (median 7.8 GB) are
+  the same in both runs, and so is the driver's pool through the first epoch (peak 22.2 GB in both); from the second epoch the
+  pool runs higher (median 23.5 against 21.1 GB, peak 26.6 against 25.1). The +2.07 GB is the pool's, after the first epoch.
+- The stopped probe (entry 19) stayed alive, idle, beside every GPU job from 17:59 on: the three diagnostics, both probes, both
+  chains and the test run of record (0.56 GB, no GPU memory, about 1% of one core: its CPU time rose 32.5 -> 38.2 s from 19:14
+  to 19:25). The speed readings compare against runs made without it, so an effect of it could only make D5 read slower. It was
+  stopped by hand at 19:43:31 with SIGTERM (it had answered no SIGINT): rc -15, 6,242 s after its start; its full log replaces
+  the earlier copy (`probe_d5_0.8b_stopped.log`).
+
 ### Next
 D5 is done and on by default: the adapters' extra work is 10.9% / 4.8% of a micro-batch (0.8B / 9B) after it, the frozen products
 36.9% / 69.0% at the platform's rate. Then D3 (the rule's chunking: 9.9% / 3.7%). D8b (a fused cross-entropy, ~2% of a 0.8B
-step) and the vision cache's trim stay proposed for their own entries; so do the adapter path's next steps (dY read once for G and
-dB; the mask applied as x is loaded; the weights' bf16 casts kept per optimizer step) and the head's forward in another form at
-the labelled row counts.
+step) is set aside for now (17:3x PST): not built, outside D5 and D3, back only if asked for. The vision cache's trim stays
+proposed for its own entry; so do the adapter path's next steps (dY read once for G and dB; the mask applied as x is loaded; the
+weights' bf16 casts kept per optimizer step) and the head's forward in another form at the labelled row counts.
