@@ -55,3 +55,23 @@ The cache on a small model: the served output equal to the computed one bit for 
 not in evaluation or with a training tower, a weight change empties it, the tower draws no random numbers, the cap.
 `bench/training_probe.py` repeats the checks inside a real training run of each model (the real tower, the sample's pictures,
 and for 0.8B the whole model in float64 as the reference of every gradient).
+
+## Measured
+Both settings are on by default since series designs D8 and D9 admitted them ([series_layer.md](series_layer.md), D8 and D9). On
+an M3 Max (PyTorch 2.15, transformers 5.22.1), LoRA training of the Qwen3.5 picture readers (rank 32, bf16 autocast, the record's
+collator: prompt, picture and padding ignored), with the rest of macai on:
+
+| | Qwen3.5-0.8B, 2 x 8 sequences | Qwen3.5-9B, 1 x 16 |
+|---|---|---|
+| positions whose next token carries a label | 17.9% | 21.5% |
+| the head and the loss a micro-batch (in the step profile at 0.8B; the isolated bench at 9B) | 269.6 -> 53.6 ms | 298.0 -> 83.6 ms |
+| the step, the head at the labelled positions (against the kernels before) | 9.18 -> 7.51 s (-18.2%) | 46.2 -> 42.9 s (-7.1%) |
+| the step from the second epoch on, the cache too (against the head alone) | 7.48 -> 6.29 s (-15.9%) | 37.5 s (-12.6%, by the epochs' ratios to the runs before) |
+| the cache: CPU memory for the sample's 372 pictures; a lookup, hashing included | 1.68 GB; 7.4 ms (two pictures) | 3.56 GB; 6.2 ms |
+| the process's peak footprint (the cache included) | 41.6 -> 29.2 GB | 60.4 -> 52.0 GB |
+| the loss | like the reference by Phase 4's readings (100 steps) | steps 1-2 within 1e-6; over 25 steps .0012 from the reference run |
+
+The cache in numbers: the key of a picture is computed from its pixel rows copied back from the GPU (5.8 ms a 0.8B micro-batch of
+two pictures, 4.2 ms at 9B); a served micro-batch costs 7.4 / 6.2 ms in all against the tower's ~134 / ~318 ms. In the first epoch
+every call pays the key and the stores (+0.5% on the step). A picture takes 4.5 MB in full at 0.8B (1.1 MB of it the merged
+features the model reads) and 9.6 MB at 9B (4.5 MB).

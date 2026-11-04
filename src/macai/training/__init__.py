@@ -12,13 +12,16 @@ Qwen3.5 modeling code beside the rule and the layer parts; each is a setting of 
                     (mm_encoder_outputs): the tower runs once a picture.
 
 Each runs only where its conditions hold (training mode; for the cache, every tower parameter frozen); anywhere else the
-model's own code runs. stats() gives the counts of both (the head's calls, the cache's stores, hits and its own time).
+model's own code runs. Both are on by default; configure() switches either off. stats() gives the counts of both (the head's
+calls, the cache's stores, hits and its own time).
 """
 import contextlib
 
-# the settings in force (series designs D8 and D9, docs/series_layer.md)
-HEAD_AT_LABELS = False
-VISION_CACHE = False
+# the settings in force: both admitted by series designs D8 and D9 (parity: the loss within float32 rounding of the model's own
+# path, every gradient at its error against float64, the served tower output the same bits as a recompute; speed: the step
+# 18% / 7% faster at 0.8B / 9B, and the later epochs 16% / 13% faster again) and on by default since; docs/series_layer.md
+HEAD_AT_LABELS = True
+VISION_CACHE = True
 # the most a vision cache stores (GiB of CPU memory); past it, new pictures are computed every time
 VISION_CACHE_MAX_GB = 16.0
 

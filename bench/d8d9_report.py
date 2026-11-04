@@ -343,7 +343,7 @@ def profile():
     new = PR.report("0.8b", path, d2m)
     old = PR.report("0.8b", os.path.join(LOGS, PROFILE_D4 + ".json"), d2m)
     groups = {}
-    for g in set(new["groups"]) | set(old["groups"]):
+    for g in sorted(set(new["groups"]) | set(old["groups"]), key=lambda g: -(old["groups"].get(g, {}).get("ms_per_micro_batch") or 0)):
         a, b = old["groups"].get(g, {}), new["groups"].get(g, {})
         groups[g] = {"d4_ms": a.get("ms_per_micro_batch"), "d8_ms": b.get("ms_per_micro_batch"),
                      "d4_share_pct": a.get("share_pct"), "d8_share_pct": b.get("share_pct")}

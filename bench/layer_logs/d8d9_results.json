@@ -1233,35 +1233,35 @@
    "picture_patches_mean": 3801
   },
   "groups": {
-   "lora_extra": {
-    "d4_ms": 135.11,
-    "d8_ms": 154.81,
-    "d4_share_pct": 12.83,
-    "d8_share_pct": 18.44
-   },
    "frozen_products": {
     "d4_ms": 279.73,
     "d8_ms": 281.36,
     "d4_share_pct": 26.57,
     "d8_share_pct": 33.52
    },
+   "lm_head_and_loss": {
+    "d4_ms": 269.59,
+    "d8_ms": 53.59,
+    "d4_share_pct": 25.61,
+    "d8_share_pct": 6.38
+   },
+   "lora_extra": {
+    "d4_ms": 135.11,
+    "d8_ms": 154.81,
+    "d4_share_pct": 12.83,
+    "d8_share_pct": 18.44
+   },
+   "vision_tower": {
+    "d4_ms": 134.12,
+    "d8_ms": 132.77,
+    "d4_share_pct": 12.74,
+    "d8_share_pct": 15.82
+   },
    "rule": {
     "d4_ms": 75.66,
     "d8_ms": 75.59,
     "d4_share_pct": 7.19,
     "d8_share_pct": 9.0
-   },
-   "surroundings": {
-    "d4_ms": 33.27,
-    "d8_ms": 33.38,
-    "d4_share_pct": 3.16,
-    "d8_share_pct": 3.98
-   },
-   "new_shapes": {
-    "d4_ms": 17.87,
-    "d8_ms": 10.1,
-    "d4_share_pct": 1.7,
-    "d8_share_pct": 1.2
    },
    "data_optimizer_trainer": {
     "d4_ms": 60.98,
@@ -1275,23 +1275,23 @@
     "d4_share_pct": 5.11,
     "d8_share_pct": 6.91
    },
+   "surroundings": {
+    "d4_ms": 33.27,
+    "d8_ms": 33.38,
+    "d4_share_pct": 3.16,
+    "d8_share_pct": 3.98
+   },
+   "new_shapes": {
+    "d4_ms": 17.87,
+    "d8_ms": 10.1,
+    "d4_share_pct": 1.7,
+    "d8_share_pct": 1.2
+   },
    "other_model_parts": {
     "d4_ms": 10.58,
     "d8_ms": 10.06,
     "d4_share_pct": 1.01,
     "d8_share_pct": 1.2
-   },
-   "vision_tower": {
-    "d4_ms": 134.12,
-    "d8_ms": 132.77,
-    "d4_share_pct": 12.74,
-    "d8_share_pct": 15.82
-   },
-   "lm_head_and_loss": {
-    "d4_ms": 269.59,
-    "d8_ms": 53.59,
-    "d4_share_pct": 25.61,
-    "d8_share_pct": 6.38
    }
   },
   "head_and_loss_components": {

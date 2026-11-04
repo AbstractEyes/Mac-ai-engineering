@@ -11,8 +11,11 @@ recomputed in the backward (the same bits), and the process's footprint sits und
 ([docs/series_memory.md](docs/series_memory.md)). The rest of the layer around the rule (the RMSNorms, the short convolution,
 beta and g, the gated norm, SwiGLU) now runs as Metal kernels too, on by default (`macai.layer`): a LoRA training step of
 Qwen3.5 10.98 -> 9.18 s at 0.8B and 51.1 -> 46.2 s at 9B against the kernels before, with a smaller footprint and the
-reference's loss ([docs/series_layer.md](docs/series_layer.md)). The rest of the design series (the products and the adapters'
-path, the rule's chunking) is not done. Treat the numbers below as measurements of a prototype.
+reference's loss ([docs/series_layer.md](docs/series_layer.md)). The training path around the layers is lighter too, on by
+default (`macai.training`): the LM head and the loss run only at the positions that carry a label, and a frozen vision tower's
+output is kept per picture after the first epoch: a step 9.18 -> 7.51 s at 0.8B (46.2 -> 42.9 s at 9B), and 6.29 s (37.5 s) from
+the second epoch on, the same loss within float32 rounding. The rest of the design series (the products and the adapters' path,
+the rule's chunking) is not done. Treat the numbers below as measurements of a prototype.
 
 ## What is here
 - `macai.gated_delta`: the gated delta rule (the linear attention in three of every four layers of Qwen3.5 / Qwen3-Next) as
@@ -28,8 +31,15 @@ path, the rule's chunking) is not done. Treat the numbers below as measurements 
   7-19x their PyTorch paths (beta / g and SwiGLU 1.6-1.7x); a whole Qwen3.5 linear-attention layer 1.47x (0.8B) / 1.15x (9B)
   faster again. Each part is a setting. Design and measurements: [docs/layer.md](docs/layer.md),
   [docs/series_layer.md](docs/series_layer.md).
-- `macai.patch`: installs the rule and the layer parts into transformers' Qwen3.5-family modeling code (each replaced method only
-  while its source matches the transformers version it was written against), so existing training code runs them.
+- `macai.training`: the training path around the layers (series designs D8, D9), no kernels: while a Qwen3.5 model trains with
+  labels, the LM head and the loss run only at the positions whose next token carries a label (transformers' boolean
+  `logits_to_keep` and the loss's `shift_labels`; the model's own loss and reduction); while its vision tower is frozen, each
+  picture's tower output is kept in CPU memory, keyed by the exact bytes of its pixels, and served from the second epoch on
+  through the model's own precomputed-encoder input (the same bits as a recompute). Each is a setting. Design and measurements:
+  [docs/training.md](docs/training.md), [docs/series_layer.md](docs/series_layer.md).
+- `macai.patch`: installs the rule, the layer parts and the training path into transformers' Qwen3.5-family modeling code (each
+  replaced method only while its source matches the transformers version it was written against), so existing training code
+  runs them.
 - `macai.configure`: the settings measured for long PyTorch training on the Apple GPU (allocator watermarks, thread counts).
 
 ## Install

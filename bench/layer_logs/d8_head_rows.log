@@ -1,0 +1,7 @@
+[guard] start 15:07:00 limit 96.0 GB, swap +1.0 GB, wall 600 s, swap at start 0.13 GB: /Users/philipcoelho/mirel/venvs/macbench/bin/python /private/tmp/claude-501/-Users-philipcoelho-mirel-claude/ed19792c-b925-4ca1-b6be-3102c6a3a4d7/scratchpad/d345/builder_d8d9/probe_matmul_rows.py
+[probe] pid 10664
+H 1024 B 2 T 811: N 294; forward rows: differing elements 0 of 73006080; max abs diff 0
+   dE rows: differing 1127 of 301056; max abs diff 1.53e-05; other rows all zero True
+H 4096 B 1 T 768: N 144; forward rows: differing elements 0 of 35758080; max abs diff 0
+   dE rows: differing 2391 of 589824; max abs diff 1.53e-05; other rows all zero True
+[guard] end 15:07:12 rc 0 peak footprint 7.34 GB wall 12 s

@@ -4,7 +4,8 @@ After the gated delta rule's kernels (Phase 3, [series_phase3.md](series_phase3.
 [series_memory.md](series_memory.md)), a Qwen3.5 LoRA training step on the M3 Max takes 10.98 s at 0.8B (2 x 8 sequences) and
 50.91 s at 9B (1 x 16). Where the rest of that time goes was a count of FLOPs, not a measurement. This phase of the series
 measures it first (step 0, an instrument), then builds the designs in the order the measurement gives: D4 the layer's
-surroundings fused, D5 the matrix products, D3 the rule's chunking. One machine (an M3 Max, 40-core GPU, 128 GB, macOS 26,
+surroundings fused, D5 the matrix products, D3 the rule's chunking; and two entries outside them that step 0 found: D8 the LM
+head and the loss at the labelled positions only, D9 the frozen vision tower's output cached per picture. One machine (an M3 Max, 40-core GPU, 128 GB, macOS 26,
 PyTorch 2.15, transformers 5.22.1, PEFT 0.21.2, MLX as installed beside them), Phase 4's trainer and runner. The steps, their
 predictions and bars were registered before any code (series journal, 2026-11-03 11:2x PST); this log gives each step's setup,
 prediction, measurement and verdict.
@@ -776,6 +777,383 @@ micro-batch (from 15%); the step is the products, the vocabulary work, the adapt
 - Qwen3.5-MoE and Qwen3-Next: the layer parts are installed into Qwen3.5 (dense) only; the rule into all three.
 - The parts are timed at the bench shapes and in training; long sequences (D3's range) are not timed.
 
+## D8 and D9, the LM head and the loss at the labelled positions; the frozen vision tower's output cached (registered before any code)
+
+Step 0 proposed both as entries outside D3-D5 (above, "The parts outside D3-D5"); they were registered after step 0 (series
+journal, 2026-11-03 13:1x PST), before any code, and come before D5 and D3 in the measured order.
+
+| entry | design | predicted | bars |
+|---|---|---|---|
+| D8, the head and the loss at labelled positions | while training with labels, the hidden states gathered at the positions whose shifted label is not ignored before the head (transformers 5.22.1: a boolean `logits_to_keep` and `shift_labels`; prior art s.7), the loss reduced as the model's own loss function reduces it (`num_items_in_batch` kept); the gradient to every other position zero, as before. No kernel; installed by macai.patch, selectable off. Conditional D8b: a fused cross-entropy (MLX's form, prior art s.7.5) only if the head and the loss still take >= 3% of the step after D8 | the head and the loss a micro-batch 0.8B 266.7 -> 50-75 ms, 9B 347.6 -> 70-100 ms; the step 0.8B -14 to -18%, 9B -6 to -9% against the same configuration without it; the logits' memory down by the same fraction | parity: on the same weights and batch the loss within relative 1e-5 of the model's own path and every gradient (to the hidden states, the LoRA weights) within twice that path's own error against float64; steps 1-2 of a training run against the run without it; speed: the step >= 10% faster at 0.8B, >= 5% at 9B |
+| D9, the frozen vision tower's output cached | the tower's output (whatever `get_image_features` returns) stored per picture on the first pass, keyed by the exact bytes of the picture's `pixel_values` rows and its `image_grid_thw` entry (never a near match), kept off the GPU's allocator, served in later passes; active only while every tower parameter is frozen and the model trains; transformers' own precomputed-encoder path read first; selectable off | the step in epochs after the first 0.8B -9 to -11%, 9B -8 to -10% (the tower's 138.5 / 317.5 ms a micro-batch down to a lookup of <= 15 ms); the first epoch within +2%; the cache ~0.6 MB a picture at 0.8B, ~2.3 MB at 9B | parity: the served output equal to a recompute of the same picture (bit for bit, or within the tower's own run-to-run spread, measured); a changed picture never served (one pixel changed; the same pixels at another grid); speed: the later epochs' step >= 7% faster at both sizes |
+
+Integration, once both are admitted, with D4's parts on: Qwen3.5-0.8B 2 x 8, the cache emptied, 100 steps (4 epochs): the loss
+read as Phase 4 read it against A, B, C, the guard's peak footprint <= 53.5 GB, the steady step and each epoch's window against
+D4's run of record; Qwen3.5-9B 1 x 16, 50 steps (2 epochs, so the cache serves): footprint <= 74.6 GB, the steady step by epoch.
+The baselines: D4's runs of record (0.8B 100 steps; 9B 25 steps); for a 9B second epoch without a cache, D2m's 9B run's
+second-epoch over first-epoch ratio. An entry is admitted only when its bars are met; a failing entry's integration is re-run
+without it. Both live in macai (the record's trainer untouched).
+
+## D8 and D9: as built (`macai.training`, [training.md](training.md))
+
+| setting | replaces | what runs |
+|---|---|---|
+| `HEAD_AT_LABELS` (D8) | `Qwen3_5ForConditionalGeneration.forward` and `Qwen3_5ForCausalLM.forward` | while the model trains with labels: the original forward called with `labels=None` and a boolean `logits_to_keep` marking the positions whose next token's label is not -100 (its `slice_logits_to_keep` gathers those rows of the final hidden states, flattened to [N, hidden], before the head), then the model's own loss function on those logits with `shift_labels` (the shifted labels at those positions) and every keyword argument the original passes it. The output carries the loss first and the logits of the labelled positions |
+| `VISION_CACHE` (D9) | `Qwen3_5Model.forward` | while the model trains with every tower parameter frozen: the micro-batch's pictures looked up by key; all stored: their outputs (copied from CPU memory to the GPU) handed to the original forward as its `mm_encoder_outputs`, `pixel_values` then None, so the tower does not run; any picture missing: `get_image_features` called as the original forward calls it, its output handed over the same way, the new pictures stored |
+| `VISION_CACHE_MAX_GB` | | the most a cache stores (16 GiB): a guard for the default, far above this sample's needs |
+
+Neither copies a line of transformers' code: each replacement calls the original method, and each is installed only while the
+sources of what it replaces and relies on (the forwards, `slice_logits_to_keep`, the causal LM loss and its cross-entropy,
+`get_image_features`, the tower's forward) hash as in transformers 5.22.1.
+
+What the design rests on, read first:
+- transformers' precomputed-encoder path. `accepts_precomputed_kwargs` (on `get_image_features`) renames modality-prefixed
+  keyword arguments for the encoder: precomputed encoder *inputs* (the attention boundaries, position ids, interpolation
+  indices), not outputs. `mm_encoder_outputs` in the model's forward takes the encoder's *outputs* in place of `pixel_values`.
+  The cache serves through `mm_encoder_outputs`, so the model's own code places the features, checks the placeholder count and
+  builds the 3-D positions; no new path in the forward.
+- The key. A picture's rows of `pixel_values` are its patches (t x h x w rows of 1,536 values); the SHA-256 of their bytes
+  (in 1 MiB chunks on four threads, then the chunks' digests and the length), the rows' dtype and width, the grid entry, and the
+  device, the tower's dtype, the autocast state and dtype and the attention implementation. The tower's weights are guarded by
+  their storage addresses and version counters, read at every call (a change empties the cache).
+- The Trainer and `num_items_in_batch`. `Qwen3_5ForConditionalGeneration` sets `accepts_loss_kwargs = False`, so transformers'
+  Trainer computes no `num_items_in_batch` for it, passes none, and divides each micro-batch's mean loss by the accumulation
+  steps. D8 passes the original's keyword arguments to the loss function, so either reduction is the model's own (both tested).
+- Random numbers. The tower's attention dropout is fixed at 0 and it has no dropout module; measured in both towers: a tower
+  pass in training mode leaves the CPU's and the GPU's generator states as they were. Serving a picture therefore changes no
+  draw that follows (the LoRA dropout's masks are the same with and without the cache).
+- Synchronization. D8's boolean gather needs the count of labelled positions on the CPU: one synchronization at the forward's
+  end, where the loss follows anyway. D9's lookup copies the micro-batch's pixel rows to the CPU at the forward's start, where the
+  tower's own position code synchronizes too; a store's copy to CPU memory waits for the next call.
+
+## D8 and D9: parity (`tests/test_training.py`, the test run of record `bench/layer_logs/d8d9_tests.log`, D8's cases in `d8d9_parity.jsonl`; `bench/training_probe.py`, records `probe_d8d9_0.8b.json`, `probe_d8d9_9b.json`)
+
+### D8, the head at the labelled positions
+
+Error = the largest absolute difference over the reference's largest magnitude, each tensor apart; the bar: the head-at-labels
+path's error at most twice the model's own path's, every gradient; the loss within relative 1e-5 of the model's own path.
+
+| check | the loss: relative difference from the model's own path | gradients: head-at-labels error / model path's error against float64 (worst) | other |
+|---|---|---|---|
+| models at the real widths and vocabulary (two layers, LoRA rank 32, B drawn, fixed dropout masks; 2 x 97, the prompt and padding ignored), against float64 on the CPU: 0.8B | 7.5e-8 | 28 gradients (input embeddings, final hidden states, 26 LoRA weights) 0.86-1.31 (in_proj_qkv's LoRA B) | the logits at the labelled positions the same bits |
+| the same at 9B's widths | 0.0 | 0.89-1.09 | the same bits |
+| the real Qwen3.5-0.8B, a real micro-batch (2 x 446 positions, 126 labelled, two pictures), the adapters' B drawn, no dropout, against the whole model in float64 on the CPU | 3.5e-7 | 302 gradients 0.91-1.09 (layer 9's in_proj_qkv LoRA A); the model path's own errors 4.3e-2 to 0.33 | the logits at the labelled positions the same bits; the final hidden states the same bits |
+| the real Qwen3.5-9B, a real micro-batch (536 positions, 170 labelled, one picture), against a float64 head and loss on the same final hidden states | 6.9e-7 | the final hidden states' gradient: 1.66e-2 on both paths (ratio 1.00); the LoRA gradients between the two paths within 3.8% (no float64 model at 9B: 75 GB) | the same bits |
+| steps 1-2 of a training run against D4's run of record (the adapters' B is zero and the first update's learning rate zero: the same weights) | 0.8B: step 1 9.3e-8, step 2 0 (the same bits); 9B: 8.6e-7, 6.9e-7 | | |
+| `num_items_in_batch` given (the sum over the labelled positions, then the model's division) | <= 1e-5 | | a third of the mean at three times the count |
+
+Beside them: the loss function receives the model path's keyword arguments plus `shift_labels`; the model's own path runs, bit
+for bit, in evaluation, without labels, with `shift_labels` or a tuple output asked (and, by the condition's test, with
+`logits_to_keep` or positional arguments given); a micro-batch without a label gives NaN on both paths; the positions without a
+label get no gradient on either path.
+
+As chains:
+- The head's product on the gathered rows gives each row the same bits as on every position (`bench/probe_head_rows.py`,
+  `bench/layer_logs/d8_head_rows.log`: 0 of 73 M logits differ at 0.8B's shape, 0 of 36 M at 9B's) -> the loss differs only by
+  the order of its float32 mean -> 1e-7 relative.
+- The gradient to the final hidden states, dE = dZ W, sums over the 248,320 words in another order when the product has fewer
+  rows (the GPU picks another split) -> 0.4% of its elements differ by one bf16 step in the probe's shapes, 1.1% in the real
+  micro-batch (1,369 of 129,024 at 0.8B), at the same
+  error against float64 -> every gradient below at the model path's own error (ratios 0.86-1.31 in the two-layer models,
+  0.91-1.09 over the real 0.8B's 302).
+
+### D9, the cache
+
+| check | 0.8B | 9B |
+|---|---|---|
+| the tower draws random numbers in training mode (the CPU's and the GPU's generator states before and after a pass) | no (3 micro-batches) | no (3) |
+| the same micro-batch twice | the same bits | the same bits |
+| each picture alone against its rows in a two-picture micro-batch (0.8B), or paired with the previous micro-batch's picture (9B) | the same bits (6 of 6) | the same bits (2 of 2) |
+| a served output (everything get_image_features returns) against a recompute | the same bits (3 of 3) | the same bits (3 of 3) |
+| one pixel value moved to the next float32 | not served (computed) | not served |
+| the same pixels at another grid (h and w swapped, or 40 x 40 read as 80 x 20) | not served | not served |
+| the tower's output needs a gradient in training | no | no |
+| tests on a small model: served = computed bit for bit and the model's outputs unchanged; one value changed, another grid, the pixels in another dtype not served; not in evaluation, not with a training tower parameter; a weight changed in place empties the cache; the same picture twice in a micro-batch stored once; the cap | passed | |
+
+So the tower's own run-to-run spread is zero: its output for a picture is the same bits whatever the micro-batch it runs in, and
+the bar's strict form (bit for bit) holds.
+
+## D8 and D9: speed
+
+All runs through `bench/phase4_train.py` with D4's parts on (`--layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU`), the recomputed
+states, the cache emptied each micro-batch, at commit 69ca269 with the tracked tree clean, one job at a time under the guard
+(15:29-16:52 PST). Step times on the trainer's clock (D4's windows' clock); the same steps run the same batches in every run
+(the data order is seeded; the head's per-step position counts match step for step between the runs).
+
+### D8 at 0.8B, 2 x 8 (`d8_0.8b_2x8_25steps`, `d8_0.8b_2x8_100steps`)
+
+| steps | D4 (run of record) | D8, 1 epoch (first run) | D8, 4 epochs (repeat) | D8 / D4, first | D8 / D4, repeat |
+|---|---|---|---|---|---|
+| 1-10 | 9.10 | 7.50 | 7.50 | 0.824 | 0.824 |
+| 11-25 | 9.73 | 8.07 | 7.67 | 0.829 | 0.788 |
+| 16-25 | | 8.50 | 7.80 | | |
+| 26-50 / 51-75 / 76-100 | 9.24 / 9.00 / 8.96 | | 7.44 / 7.52 / 7.48 | | 0.805 / 0.836 / 0.835 |
+| 11-100 (the steady step) | 9.178 | | 7.511 | | 0.818 (-18.2%) |
+
+The two D8 runs disagree on steps 16-25 (8.50 against 7.80 s a step) while steps 1-15 agree within 1-2%. The repeat matches the
+integration run's first epoch step for step (7.46-8.54 s against 7.46-8.52), which has D8 on as well; the first run came
+directly after the loss-head bench's minute and a half of full-rate products. Identical configurations elsewhere in the record
+agree within 1% on these steps (D2m's 25- and 100-step runs: 11.40 / 11.40 s at 16-25), so the first run's late steps are read as
+a machine state, not traced. Both runs meet the bar; the steady step is read from the repeat.
+
+Steps 1-2 against D4's run of record (the adapters' B is zero and the first update's learning rate is zero, so both steps run
+the same weights): 2.5624918937683105 against 2.5624916553497314 (9.3e-8), 2.426778793334961 against the same bits.
+
+Memory: the live tensors at a forward's end 12.94 -> 9.12 GiB (peak over 100 steps), the driver's pool 36.80 -> 23.83 GB, the
+guard's peak footprint 41.58 -> 27.30 GB. As a chain: the vocabulary-wide tensors of a micro-batch (the bf16 logits, the loss's
+float32 copies and gradient, accelerate's float32 copy of the returned logits) shrink with the positions computed (17.9% of them
+over the run; 1,622 -> 312 at the profile's average micro-batch) -> the live peak at a forward's end falls 3.8 GiB, and the
+allocator's pool, which grows with the largest tensors, 13 GB.
+
+D8's gain is largest on the steps D4 found slowest (19-26, the batches with the most positions: 0.73-0.79 of D4 there against
+0.82-0.85 on steps 11-18). As a chain, read here: those batches carry the largest vocabulary-wide float32 tensors (up to 2 GB
+each) -> D4's step there was slower than its token count alone explains -> without them the steps fall in line. Not traced
+further (the profile covers steps 3-7).
+
+### D8 at 9B, 1 x 16 (`d8_9b_1x16_25steps`, 1 epoch: Phase 4's 9B schedule)
+
+| measure | D4 (run of record) | D8 | D8 / D4 |
+|---|---|---|---|
+| steps 1-10, s a step | 45.6 | 42.4 | 0.930 |
+| steps 11-25 | 46.20 | 42.93 | 0.929 (-7.1%) |
+| the loss at steps 1-2 (the same weights) | 2.2223074 / 2.0705986 | 2.2223094 / 2.0706000 | 8.6e-7 / 6.9e-7 |
+| the loss over steps 1-25 against Phase 4's 9B reference run (the same schedule), root mean square of the difference | .0013 | .0012 | |
+| the guard's peak footprint / the live tensors at a forward's end / the driver's pool | 60.44 GB / 17.28 GiB / 54.46 GB | 48.22 GB / 15.29 GiB / 46.01 GB | |
+
+As a chain: at 9B the head and the loss were ~11% of the step (step 0) and the head computes 21.5% of the positions -> the bench's
+whole chain 298 -> 84 ms a micro-batch, 3.4 s of 16 micro-batches -> 46.2 -> 42.9 s (-3.3 s measured).
+
+### The head and the loss part by part (`bench/bench_loss_head.py`, `bench/layer_logs/d8_loss_head.json`)
+
+At the profile's average micro-batch (0.8B: 1,622 positions, 312 labelled; 9B: 768 positions, 163 labelled), every position
+against the labelled ones only, Metal events, the two alternating in 5 rounds, ms a micro-batch:
+
+| part | 0.8B every position | 0.8B labelled | 9B every position | 9B labelled |
+|---|---|---|---|---|
+| the head's product (forward) | 72.7 | 18.4 (8.6 TFLOP/s) | 136.8 | 46.4 (7.1 TFLOP/s) |
+| the head's gradient to its input (dE) | 71.3 | 13.4 (11.8 TFLOP/s) | 132.0 | 31.4 (10.6 TFLOP/s) |
+| the logits cast to float32 | 6.9 | 1.35 | 3.3 | 0.69 |
+| the cross-entropy forward / backward | 17.9 / 22.5 | 3.5 / 4.5 | 8.5 / 10.8 | 2.0 / 2.3 |
+| the gradient cast back to bf16 | 6.8 | 1.3 | 3.2 | 0.67 |
+| accelerate's float32 copy of the returned logits | 6.9 | 1.35 | 3.3 | 0.68 |
+| the whole chain, forward and backward | 200.8 | 43.1 (0.21x) | 298.0 | 83.6 (0.28x) |
+
+The products shrink with the rows, but not in proportion at 9B: 163 rows is a narrow product, and the head's forward runs at
+7.1 TFLOP/s there (8.6 at 0.8B's 312), against 11-12 at the full positions.
+
+### D9 at 0.8B and 9B: the integration runs (`d8d9_0.8b_2x8_100steps`, `d8d9_9b_1x16_50steps`)
+
+| steps | D4 | D8 alone (repeat) | D8 + D9 | D9's own: against D8 alone | registered reading: the window's ratio to D4 over the first epoch's |
+|---|---|---|---|---|---|
+| 0.8B 1-10 | 9.10 | 7.50 | 7.60 | 1.013 | |
+| 0.8B 11-25 (first epoch) | 9.73 | 7.67 | 7.67 | 1.000 | (0.788 to D4) |
+| 0.8B 26-50 | 9.24 | 7.44 | 6.32 | 0.849 | 0.868 |
+| 0.8B 51-75 | 9.00 | 7.52 | 6.28 | 0.835 | 0.886 |
+| 0.8B 76-100 | 8.96 | 7.48 | 6.28 | 0.840 | 0.890 |
+| 0.8B 26-100 (the later epochs) | 9.067 | 7.48 | 6.293 | 0.841 (-15.9%) | 0.881 (-11.9%) |
+| 9B 1-10 | 45.6 | | 42.8 | | |
+| 9B 11-25 (first epoch) | 46.20 | | 43.13 | | (0.934 to D4) |
+| 9B 26-50 (second epoch) | 45.94 (D4's 11-25 times D2m's second-epoch ratio 0.9943) | | 37.48 | | 0.874 (-12.6%) |
+
+The registered reading assumes D8's relative effect is the same in every epoch; at 0.8B, where D8 alone ran all four epochs, it is
+not (D8 alone against D4: 0.788 in the first epoch, 0.805-0.836 in the later ones, because D4's first epoch holds its slow steps
+19-26), so the direct reading against D8 alone is the cleaner one there; both clear the bar. At 9B only the registered reading
+exists (D8 alone ran one epoch).
+
+The cache in the runs (`training_counts` at every step):
+
+| | 0.8B | 9B |
+|---|---|---|
+| pictures stored (first epoch) | 372 (1.68 GB) | 372 (3.56 GB) |
+| a picture, in full (the tower's last hidden states and the merged features) / the merged features alone | 4.51 / 1.13 MB | 9.58 / 4.51 MB |
+| pictures repeating inside an epoch (the sample's 18 items in two forms) | 18 an epoch; none served in the first epoch (each repeat shared its micro-batch with a picture not yet stored, so the tower ran) | 18; all 18 served in the first epoch (one picture a micro-batch) |
+| served micro-batches, later epochs | 200 of 200 an epoch | 390 of 390 |
+| the cache's own time a call: the key (the pixel rows copied to the CPU and hashed) + building a served output | 5.8 + 1.6 = 7.4 ms (two pictures) | 4.2 + 2.0 = 6.2 ms (one picture) |
+| a store's copy to CPU memory | 1.0 ms a picture | 2.3 ms |
+| the first epoch against D8 alone | +0.5% over steps 1-25 (1-10 +1.3%, 11-25 0.0%) | 1-10 +0.9%, 11-25 +0.5% (13 micro-batches served there) |
+
+As chains:
+- 0.8B: the tower took 134 ms of a micro-batch in D4's profile; with D8 the micro-batch is 839 ms (the profile below), so the
+  tower is 16% of it -> served, it costs the cache's 7.4 ms -> ~126 ms saved a micro-batch, ~1.0 s of a 7.5 s step -> -13.5%
+  expected, -15.9% measured against D8 alone (the rest not traced: the tower's CPU-side position work and its per-block
+  synchronizations are partly hidden from the GPU timeline). The prediction (-9 to -11%) counted the tower's share of D4's
+  longer step (11%), before D8 shortened it.
+- 9B: the tower's 317.5 ms a micro-batch is ~12% of the D8 micro-batch (2.7 s) -> ~-11.5% expected, -12.6% measured by the
+  registered reading; the same cause for the miss against -8 to -10%.
+- The first epoch: every call pays the key (5.5 / 3.5 ms) and the stores (1.0 / 2.3 ms a picture) -> +0.8% expected on the
+  0.8B step, +0.2% at 9B; measured +0.5% over steps 1-25 at 0.8B (+1.3% on steps 1-10, none on 11-25) and +0.5-0.9% at 9B against
+  D8 alone, inside the +2% predicted.
+
+## D8 and D9: admission
+
+| entry | parity | speed bar | verdict |
+|---|---|---|---|
+| D8 (`HEAD_AT_LABELS`) | the loss within 7.5e-8 to 6.9e-7 of the model's own path (bar 1e-5); every gradient 0.86-1.31x the model path's own error against float64 (bar 2); steps 1-2 the same weights' losses (0.8B 9.3e-8 / 0; 9B 8.6e-7 / 6.9e-7) | 0.8B: 0.788-0.829 of D4 on the first epoch (two runs), 0.818 on steps 11-100 (bar <= 0.90); 9B: 0.929 (bar <= 0.95) | ADMITTED |
+| D9 (`VISION_CACHE`) | a served output the same bits as a recompute, both towers; one pixel moved, another grid: not served; no random numbers drawn | later epochs 0.8B 0.841 of D8 alone (registered reading 0.881), 9B 0.874 (registered reading) (bar <= 0.93) | ADMITTED |
+
+Both are now macai's defaults (`macai.training`: `HEAD_AT_LABELS = True`, `VISION_CACHE = True`), selectable off;
+`bench/phase4_train.py` keeps both off unless its options say otherwise, so the runs before reproduce.
+
+## D8 and D9: integration (`bench/layer_logs/d8d9_0.8b_2x8_100steps.json`, `d8d9_9b_1x16_50steps.json`; `bench/d8d9_report.py` -> `d8d9_results.json`)
+
+Both entries on, with D4's parts (`--layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache`), at commit
+69ca269, the tracked tree clean, one job at a time under the guard; every training forward took the head at the labelled
+positions (0.8B 800 of 800 micro-batches, 9B 800 of 800, no fallback) and went through the cache.
+
+### Qwen3.5-0.8B, 2 x 8, the cache emptied each micro-batch, 4 epochs (100 steps), 15:34-15:45 PST
+
+| measure | bar / prediction | D8 + D9 | D4 (run of record) | verdict |
+|---|---|---|---|---|
+| the guard's peak footprint | <= 53.5 GB | 29.20 GB | 41.58 GB | MET |
+| the steady step (steps 11-100) | | 6.522 s (-28.9%) | 9.178 s | |
+| steps 1-10 / 11-25 / 26-50 / 51-75 / 76-100, s a step | | 7.60 / 7.67 / 6.32 / 6.28 / 6.28 | 9.10 / 9.73 / 9.24 / 9.00 / 8.96 | |
+| the loss: the largest gap from the reference pair's mean | <= 2 x the pair's largest spread = .0159 | .0100 (step 47) | .0086 | met |
+| the final loss within 1% of the pair's mean (0.1967) | <= 1% | 0.1975 (0.44%) | 0.1948 (0.94%) | met |
+| root mean square of the step-loss difference against A / B / C | the references among themselves .0034 each | .0034 / .0042 / .0037 | .0034 / .0044 / .0041 | |
+| its root mean square gap over spread (0.87 expected of a run drawn like the reference) | | 1.01 | 1.03 | |
+| mean loss (the pair's 0.5776) | | 0.5760 | 0.5754 | |
+| the live tensors at a forward's end (peak) / the driver's pool (peak) | | 9.14 GiB / 25.15 GB | 12.94 GiB / 36.80 GB | |
+| the cache | | 372 pictures, 1.68 GB of CPU memory | | |
+
+D8 alone over the same 100 steps (`d8_0.8b_2x8_100steps`, the direct baseline of D9): steady 7.511 s, footprint 27.30 GB; its
+loss by Phase 4's readings: the largest gap .0082 (met), the root mean square gap over spread 0.97, the final loss 0.1923, 2.2%
+from the pair's mean (the 1% reading not met; the references' own final losses disagree by 1.2% (A, B) and 2.2% (C against the
+pair), and this run's adapters start from their own unseeded draw).
+
+### Qwen3.5-9B, 1 x 16, the cache emptied, 2 epochs (50 steps), 15:45-16:19 PST
+
+| measure | bar / prediction | D8 + D9 | D4 (run of record, 25 steps) | verdict |
+|---|---|---|---|---|
+| the guard's peak footprint (50 steps) | <= 74.6 GB | 51.96 GB | 60.44 GB | MET |
+| steps 1-10 / 11-25 (first epoch) | | 42.8 / 43.13 s | 45.6 / 46.20 s | |
+| steps 26-50 (second epoch) | | 37.48 s (-18.4% against the 45.94 s baseline) | (45.94 s: D4's 11-25 times D2m's second-epoch ratio) | |
+| steps 11-50 | | 39.60 s | | |
+| the live tensors at a forward's end (peak) / the driver's pool (peak) | | 15.31 GiB / 46.22 GB | 17.28 GiB / 54.46 GB | |
+| the loss at steps 1-2 (the same weights) | | 2.2223094 / 2.0706000 | 2.2223074 / 2.0705986 (8.6e-7, 6.9e-7) | |
+| the cache | | 372 pictures, 3.56 GB of CPU memory | | |
+
+The 50-step run's learning rate differs from Phase 4's 25-step 9B reference's after the first update (warmup 2 steps against 1:
+1e-4 against 2e-4 at step 2), so its loss is compared with that reference at steps 1-2 only: 2.2223 / 2.0706 against the
+reference implementation's 2.2228 / 2.0699 (2.3e-4 and 3.5e-4 apart, as D4's kernels were). D8 alone at 9B runs the reference's
+schedule and was compared over all 25 steps (above: .0012, D4 .0013).
+
+As chains:
+- The step, 0.8B: D8 takes ~216 ms from a micro-batch (the head and the loss 269.6 -> 53.6 ms, the profile below) -> D4's
+  9.18 s -> 7.51 s; D9 then serves the tower's 133 ms a micro-batch from a 7.4 ms lookup from the second epoch on -> 7.48 -> 6.29
+  s in the later epochs -> 6.52 s over steps 11-100, 29% under D4's.
+- The step, 9B: D8 takes the head and the loss from ~298 to ~84 ms a micro-batch (the bench) -> 46.2 -> 42.9 s (D8 alone); D9
+  the tower's ~318 ms from the second epoch -> 37.5 s.
+- Memory: D8 removes most of the vocabulary-wide float32 tensors (live -3.8 GiB at 0.8B, -2.0 GiB at 9B) -> the allocator's pool
+  shrinks 11.7 / 8.2 GB -> the footprint 41.58 -> 29.20 GB and 60.44 -> 51.96 GB, the cache's CPU memory (1.68 / 3.56 GB)
+  included.
+- The loss: D8 changes the rounding of the head's gradient in one element of a hundred, D9 changes nothing (the served output
+  is the computed one's bits) -> the curve stays within the references' spread by Phase 4's readings.
+
+## The step profile with D4 + D8 (0.8B, `profile_d8_0.8b_2x8.json`, steps 3, 5, 7)
+
+Step 0's profiler, options and steps as D4's re-profile, with D8 on (`--head-at-labels`); D9 off, because the profiler replays
+each micro-batch (B and C) after training on it (A), and with the cache on the replays would be served from it while A computed.
+Valid as before: the profiled pass against its unprofiled replay 0.999 (median 1.014; none over 1.10), the components' sum
+against the wall clock 0.9993, no stack mismatches or negative segments.
+
+| group, ms a micro-batch (share) | D4 | D4 + D8 | change |
+|---|---|---|---|
+| the layers' frozen products | 279.7 (26.6%) | 281.4 (33.5%) | +1.6 |
+| the LM head and the loss | 269.6 (25.6%) | 53.6 (6.4%) | -216.0 |
+| the LoRA adapters' extra work | 135.1 (12.8%) | 154.8 (18.4%) | +19.7 |
+| the vision tower | 134.1 (12.7%) | 132.8 (15.8%) | -1.3 |
+| the rule | 75.7 (7.2%) | 75.6 (9.0%) | -0.1 |
+| data, optimizer and the Trainer | 61.0 (5.8%) | 39.9 (4.7%) | -21.1 |
+| the full-attention layers' attention | 53.8 (5.1%) | 58.0 (6.9%) | +4.2 |
+| the surroundings | 33.3 (3.2%) | 33.4 (4.0%) | +0.1 |
+| (beside) a new input shape, A - B | 17.9 (1.7%) | 10.1 (1.2%) | -7.8 |
+| the micro-batch | 1,052.8 | 839.4 | -213.4 (-20.3%) |
+
+The head and the loss by component (ms a micro-batch, forward / backward): the head's product 72.2 / 72.5 -> 18.9 / 13.8; the
+loss (the float32 cast, the cross-entropy and their backward) 24.7 / 93.2 -> 4.8 / 13.5; accelerate's float32 copy of the
+returned logits 6.9 -> 1.4; the gather of the labelled rows 0.3 / 0.4 (new); the labels' shift and gather 0.5 (new). The data,
+optimizer and Trainer group falls with them (the cache emptied between forward and backward releases 5x smaller tensors). The
+LoRA adapters' and the attention's rises (+20, +4 ms) are not explained by D8, which does not touch them; the profiled steps run
+early in the epoch and the two profiles' replay ratios differ (1.052 against 0.999).
+
+## D8b, the fused cross-entropy (conditional): the trigger reading and a proposal (not built)
+
+The trigger (registered): the head and the loss still at >= 3% of the step after D8. Read in situ at 0.8B: 53.6 ms, 6.4% of the
+micro-batch -> the trigger fires. At 9B (not profiled again): the bench's 83.6 ms a micro-batch against the D8 micro-batch's
+~2.7 s -> ~3.1%, at the threshold.
+
+What the 6.4% is made of: the head's two products 32.7 ms (61%), the loss's own passes (the float32 cast, the cross-entropy's
+forward and backward, the cast back) 18.3 ms (34%), accelerate's float32 copy 1.4 ms, the gather and labels 1.2 ms. A fused
+cross-entropy touches only the loss's own passes and the copy.
+
+The proposal (D8b, for its own entry):
+
+| item | proposal |
+|---|---|
+| design | a Metal cross-entropy over the bf16 logits of the labelled rows, MLX's form (prior art s.7.5): forward, one pass a row (online max and sum in float32) writing the loss and the row's log-sum-exp; backward, one pass rebuilding softmax from the saved log-sum-exp and writing the bf16 gradient over the logits in place; no float32 copy of the logits; the logits not returned in training (accelerate's float32 copy removed with them), behind a setting |
+| floor | three passes over the bf16 logits: 312 x 248,320 x 2 bytes x 3 = 465 MB a 0.8B micro-batch (1.3 ms at 356 GB/s); 9B 243 MB (0.7 ms) |
+| predicted | the loss's own passes and the copy 19.7 -> ~2.6 ms a 0.8B micro-batch (2x its floor): ~-135 ms a step, -1.8% of the D8 step (7.5 s), -2.2% of the D8 + D9 later-epoch step (6.3 s); 9B (the bench's 6.3 ms -> ~1.4 ms; in situ perhaps twice the bench): ~-0.2 to -0.4% |
+| bars (proposed) | parity as D8's (the loss within relative 1e-5 of the model's own loss; the gradient to the hidden states within twice its error against float64); speed >= 1.5% of the 0.8B step |
+| the larger lever beside it | the head's products at these row counts run at 7.1-8.6 TFLOP/s forward (312 / 163 rows) against 11-12 at full positions: 61% of what is left; a matter for D5 (the products), not D8b |
+
+## D8 and D9's verdicts in short
+
+| registered | measured | verdict |
+|---|---|---|
+| D8 parity: the loss within relative 1e-5 of the model's own path | 7.5e-8 (0.8B widths), 0 (9B widths), 3.5e-7 (the real 0.8B), 6.9e-7 (the real 9B) | MET |
+| D8 parity: every gradient within twice the model path's own error against float64 | 0.86-1.31x (two-layer models at both widths); 0.91-1.09x over 302 gradients of the real 0.8B against the whole model in float64 | MET |
+| D8 parity: steps 1-2 against the run without it | 0.8B 9.3e-8 / the same bits; 9B 8.6e-7 / 6.9e-7 | MET |
+| D8 speed: >= 10% faster at 0.8B | -17.1% / -21.2% on the first epoch (two runs), -18.2% on steps 11-100 | MET: ADMITTED |
+| D8 speed: >= 5% faster at 9B | -7.1% (steps 11-25, D8 alone); -6.6% in the integration's first epoch | MET: ADMITTED |
+| D8 prediction: the head and the loss a 0.8B micro-batch 266.7 -> 50-75 ms | 269.6 -> 53.6 ms | met |
+| D8 prediction: 9B 347.6 -> 70-100 ms | not profiled in situ; the bench's whole chain 83.6 ms | met by the bench (not in situ) |
+| D8 prediction: the step 0.8B -14 to -18% | -18.2% (steps 11-100), -17.1% / -21.2% (the first epoch, two runs) | missed by 0.2 point (faster) on the steady step |
+| D8 prediction: the step 9B -6 to -9% | -7.1% | met |
+| D8 prediction: the logits' memory down by the same fraction | the head computes 17.9% of the positions (0.8B) / 21.5% (9B), every vocabulary-wide tensor with them; the live tensors at a forward's end -3.8 / -2.0 GiB | met |
+| D9 parity: the served output against a recompute | the same bits (both towers, every check) | MET |
+| D9 parity: a changed picture never served | one pixel moved, another grid, another dtype: never served | MET |
+| D9 speed: the later epochs >= 7% faster at both sizes | 0.8B -15.9% against D8 alone (-11.9% by the registered reading); 9B -12.6% (registered reading) | MET: ADMITTED |
+| D9 prediction: the later epochs 0.8B -9 to -11%, 9B -8 to -10% | -15.9% (-11.9%); -12.6% | missed (faster): the prediction counted the tower's share of D4's longer step |
+| D9 prediction: the first epoch within +2% | 0.8B +0.5%, 9B +0.5% (steps 11-25) against D8 alone | met |
+| D9 prediction: the cache ~0.6 MB a picture at 0.8B, ~2.3 MB at 9B | in full 4.51 / 9.58 MB; the merged features alone 1.13 / 4.51 MB | missed (larger): the sample's 372 pictures average 2,201 patches (550 merged positions), and the cache keeps the tower's last hidden states too |
+| D9 prediction: the lookup <= 15 ms | 7.4 ms (0.8B, two pictures), 6.2 ms (9B), hashing included | met |
+| integration 0.8B: footprint <= 53.5 GB; the loss as Phase 4 read it | 29.20 GB; the largest gap .0100 against .0159; the final loss 0.44% | MET; like the reference |
+| integration 9B: footprint <= 74.6 GB | 51.96 GB | MET |
+
+In plain words: the head and the loss now run only where a label is, which takes four fifths of the vocabulary-wide work out of
+a 0.8B micro-batch (three quarters at 9B) without changing the loss beyond float32 rounding; and a frozen tower's output is kept per picture and served
+from the second epoch on, the same bits as a recompute. A 0.8B LoRA step of the readers' recipe falls from D4's 9.18 s to 7.51 s
+with the first and to 6.29 s in the later epochs with both (6.52 s over steps 11-100, -29%); a 9B step from 46.2 s to 42.9 s,
+then 37.5 s in the second epoch; the footprint falls 12 / 8 GB with the cache's CPU memory counted.
+
+## D8 and D9: not done, and what is uncertain
+
+- D8b (a fused cross-entropy) is not built: its trigger fires at 0.8B (6.4% of a micro-batch), but what it can remove is the
+  loss's own passes and the output copy (~2% of the step); proposed above for its own entry. The head's products at small row
+  counts (61% of what is left) belong to D5.
+- The two D8-alone runs at 0.8B disagree on steps 16-25 by 5-12% a step; the repeat agrees with the integration run step for
+  step, and the first came straight after the loss-head bench. The cause is not traced; the bars hold on either run.
+- D8's larger gain on D4's slow steps (19-26, the largest batches) is read as the vocabulary-wide float32 tensors' cost there;
+  not profiled (the profile covers steps 3-7).
+- D9's later-epoch gain against D8 alone (-15.9%) is ~2 points more than the tower's profiled time predicts (-13.5%); the rest
+  (the tower's CPU-side position work and its per-block synchronizations, partly hidden from the GPU timeline) is not traced.
+- At 9B, D9's gain is the registered reading only (D8 alone ran one epoch there); the head and the loss after D8 were measured in
+  the bench, not in situ.
+- The 0.8B repeats inside an epoch (the 18 items in two forms) were never served in the first epoch: each shared its micro-batch
+  with a picture not yet stored, and the cache serves only whole micro-batches. Computing only the missing pictures would serve
+  them, at the cost of a tower pass whose micro-batch differs from the uncached one (the same bits, by the probes' composition
+  checks).
+- The cache keeps the tower's last hidden states (registered: what get_image_features returns, in full), which the model never
+  reads in this path: 3.4 of the 4.5 MB a picture at 0.8B, 5.1 of 9.6 MB at 9B. Keeping the merged features alone would cut the
+  cache to a quarter / a half.
+- The key copies the micro-batch's pixel rows back from the GPU to hash them (5.8 / 4.2 ms of the 7.4 / 6.2 ms lookup);
+  hashing them on the CPU before the Trainer moves them (in the collator) would remove the copy but needs the trainer's side.
+- A tower weight changed through a tensor's `.data` is not seen by the cache's version counters; `clear_vision_cache()` after one.
+- Qwen3.5-MoE and Qwen3-Next: not touched by D8 or D9.
+- D8 alone over 100 steps ended 2.2% from the reference pair's final loss (the 1% reading not met there; the integration run with
+  both met it at 0.44%): the references themselves disagree by 1.2% and 2.2% at the last step, and each run's adapters start from
+  their own unseeded draw.
+
 ## The log
 
 ### 1. 2026-11-03 11:4x-11:5x PST: the instrument and its check (commit 8fb6609)
@@ -841,9 +1219,40 @@ guard, all rc 0, one job at a time.
 measuring what they measured (the rule against transformers' reference; transformers' parts in step 0's bench);
 `bench/phase4_train.py` keeps every part off unless `--layer` says otherwise (the runs before D4 reproduce).
 
+### 12. 2026-11-03 14:5x-15:29 PST: D8 and D9's code, the tests, the probes (commits 89b06ac, 69ca269)
+A probe of the head's product first (the bf16 product on the gathered rows against every position, at both models' shapes: 0 of
+73 M / 36 M logits differ; the gradient to the input: 0.4% of its elements differ by one bf16 step). Then `macai.training` (the
+two replacements, the cache, the source checks), the runner's options and counts, the tests. Two faults in the first test runs,
+both in the tests: a call with labels and `logits_to_keep=1`, which the model's own path rejects as well (its loss needs a label
+row for every kept position), and a non-contiguous `shift_labels`, which the model's own loss cannot view; the condition is now
+tested on the condition itself, and `shift_labels` passed contiguous. The probe in a real training run: two attempts failed on
+faults of the probe script (a conversion to float64 on the GPU; a module moved to float64 before leaving the GPU), their records
+kept (`probe_d8d9_0.8b_failed1`, `_failed2`); a first complete probe with the LoRA dropout on during the head check
+(`probe_d8d9_0.8b_run1`: the two paths' LoRA gradients within 5.5% of each other, no float64 model); the probes of record with
+the dropout an identity during the check and, at 0.8B, the whole model in float64 (21 s on the CPU). The probes ran the code of
+89b06ac before it was committed (their records say dirty). The cache's cap (`VISION_CACHE_MAX_GB`, 16 GiB) was added before the
+probes of record, as a guard for the default.
+
+### 13. 15:29-16:21: the first run chain (commit 69ca269, the tracked tree clean)
+The loss-head bench 15:30-15:31; D8 alone at 0.8B (25 steps) 15:31-15:34; the integration at 0.8B 15:34-15:45 (6.522 s a step);
+at 9B 15:45-16:19 (43.13 / 37.48 s by epoch); the profile with D4 + D8 16:19-16:21. All under the guard, all rc 0. The first D8
+run's steps 16-25 ran 5-12% slower than the integration's same steps, with D8 on in both and the cache serving nothing there:
+not a cost of the cache's absence, as the repeat showed (entry 14).
+
+### 14. 16:21-16:52: the second chain: D8 alone at 0.8B over 100 steps, at 9B over 25
+The repeat at 0.8B matched the integration's first epoch step for step (steps 16-25: 7.80 / 7.80 s a step) and not the first D8
+run (8.50 s); it is D9's direct baseline for the later epochs. The 9B run gives D8's own 9B reading on Phase 4's 9B schedule.
+Both under the guard, rc 0.
+
+### 15. 16:52-17:0x: the defaults, the test run of record, the report
+D8 and D9 admitted and made the defaults (`macai.training`: `HEAD_AT_LABELS`, `VISION_CACHE` on); `bench/phase4_train.py`
+keeps both off unless its options say otherwise. The test run of record (`d8d9_tests.log`: 505 passed, the 490 before and 15
+new; D8's cases in `d8d9_parity.jsonl` beside D4's). `bench/d8d9_report.py` -> `d8d9_results.json`; the report sets the Hub's
+offline mode itself (a reading of the step profile run by hand without it had let huggingface_hub look up a model's
+configuration online).
+
 ### Next
-D4 is done and on by default. The two entries proposed outside D3-D5 were registered after step 0 as D8 (the LM head and the
-loss at labelled positions only) and D9 (the frozen vision tower's output cached per picture); they come next, now larger shares
-of a shorter step (0.8B: the LM head and the loss 25.6%, the vision tower 12.7%). Then D5 (the products and the adapters' path:
-the LoRA adapters' extra work is now 12.8% of a 0.8B micro-batch, 135 ms, in_proj_qkv's LoRA-B backward no longer an outlier),
-then D3. The order: D8, D9, D5, D3.
+D8 and D9 are done and on by default. D8b (a fused cross-entropy) was triggered and is proposed above for its own entry, with
+its expected gain (~2% of a 0.8B step, ~0.3% at 9B). Then D5 (the products and the adapters' path: in the profile with D8 the
+frozen products are 33.5% of a 0.8B micro-batch, the LoRA adapters' extra work 18.4%, the head's products at small row counts
+3.9%), then D3.
