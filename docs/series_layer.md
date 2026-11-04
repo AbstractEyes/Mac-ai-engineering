@@ -1536,6 +1536,79 @@ is under the share that would justify a custom product.
 - Qwen3.5 is where it was measured; the replacement applies to every model PEFT adapts with vanilla LoRA (bias-free, rank a
   multiple of 8 up to 64), untimed elsewhere.
 
+## D3, the rule's chunking and tiling (registered before any code)
+
+| part | registered | predicted (registered) | bars |
+|---|---|---|---|
+| (a) the readers' shapes under the recomputed states | (a1) chunk 8 for the training forward (it keeps no states now; Phase 3 measured 2.17 against 2.40 ms for a forward without states); (a2) double-buffered staging in the state passes (one barrier a chunk; the next chunk's loads under this chunk's products); (a3) states every 32 tokens with the chunk-16 algebra (Phase 3's "Next" item 1; its traffic estimate re-made under the recomputed states before building) | <= 1 ms a layer call together (<= 2% of the bench layer) | the harness at its float64 bars, each new variant added to it; >= 1.1x on its part at its target shapes; no shape slower by more than 2%; an item that misses is not adopted (selectable off, its records and cause kept here) |
+| (b) long sequences (1 row, 4,096-32,768 tokens; prefill and training) | a head's value columns split over 2-4 threadgroups when the heads do not fill the GPU (16 / 32 heads on 40 cores); read at the readers' micro-batches too (0.8B 2 rows x 16 heads = 32 head-rows, 9B 1 x 32 = 32, on 40 cores) and used where it pays | >= 1.5x the current forward at 1 row, 16 heads, >= 4,096 tokens | as (a) |
+
+Integration after an admission that changes the readers' path (as D4, D8 / D9 and D5): every run with the admitted entries
+(`--layer RMSNORM,CONV,GATED_NORM,GATES,SWIGLU --head-at-labels --vision-cache --lora-fused`) and D3's runner option. Qwen3.5-0.8B
+2 x 8, the cache emptied, the recomputed states, 4 epochs (100 steps): the loss read as Phase 4 read it against A, B, C, the guard's
+peak footprint <= 53.5 GB, the steady step and each window against D5's run of record (`d5_0.8b_2x8_100steps`: 6.000 s over steps
+11-100 on the trainer's clock; on each step's own clock 5.999 s and 6.78 / 7.23 / 5.91 / 5.67 / 5.67 s over steps 1-10 / 11-25 /
+26-50 / 51-75 / 76-100). Qwen3.5-9B 1 x 16, the cache emptied, 25 steps: footprint <= 74.6 GB, steps 11-25 against D5's 40.93 s,
+the loss over steps 1-25 against Phase 4's 9B reference.
+
+### D3: where the rule's time is now, and the design's predictions (written before any code)
+
+The rule in situ (the step profiles with D4 + D8 + D5, `profile_d5_0.8b_2x8.json`, `profile_d5_9b_1x16.json`; the drop-in's
+forward and backward a layer call, every micro-batch's own token count):
+
+| | 0.8B, 2 rows x 16 heads (32 head-rows), 474-1,090 tokens, mean 811 | 9B, 1 row x 32 heads (32 head-rows), 211-1,257 tokens, mean 768 |
+|---|---|---|
+| a micro-batch (18 / 24 calls) | 75.8 ms (9.9%) | 99.2 ms (3.7%) |
+| a call: forward / backward | 1.20 / 3.01 ms | 1.19 / 2.94 ms |
+| a call against its tokens (a line through the micro-batches) | 0.26 ms + 4.87 us a token (forward 1.40 us a token) | 0.13 ms + 5.22 us a token (forward 1.51 us a token) |
+
+As a chain: both models' micro-batches give the state passes 32 head-rows, one threadgroup each, on 40 cores -> one round, each
+core walking one head's chunks in order -> the forward costs ~1.4-1.5 us a token, ~22-24 us a chunk of 16 (Phase 3: a core is
+saturated by one head's threadgroup at ~23% of its matrix peak) -> the time is the chain of chunks, not the bytes; the per-chunk
+backward (every chunk in parallel) is the bandwidth-bound part.
+
+The design (macai.gated_delta, every item a setting, off until admitted):
+
+| item | the design | where the time it removes comes from |
+|---|---|---|
+| (a1) `op.FWD_CHUNK = 8` | a forward that keeps no states (inference, and the training forward under the recomputed states) runs `gdc_prep` and `gdc_fwd` compiled at C = 8; the backward recomputes at C = 16 from the inputs, as now (its algebra and every gradient's bits unchanged) | a chunk's C x C work halves, its staged tiles halve; the chain of chunks doubles |
+| (a2) `_chunked.DBUF = 1` | the state passes (`gdc_fwd`, `gdc_bwd_state`) stage each chunk's keys and queries into one of two threadgroup buffers: the next chunk's tiles are read into registers before this chunk's products and written to the other buffer after them, one barrier a chunk; the per-lane inputs of the next chunk (its decay sums, beta, the value or output-gradient tiles, A, M) are read a chunk ahead the same way (the prior art's form for Apple GPUs: register prefetch, which the M3 favours over asynchronous copies) | each chunk now waits for its loads twice (stage, then the per-lane tiles) and passes two barriers |
+| (a3) states every 32 tokens | the recompute pass and the backward state pass store every other chunk boundary; the per-chunk backward takes a pair of chunks a threadgroup: S_b = exp(G_a,last) S_a + K_a^T diag(e_a) Vn_a and dS_b (the backward state update) enter its products only through small C x C cross terms, so the pair's six large products keep two big right operands (S_a and dS_b+1) | the per-chunk backward's reads of the states and their gradients halve |
+| (b) `op.VALUE_SPLIT` | the state passes' threadgroups own 128 / s value columns (s = 2, 4, 8): s threadgroups a head-row, each staging the whole chunk's keys and queries (the kernels already index their columns by threadgroup); a rule picks s from the head-rows (B x H) | the cores the head-rows leave idle (16 head-rows: 24 of 40) |
+
+(a3) re-estimated under the recomputed states (the registration asked for it before building): the forward no longer stores the
+chunk states, but the backward's recompute pass now writes them, so the traffic is the stored path's: the recompute pass writes
+S_c (64 KB a chunk-head) and the backward state pass dS_c+1, the per-chunk backward reads both. At the 0.8B bench shape (4,096
+chunk-heads): 268 MB each way of each. Halving them saves 268 MB of the per-chunk backward's reads (0.75 ms of its 2.53 at its 95%
+of the bandwidth ceiling) and 268 MB of the state passes' writes (those passes are latency-bound at 47-63% of the ceiling: little
+of it on their critical path); the pair's cross terms add ~0.5 MFLOP to its ~3.9 (+13%, ~0.3 ms at its 3.2 TFLOP/s) and the pair's
+threadgroup memory roughly doubles (Phase 3 entry 5: the per-chunk backward is occupancy-sensitive). Net: -0.2 to -0.6 ms on the
+backward's ~8 ms at the bench shape (1.03-1.08x), -0.05 to -0.25 ms of ~3.0 ms a call at the readers' shapes (1.02-1.08x): under
+the 1.1x bar on its part.
+
+Predicted, the rule a layer call (the drop-in with its inputs as the layer gives them: q, k bf16, v, g, beta float32, every input
+needing its gradient; Metal events; the readers' shapes summed over the profiles' micro-batches):
+
+| item | bench shapes 4 x 1,024 x 16 / 2 x 1,024 x 32 (forward ~3.0, forward + backward ~11 ms) | readers' micro-batches (a call: ~1.2 / ~4.2 ms) | its part's ratio (bar 1.1x) |
+|---|---|---|---|
+| (a1) | the forward -0.1 to -0.3 ms (Phase 3: 2.40 -> 2.17 / 2.49 -> 2.18, 1.11x / 1.14x) | the forward -0.06 to +0.06 ms (one round of 32 threadgroups: twice the chunks at half the work each) | the training forward: 1.05-1.14x at the bench shapes; 0.95-1.05x at the readers': misses there |
+| (a2) | the rule -0.3 to -0.8 ms | -0.15 to -0.35 ms a call | the state passes 1.05-1.15x |
+| (a3) | the backward -0.2 to -0.6 ms | -0.05 to -0.25 ms | the backward 1.02-1.08x: misses |
+| (a) together | -0.5 to -1.5 ms (registered: <= 1 ms) | -0.2 to -0.6 ms | |
+
+| (b), 1 row | 4,096 / 8,192 / 16,384 / 32,768 tokens, now (predicted from the in-situ forward's 1.4 us a token) | with the split |
+|---|---|---|
+| 16 heads, the forward (prefill, no states) | ~6 / ~12 / ~24 / ~49 ms | 1.6-2.0x (s = 2 or 4: half a head's columns a core) |
+| 16 heads, forward + backward (training) | ~21 / ~42 / ~83 / ~166 ms (4.9-5.2 us a token) | 1.4-1.8x (the per-chunk backward is parallel already) |
+| 32 heads, the forward / forward + backward | ~6.5 / 13 / 26 / 51 ms; ~21-170 ms | 1.0-1.25x (32 threadgroups already fill 32 of 40 cores) |
+| the readers' micro-batches (32 head-rows) | | 0.95-1.10x: not used there |
+
+The step these imply: (a) at 0.8B -0.2 to -0.6 ms a call x 18 calls x 8 micro-batches = -0.03 to -0.09 s a step (6.00 -> 5.91-5.97
+s, -0.5 to -1.5%); at 9B x 24 calls x 16 micro-batches = -0.08 to -0.23 s (40.93 -> 40.70-40.85 s, -0.2 to -0.6%); both inside a
+step's run-to-run spread, so the integration reads the loss, the footprint and the windows, and the gain is read from the bench and
+the step profile's rule rows. (b): no change at the readers' shapes; the prefill of a long prompt 1.6-2.0x on the rule's forward at
+16 heads.
+
 ## The log
 
 ### 1. 2026-11-03 11:4x-11:5x PST: the instrument and its check (commit 8fb6609)
